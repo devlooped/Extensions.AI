@@ -29,6 +29,7 @@ env:
   MSBUILDTERMINALLOGGER: auto
   Configuration: ${{ github.event.inputs.configuration || 'Release' }}
   SLEET_FEED_URL: ${{ vars.SLEET_FEED_URL }}
+  OPENAI__KEY: ${{ secrets.OPENAI__KEY }}
 
 defaults:
   run:
@@ -86,7 +87,7 @@ jobs:
       - name: 🚀 sleet
         env:
           SLEET_CONNECTION: ${{ secrets.SLEET_CONNECTION }}
-        if: env.SLEET_CONNECTION != ''
+        if: env.SLEET_CONNECTION != '' && env.SLEET_FEED_URL != ''
         run: |
           dotnet tool update sleet -g --allow-downgrade --version $(curl -s --compressed ${{ vars.SLEET_FEED_URL }} | jq '.["sleet:version"]' -r)        
           sleet push bin --config none -f --verbose -p "SLEET_FEED_CONTAINER=nuget" -p "SLEET_FEED_CONNECTIONSTRING=${{ secrets.SLEET_CONNECTION }}" -p "SLEET_FEED_TYPE=azure" || echo "No packages found"
