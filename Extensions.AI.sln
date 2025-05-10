@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI", "src\AI\AI.csproj", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI.Tests", "src\AI.Tests\AI.Tests.csproj", "{3553B2FB-B06C-4766-93FD-1B7004761080}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dotnet-meai", "src\dotnet-meai\dotnet-meai.csproj", "{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,18 @@ Global
 		{3553B2FB-B06C-4766-93FD-1B7004761080}.Release|x64.Build.0 = Release|Any CPU
 		{3553B2FB-B06C-4766-93FD-1B7004761080}.Release|x86.ActiveCfg = Release|Any CPU
 		{3553B2FB-B06C-4766-93FD-1B7004761080}.Release|x86.Build.0 = Release|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Debug|x64.Build.0 = Debug|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Debug|x86.Build.0 = Debug|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Release|x64.ActiveCfg = Release|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Release|x64.Build.0 = Release|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Release|x86.ActiveCfg = Release|Any CPU
+		{58FC11CF-7D61-48B9-B95F-0EAA889D6DED}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
