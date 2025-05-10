@@ -5,6 +5,8 @@
     <RootNamespace>Devlooped.Extensions.AI</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>6eb457f9-16bc-49c5-81f2-33399b254e04</UserSecretsId>
+
+    <RestoreSources>https://api.nuget.org/v3/index.json;https://pkg.kzu.app/index.json</RestoreSources>
   </PropertyGroup>
 
 </Project>
