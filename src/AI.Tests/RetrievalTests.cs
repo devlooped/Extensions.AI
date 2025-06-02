@@ -12,7 +12,7 @@ namespace Devlooped.Extensions.AI;
 public class RetrievalTests(ITestOutputHelper output)
 {
     [SecretsTheory("OpenAI:Key")]
-    [InlineData("gpt-4.1-mini", "Qué es la rebeldía en el Código Procesal Civil y Comercial Nacional?")]
+    [InlineData("gpt-4.1-nano", "Qué es la rebeldía en el Código Procesal Civil y Comercial Nacional?")]
     [InlineData("gpt-4.1-nano", "What's the battery life in an iPhone 15?", true)]
     public async Task CanRetrieveContent(string model, string question, bool empty = false)
     {
@@ -31,6 +31,11 @@ public class RetrievalTests(ITestOutputHelper output)
                         ResponseTool.CreateFileSearchTool([store.VectorStoreId]))
                     .AsBuilder()
                     .UseLogging(output.AsLoggerFactory())
+                    .Use((messages, options, next, cancellationToken) =>
+                    {
+
+                        return next.Invoke(messages, options, cancellationToken);
+                    })
                     .Build();
 
                 var response = await chat.GetResponseAsync(

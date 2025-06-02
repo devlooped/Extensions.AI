@@ -18,10 +18,10 @@ public static class OpenAIResponseClientExtensions
 
     class ToolsReponseClient(OpenAIResponseClient inner, ResponseTool[] tools) : OpenAIResponseClient
     {
-        public override Task<ClientResult<OpenAIResponse>> CreateResponseAsync(IEnumerable<ResponseItem> inputItems, ResponseCreationOptions options = null, CancellationToken cancellationToken = default)
+        public override Task<ClientResult<OpenAIResponse>> CreateResponseAsync(IEnumerable<ResponseItem> inputItems, ResponseCreationOptions? options = null, CancellationToken cancellationToken = default)
             => inner.CreateResponseAsync(inputItems, AddTools(options), cancellationToken);
 
-        public override AsyncCollectionResult<StreamingResponseUpdate> CreateResponseStreamingAsync(IEnumerable<ResponseItem> inputItems, ResponseCreationOptions options = null, CancellationToken cancellationToken = default)
+        public override AsyncCollectionResult<StreamingResponseUpdate> CreateResponseStreamingAsync(IEnumerable<ResponseItem> inputItems, ResponseCreationOptions? options = null, CancellationToken cancellationToken = default)
             => inner.CreateResponseStreamingAsync(inputItems, AddTools(options), cancellationToken);
 
         ResponseCreationOptions AddTools(ResponseCreationOptions options)
