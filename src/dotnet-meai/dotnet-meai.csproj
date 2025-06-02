@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -17,7 +17,7 @@
   <ItemGroup>
     <PackageReference Include="NuGet.Protocol" Version="6.13.2" />
     <PackageReference Include="NuGetizer" Version="1.2.4" PrivateAssets="all" />
-    <PackageReference Include="Devlooped.Extensions.DependencyInjection" Version="2.1.0-rc.5" PrivateAssets="all" />
+    <PackageReference Include="Devlooped.Extensions.DependencyInjection" Version="2.1.0" PrivateAssets="all" />
     <PackageReference Include="Devlooped.Sponsors.Commands" Version="42.42.1585-main" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
