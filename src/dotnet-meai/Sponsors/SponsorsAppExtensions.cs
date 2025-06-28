@@ -1,7 +1,8 @@
-﻿using DotNetConfig;
+﻿using Devlooped.Sponsors;
+using DotNetConfig;
 using Spectre.Console.Cli;
 
-namespace Devlooped.Sponsors;
+namespace Devlooped.Extensions.AI;
 
 static class SponsorsAppExtensions
 {

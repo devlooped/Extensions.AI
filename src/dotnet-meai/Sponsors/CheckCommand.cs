@@ -1,12 +1,13 @@
 ﻿using System.ComponentModel;
+using Devlooped.Sponsors;
 using DotNetConfig;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using static Devlooped.Sponsors.CheckCommand;
+using static Devlooped.Extensions.AI.CheckCommand;
 using static ThisAssembly.Strings;
 
-namespace Devlooped.Sponsors;
+namespace Devlooped.Extensions.AI;
 
 [Description("Checks the current sponsorship status with [lime]devlooped[/], entirely offline")]
 [Service]

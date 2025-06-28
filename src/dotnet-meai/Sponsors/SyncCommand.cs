@@ -1,9 +1,10 @@
 ﻿using System.ComponentModel;
+using Devlooped.Sponsors;
 using DotNetConfig;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console.Cli;
 
-namespace Devlooped.Sponsors;
+namespace Devlooped.Extensions.AI;
 
 [Description("Synchronizes your sponsorship manifest for [lime]devlooped[/]")]
 [Service]
