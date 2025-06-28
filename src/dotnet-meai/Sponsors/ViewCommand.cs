@@ -1,8 +1,9 @@
 ﻿using System.ComponentModel;
+using Devlooped.Sponsors;
 using DotNetConfig;
 using Spectre.Console.Cli;
 
-namespace Devlooped.Sponsors;
+namespace Devlooped.Extensions.AI;
 
 [Description("Validates and displays your sponsor manifest for [lime]devlooped[/], if present")]
 class DevloopedViewCommand(Config config, IHttpClientFactory http) : ViewCommand<DevloopedViewCommand.DevloopedViewSettings>(http)
