@@ -96,9 +96,7 @@
 [file "Directory.Build.rsp"]
 	url = https://github.com/devlooped/oss/blob/main/Directory.Build.rsp
 	sha = 0f7f7f7e8a29de9b535676f75fe7c67e629a5e8c
-
-	etag = 0ccae83fc51f400bfd7058170bfec7aba11455e24a46a0d7e6a358da6486e255
-	weak
+    skip
 [file "_config.yml"]
 	url = https://github.com/devlooped/oss/blob/main/_config.yml
 	sha = 68b409c486842062e0de0e5b11e6fdb7cd12d6e2
