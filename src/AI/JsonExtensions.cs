@@ -10,7 +10,7 @@ static class JsonExtensions
     /// <summary>
     /// Recursively truncates long strings in an object before serialization and optionally excludes additional properties.
     /// </summary>
-    public static string ToJsonString(this object? value, int maxStringLength = 100, bool includeAdditionalProperties = true)
+    public static string ToJsonString(this object? value, int? maxStringLength = 100, bool includeAdditionalProperties = true)
     {
         if (value is null)
             return "{}";
@@ -19,7 +19,7 @@ static class JsonExtensions
         return FilterNode(node, maxStringLength, includeAdditionalProperties)?.ToJsonString() ?? "{}";
     }
 
-    static JsonNode? FilterNode(JsonNode? node, int maxStringLength, bool includeAdditionalProperties)
+    static JsonNode? FilterNode(JsonNode? node, int? maxStringLength = 100, bool includeAdditionalProperties = true)
     {
         if (node is JsonObject obj)
         {
@@ -44,9 +44,12 @@ static class JsonExtensions
 
             return filtered;
         }
-        if (node is JsonValue val && val.TryGetValue(out string? str) && str is not null && str.Length > maxStringLength)
+        if (maxStringLength != null &&
+            node is JsonValue val &&
+            val.TryGetValue(out string? str) &&
+            str is not null && str.Length > maxStringLength)
         {
-            return str[..maxStringLength] + "...";
+            return str[..maxStringLength.Value] + "...";
         }
         return node;
     }
