@@ -1,5 +1,9 @@
 <Project InitialTargets="SetLocalVersion">
 
+  <PropertyGroup>
+    <PackOnBuild>true</PackOnBuild>
+  </PropertyGroup>
+
   <Target Name="SetLocalVersion" Condition="!$(CI)">
     <GetVersion>
       <Output TaskParameter="Version" PropertyName="Version" />
