@@ -1,4 +1,4 @@
-![Icon](assets/img/icon-64.png) Devlooped.Extensions.AI
+![Icon](assets/img/icon-32.png) Devlooped.Extensions.AI
 ============
 
 [![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
