@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/devlooped/Extensions.AI.svg?color=blue)](https://github.com//devlooped/Extensions.AI/blob/main/license.txt)
 [![Build](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml)
 
-## Extensions
+# Extensions
 
 <!-- include src/AI/readme.md#content -->
 <!-- #content -->
@@ -110,7 +110,7 @@ IChatClient client = new GrokClient(Env.Get("XAI_API_KEY")!)
 <!-- #content -->
 <!-- src/AI/readme.md#content -->
 
-## Weaving
+# Weaving
 
 <!-- include src/Weaving/readme.md#content -->
 <!-- #content -->
