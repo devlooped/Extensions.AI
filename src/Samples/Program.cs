@@ -6,7 +6,7 @@ var messages = new Chat()
 };
 
 // Env supports .env as well as all standard .NET configuration sources
-var grok = new GrokClient(Env.Get("XAI_API_KEY")!, new GrokClientOptions()
+var grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")), new GrokClientOptions()
     .UseJsonConsoleLogging(new() { WrapLength = 80 }));
 
 var options = new ChatOptions
