@@ -26,8 +26,8 @@ AnsiConsole.MarkupLine($":robot: {response.Text}");
 ```
 
 > [!NOTE]
-> The most useful namespaces and dependencies for developing Microsoft.Extensions.AI-
-> powered applications are automatically referenced and imported when using this package.
+> The most useful namespaces and dependencies for developing Microsoft.Extensions.AI-powered 
+> applications are automatically referenced and imported when using this package.
 
 ## Configuration / Environment Variables
 
