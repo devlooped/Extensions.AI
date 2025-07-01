@@ -12,6 +12,10 @@ public class GrokChatOptions : ChatOptions
     /// Configures Grok's live search capabilities. 
     /// See https://docs.x.ai/docs/guides/live-search.
     /// </summary>
+    /// <remarks>
+    /// A shortcut to adding a <see cref="GrokSearchTool"/> to the <see cref="ChatOptions.Tools"/> collection, 
+    /// or the <see cref="HostedWebSearchTool"/> (which sets the <see cref="GrokSearch.Auto"/> behavior).
+    /// </remarks>
     public GrokSearch Search { get; set; } = GrokSearch.Auto;
 
     /// <summary>

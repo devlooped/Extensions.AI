@@ -1,20 +1,20 @@
 ﻿// Sample X.AI client usage with .NET
 var messages = new Chat()
 {
-    { "system", "You are a highly intelligent AI assistant." },
-    { "user", "What is 101*3?" },
+    { "system", "You are an AI assistant that knows how to search the web." },
+    { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
 };
 
-var grok = new GrokClient(Env.Get("XAI_API_KEY")!);
+var grok = new GrokClient(Env.Get("XAI_API_KEY")!, new GrokClientOptions()
+    .UseJsonConsoleLogging(new() { WrapLength = 80 }));
 
-var options = new GrokChatOptions
+var options = new ChatOptions
 {
-    ModelId = "grok-3-mini", // or "grok-3-mini-fast"
-    Temperature = 0.7f,
-    ReasoningEffort = ReasoningEffort.High, // or GrokReasoningEffort.Low
-    Search = GrokSearch.Auto, // or GrokSearch.On or GrokSearch.Off
+    ModelId = "grok-3",
+    // Enables Live Search
+    Tools = [new HostedWebSearchTool()]
 };
 
 var response = await grok.GetResponseAsync(messages, options);
 
-AnsiConsole.MarkupLine($":robot: {response.Text}");
+AnsiConsole.MarkupLine($":robot: {response.Text.EscapeMarkup()}");

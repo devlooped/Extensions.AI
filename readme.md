@@ -6,12 +6,14 @@
 [![License](https://img.shields.io/github/license/devlooped/Extensions.AI.svg?color=blue)](https://github.com//devlooped/Extensions.AI/blob/main/license.txt)
 [![Build](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml)
 
-Extensions for [Microsoft.Extensions.AI](https://nuget.org/packages/Microsoft.Extensions.AI).
+## Extensions
 
-<!-- #content -->
+<!-- include src/Devlooped.Extensions.AI/readme.md#content -->
 
+## Weaving
 
-<!-- #content -->
+<!-- include src/Weaving/readme.md#content -->
+
 <!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
 # Sponsors 
 

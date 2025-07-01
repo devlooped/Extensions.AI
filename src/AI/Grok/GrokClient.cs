@@ -33,17 +33,31 @@ public class GrokClient(string apiKey, GrokClientOptions options)
 
     ChatOptions? SetOptions(ChatOptions? options)
     {
-        if (options is null || options is not GrokChatOptions grok)
+        if (options is null)
             return null;
 
         options.RawRepresentationFactory = _ =>
         {
-            var result = new GrokCompletionOptions
-            {
-                Search = grok.Search
-            };
+            var result = new GrokCompletionOptions();
+            var grok = options as GrokChatOptions;
 
-            if (grok.ReasoningEffort != null)
+            if (options.Tools != null)
+            {
+                if (options.Tools.OfType<GrokSearchTool>().FirstOrDefault() is GrokSearchTool grokSearch)
+                    result.Search = grokSearch.Mode;
+                else if (options.Tools.OfType<HostedWebSearchTool>().FirstOrDefault() is HostedWebSearchTool webSearch)
+                    result.Search = GrokSearch.Auto;
+
+                // Grok doesn't support any other hosted search tools, so remove remaining ones
+                // so they don't get copied over by the OpenAI client.
+                options.Tools = [.. options.Tools.Where(tool => tool is not HostedWebSearchTool)];
+            }
+            else if (grok is not null)
+            {
+                result.Search = grok.Search;
+            }
+
+            if (grok?.ReasoningEffort != null)
             {
                 result.ReasoningEffortLevel = grok.ReasoningEffort switch
                 {

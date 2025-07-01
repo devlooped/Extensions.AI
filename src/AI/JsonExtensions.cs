@@ -10,13 +10,22 @@ static class JsonExtensions
     /// <summary>
     /// Recursively truncates long strings in an object before serialization and optionally excludes additional properties.
     /// </summary>
-    public static string ToJsonString(this object? value, int? maxStringLength = 100, bool includeAdditionalProperties = true)
+    public static string ToShortJsonString(this object? value, int? maxStringLength = 100, bool includeAdditionalProperties = true)
     {
         if (value is null)
             return "{}";
 
         var node = JsonSerializer.SerializeToNode(value, value.GetType(), options);
         return FilterNode(node, maxStringLength, includeAdditionalProperties)?.ToJsonString() ?? "{}";
+    }
+
+    public static string ToShortJsonString(this JsonNode? node, int? maxStringLength = 100, bool includeAdditionalProperties = true)
+    {
+        if (node is null)
+            return "{}";
+
+        var filteredNode = FilterNode(node, maxStringLength, includeAdditionalProperties);
+        return filteredNode?.ToJsonString() ?? "{}";
     }
 
     static JsonNode? FilterNode(JsonNode? node, int? maxStringLength = 100, bool includeAdditionalProperties = true)
