@@ -8,7 +8,7 @@
 
 ## Extensions
 
-<!-- include src/Devlooped.Extensions.AI/readme.md#content -->
+<!-- include src/AI/readme.md#content -->
 
 ## Weaving
 
