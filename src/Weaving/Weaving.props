@@ -30,6 +30,7 @@
 
   <ItemGroup>
     <AssemblyMetadata Include="MSBuildProjectName" Value="$(MSBuildProjectName)" />
+    <None Update=".env" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
   </ItemGroup>
 
 </Project>
