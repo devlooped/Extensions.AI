@@ -126,7 +126,7 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-var grok = new GrokClient(Env.Get("XAI_API_KEY")!);
+var grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")));
 
 var options = new GrokChatOptions
 {
