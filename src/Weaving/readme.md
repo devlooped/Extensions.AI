@@ -29,6 +29,21 @@ AnsiConsole.MarkupLine($":robot: {response.Text}");
 > The most useful namespaces and dependencies for developing Microsoft.Extensions.AI-
 > powered applications are automatically referenced and imported when using this package.
 
+## Configuration / Environment Variables
+
+The `Env` class provides access to the following variables/configuration automatically: 
+
+* `.env` files: in local and parent directories
+* `~/.env` file: in the user's home directory (`%userprofile%\.env` on Windows)
+* All default configuration sources from [App Builder](https://learn.microsoft.com/en-us/dotnet/core/extensions/generic-host?tabs=appbuilder#host-builder-settings): 
+    * Environment variables prefixed with DOTNET_.
+    * Command-line arguments.
+    * appsettings.json.
+    * appsettings.{Environment}.json.
+    * Secret Manager when the app runs in the Development environment.
+    * Environment variables.
+    * Command-line arguments.
+
 <!-- #content -->
 <!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
 <!-- exclude -->
