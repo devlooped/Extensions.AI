@@ -13,22 +13,15 @@ namespace Devlooped.Extensions.AI;
 public class GrokChatClient : IChatClient
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
-    readonly string apiKey;
     readonly string modelId;
     readonly ClientPipeline pipeline;
     readonly OpenAIClientOptions options;
-
-    /// <summary>
-    /// Initializes the client with the specified API key and the default model ID "grok-3-mini".
-    /// </summary>
-    public GrokChatClient(string apiKey) : this(apiKey, "grok-3-mini", null) { }
 
     /// <summary>
     /// Initializes the client with the specified API key, model ID, and optional OpenAI client options.
     /// </summary>
     public GrokChatClient(string apiKey, string modelId, OpenAIClientOptions? options = default)
     {
-        this.apiKey = apiKey;
         this.modelId = modelId;
         this.options = options ?? new();
         this.options.Endpoint ??= new Uri("https://api.x.ai/v1");
@@ -79,9 +72,9 @@ public class GrokChatClient : IChatClient
             {
                 result.ReasoningEffortLevel = grok.ReasoningEffort switch
                 {
-                    ReasoningEffort.Low => OpenAI.Chat.ChatReasoningEffortLevel.Low,
                     ReasoningEffort.High => OpenAI.Chat.ChatReasoningEffortLevel.High,
-                    _ => throw new ArgumentException($"Unsupported reasoning effort {grok.ReasoningEffort}")
+                    // Grok does not support Medium, so we map it to Low too
+                    _ => OpenAI.Chat.ChatReasoningEffortLevel.Low,
                 };
             }
 
