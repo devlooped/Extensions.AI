@@ -16,17 +16,18 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "What day is today?" },
         };
 
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!);
+        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!);
 
         var options = new GrokChatOptions
         {
             ModelId = "grok-3-mini",
             Search = GrokSearch.Auto,
-            Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")]
+            Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")],
+            AdditionalProperties = new()
+            {
+                { "foo", "bar" }
+            }
         };
-
-        var client = grok.GetChatClient("grok-3");
-        var chat = Assert.IsType<IChatClient>(client, false);
 
         var response = await chat.GetResponseAsync(messages, options);
         var getdate = response.Messages
@@ -50,9 +51,7 @@ public class GrokTests(ITestOutputHelper output)
 
         var transport = new TestPipelineTransport(HttpClientPipelineTransport.Shared, output);
 
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!, new OpenAI.OpenAIClientOptions() { Transport = transport })
-            .GetChatClient("grok-3")
-            .AsIChatClient()
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", new OpenAI.OpenAIClientOptions() { Transport = transport })
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -103,9 +102,7 @@ public class GrokTests(ITestOutputHelper output)
 
         var transport = new TestPipelineTransport(HttpClientPipelineTransport.Shared, output);
 
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!, new OpenAI.OpenAIClientOptions() { Transport = transport });
-        var client = grok.GetChatClient("grok-3");
-        var chat = Assert.IsType<IChatClient>(client, false);
+        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", new OpenAI.OpenAIClientOptions() { Transport = transport });
 
         var options = new ChatOptions
         {

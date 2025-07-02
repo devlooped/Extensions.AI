@@ -20,4 +20,28 @@ public static class ChatExtensions
         public Task<ChatResponse> GetResponseAsync(Chat chat, ChatOptions? options = null, CancellationToken cancellation = default)
             => client.GetResponseAsync((IEnumerable<ChatMessage>)chat, options, cancellation);
     }
+
+    extension(ChatOptions options)
+    {
+        /// <summary>
+        /// Sets the effort level for a reasoning AI model when generating responses, if supported 
+        /// by the model.
+        /// </summary>
+        public ReasoningEffort? ReasoningEffort
+        {
+            get => options.AdditionalProperties?.TryGetValue("reasoning_effort", out var value) == true && value is ReasoningEffort effort ? effort : null;
+            set
+            {
+                if (value is not null)
+                {
+                    options.AdditionalProperties ??= [];
+                    options.AdditionalProperties["reasoning_effort"] = value;
+                }
+                else
+                {
+                    options.AdditionalProperties?.Remove("reasoning_effort");
+                }
+            }
+        }
+    }
 }

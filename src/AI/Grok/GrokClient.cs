@@ -1,113 +1,45 @@
 ﻿using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Collections.Concurrent;
-using System.Text.Json;
 using Microsoft.Extensions.AI;
 using OpenAI;
 
 namespace Devlooped.Extensions.AI;
 
-public class GrokClient(string apiKey, OpenAIClientOptions options)
+/// <summary>
+/// Provides an OpenAI compability client for Grok. It's recommended you 
+/// use <see cref="GrokChatClient"/> directly for chat-only scenarios.
+/// </summary>
+public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
     : OpenAIClient(new ApiKeyCredential(apiKey), EnsureEndpoint(options))
 {
-    // This allows ChatOptions to request a different model than the one configured 
-    // in the chat pipeline when GetChatClient(model).AsIChatClient() is called at registration time.
-    readonly ConcurrentDictionary<string, GrokChatClientAdapter> adapters = new();
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
 
-    public GrokClient(string apiKey)
-        : this(apiKey, new())
-    {
-    }
+    /// <summary>
+    /// Initializes a new instance of the <see cref="GrokClient"/> with the specified API key.
+    /// </summary>
+    public GrokClient(string apiKey) : this(apiKey, new()) { }
 
-    IChatClient GetChatClientImpl(string model)
-        // Gets the real chat client by prefixing so the overload invokes the base.
-        => clients.GetOrAdd(model, key => GetChatClient("__" + model).AsIChatClient());
+    IChatClient GetChatClientImpl(string model) => clients.GetOrAdd(model, key => new GrokChatClient(apiKey, key, options));
 
     /// <summary>
     /// Returns an adapter that surfaces an <see cref="IChatClient"/> interface that 
     /// can be used directly in the <see cref="ChatClientBuilder"/> pipeline builder.
     /// </summary>
-    public override OpenAI.Chat.ChatClient GetChatClient(string model)
-        // We need to differentiate getting a real chat client vs an adapter for pipeline setup.
-        // The former is invoked by the adapter when it needs to invoke the actual chat client, 
-        // which goes through the GetChatClientImpl. Since the method override is necessary to 
-        // satisfy the usage pattern when configuring OpenAIClient with M.E.AI, we differentiate 
-        // the internal call by adding a prefix we remove before calling downstream.
-        => model.StartsWith("__") ? base.GetChatClient(model[2..]) : new GrokChatClientAdapter(this, model);
+    public override OpenAI.Chat.ChatClient GetChatClient(string model) => new GrokChatClientAdapter(this, model);
 
-    static OpenAIClientOptions EnsureEndpoint(OpenAIClientOptions options)
+    static OpenAIClientOptions EnsureEndpoint(OpenAIClientOptions? options)
     {
-        if (options.Endpoint is null)
-            options.Endpoint = new Uri("https://api.x.ai/v1");
-
+        options ??= new();
+        options.Endpoint ??= new Uri("https://api.x.ai/v1");
         return options;
     }
 
-    static ChatOptions? SetOptions(ChatOptions? options)
-    {
-        if (options is null)
-            return null;
-
-        options.RawRepresentationFactory = _ =>
-        {
-            var result = new GrokCompletionOptions();
-            var grok = options as GrokChatOptions;
-            var search = grok?.Search;
-
-            if (options.Tools != null)
-            {
-                if (options.Tools.OfType<GrokSearchTool>().FirstOrDefault() is GrokSearchTool grokSearch)
-                    search = grokSearch.Mode;
-                else if (options.Tools.OfType<HostedWebSearchTool>().FirstOrDefault() is HostedWebSearchTool webSearch)
-                    search = GrokSearch.Auto;
-
-                // Grok doesn't support any other hosted search tools, so remove remaining ones
-                // so they don't get copied over by the OpenAI client.
-                //options.Tools = [.. options.Tools.Where(tool => tool is not HostedWebSearchTool)];
-            }
-
-            if (search != null)
-                result.Search = search.Value;
-
-            if (grok?.ReasoningEffort != null)
-            {
-                result.ReasoningEffortLevel = grok.ReasoningEffort switch
-                {
-                    ReasoningEffort.Low => OpenAI.Chat.ChatReasoningEffortLevel.Low,
-                    ReasoningEffort.High => OpenAI.Chat.ChatReasoningEffortLevel.High,
-                    _ => throw new ArgumentException($"Unsupported reasoning effort {grok.ReasoningEffort}")
-                };
-            }
-
-            return result;
-        };
-
-        return options;
-    }
-
-    class SearchParameters
-    {
-        public GrokSearch Mode { get; set; } = GrokSearch.Auto;
-    }
-
-    class GrokCompletionOptions : OpenAI.Chat.ChatCompletionOptions
-    {
-        public GrokSearch Search { get; set; } = GrokSearch.Auto;
-
-        protected override void JsonModelWriteCore(Utf8JsonWriter writer, ModelReaderWriterOptions? options)
-        {
-            base.JsonModelWriteCore(writer, options);
-
-            // "search_parameters": { "mode": "auto" } 
-            writer.WritePropertyName("search_parameters");
-            writer.WriteStartObject();
-            writer.WriteString("mode", Search.ToString().ToLowerInvariant());
-            writer.WriteEndObject();
-        }
-    }
-
-    public class GrokChatClientAdapter(GrokClient client, string model) : OpenAI.Chat.ChatClient, IChatClient
+    // This adapter is provided for compatibility with the documented usage for 
+    // OpenAI in MEAI docs. Most typical case would be to just create an <see cref="GrokChatClient"/> directly.
+    // This throws on any non-IChatClient invoked methods in the AsIChatClient adapter, and 
+    // forwards the IChatClient methods to the GrokChatClient implementation which is cached per client.
+    class GrokChatClientAdapter(GrokClient client, string model) : OpenAI.Chat.ChatClient, IChatClient
     {
         void IDisposable.Dispose() { }
 
@@ -118,14 +50,14 @@ public class GrokClient(string apiKey, OpenAIClientOptions options)
         /// the default model when the adapter was created.
         /// </summary>
         Task<ChatResponse> IChatClient.GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options, CancellationToken cancellation)
-            => client.GetChatClientImpl(options?.ModelId ?? model).GetResponseAsync(messages, SetOptions(options), cancellation);
+            => client.GetChatClientImpl(options?.ModelId ?? model).GetResponseAsync(messages, options, cancellation);
 
         /// <summary>
         /// Routes the request to a client that matches the options' ModelId (if set), or 
         /// the default model when the adapter was created.
         /// </summary>
         IAsyncEnumerable<ChatResponseUpdate> IChatClient.GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options, CancellationToken cancellation)
-            => client.GetChatClientImpl(options?.ModelId ?? model).GetStreamingResponseAsync(messages, SetOptions(options), cancellation);
+            => client.GetChatClientImpl(options?.ModelId ?? model).GetStreamingResponseAsync(messages, options, cancellation);
 
         // These are the only two methods actually invoked by the AsIChatClient adapter from M.E.AI.OpenAI
         public override Task<ClientResult<OpenAI.Chat.ChatCompletion>> CompleteChatAsync(IEnumerable<OpenAI.Chat.ChatMessage>? messages, OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
