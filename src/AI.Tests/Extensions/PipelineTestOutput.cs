@@ -12,6 +12,9 @@ public static class PipelineTestOutput
     /// </summary>
     /// <typeparam name="TOptions">The options type to configure for HTTP logging.</typeparam>
     /// <param name="pipelineOptions">The options instance to configure.</param>
+    /// <param name="output">The test output helper to write to.</param>
+    /// <param name="onRequest">A callback to process the <see cref="JsonNode"/> that was sent.</param>
+    /// <param name="onResponse">A callback to process the <see cref="JsonNode"/> that was received.</param>
     /// <remarks>
     /// NOTE: this is the lowst-level logging after all chat pipeline processing has been done.
     /// <para>
@@ -19,50 +22,76 @@ public static class PipelineTestOutput
     /// logging transport to minimize the impact on existing configurations.
     /// </para>
     /// </remarks>
-    public static TOptions UseTestOutput<TOptions>(this TOptions pipelineOptions, ITestOutputHelper output)
+    public static TOptions WriteTo<TOptions>(this TOptions pipelineOptions, ITestOutputHelper? output = default, Action<JsonNode>? onRequest = default, Action<JsonNode>? onResponse = default)
         where TOptions : ClientPipelineOptions
     {
-        pipelineOptions.Transport = new TestPipelineTransport(pipelineOptions.Transport ?? HttpClientPipelineTransport.Shared, output);
-
+        pipelineOptions.AddPolicy(new TestOutputPolicy(output ?? NullTestOutputHelper.Default, onRequest, onResponse), PipelinePosition.BeforeTransport);
         return pipelineOptions;
     }
-}
 
-public class TestPipelineTransport(PipelineTransport inner, ITestOutputHelper? output = null) : PipelineTransport
-{
-    static readonly JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.General)
+    class NullTestOutputHelper : ITestOutputHelper
     {
-        WriteIndented = true,
-    };
-
-    public List<JsonNode> Requests { get; } = [];
-    public List<JsonNode> Responses { get; } = [];
-
-    protected override async ValueTask ProcessCoreAsync(PipelineMessage message)
-    {
-        message.BufferResponse = true;
-        await inner.ProcessAsync(message);
-
-        if (message.Request.Content is not null)
-        {
-            using var memory = new MemoryStream();
-            message.Request.Content.WriteTo(memory);
-            memory.Position = 0;
-            using var reader = new StreamReader(memory);
-            var content = await reader.ReadToEndAsync();
-            var node = JsonNode.Parse(content);
-            Requests.Add(node!);
-            output?.WriteLine(node!.ToJsonString(options));
-        }
-
-        if (message.Response != null)
-        {
-            var node = JsonNode.Parse(message.Response.Content.ToString());
-            Responses.Add(node!);
-            output?.WriteLine(node!.ToJsonString(options));
-        }
+        public static ITestOutputHelper Default { get; } = new NullTestOutputHelper();
+        NullTestOutputHelper() { }
+        public void WriteLine(string message) { }
+        public void WriteLine(string format, params object[] args) { }
     }
 
-    protected override PipelineMessage CreateMessageCore() => inner.CreateMessage();
-    protected override void ProcessCore(PipelineMessage message) => inner.Process(message);
+    class TestOutputPolicy(ITestOutputHelper output, Action<JsonNode>? onRequest = default, Action<JsonNode>? onResponse = default) : PipelinePolicy
+    {
+        static readonly JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.General)
+        {
+            WriteIndented = true,
+        };
+
+        public override void Process(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
+        {
+            message.BufferResponse = true;
+            ProcessNext(message, pipeline, currentIndex);
+
+            if (message.Request.Content is not null)
+            {
+                using var memory = new MemoryStream();
+                message.Request.Content.WriteTo(memory);
+                memory.Position = 0;
+                using var reader = new StreamReader(memory);
+                var content = reader.ReadToEnd();
+                var node = JsonNode.Parse(content);
+                onRequest?.Invoke(node!);
+                output?.WriteLine(node!.ToJsonString(options));
+            }
+
+            if (message.Response != null)
+            {
+                var node = JsonNode.Parse(message.Response.Content.ToString());
+                onResponse?.Invoke(node!);
+                output?.WriteLine(node!.ToJsonString(options));
+            }
+        }
+
+        public override async ValueTask ProcessAsync(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
+        {
+            message.BufferResponse = true;
+            await ProcessNextAsync(message, pipeline, currentIndex);
+
+            if (message.Request.Content is not null)
+            {
+                using var memory = new MemoryStream();
+                message.Request.Content.WriteTo(memory);
+                memory.Position = 0;
+                using var reader = new StreamReader(memory);
+                var content = await reader.ReadToEndAsync();
+                var node = JsonNode.Parse(content);
+                onRequest?.Invoke(node!);
+                output?.WriteLine(node!.ToJsonString(options));
+            }
+
+            if (message.Response != null)
+            {
+                var node = JsonNode.Parse(message.Response.Content.ToString());
+                onResponse?.Invoke(node!);
+                output?.WriteLine(node!.ToJsonString(options));
+            }
+        }
+    }
 }

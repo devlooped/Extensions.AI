@@ -1,5 +1,4 @@
-﻿using System.ClientModel.Primitives;
-using System.Text.Json.Nodes;
+﻿using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using static ConfigurationExtensions;
 
@@ -49,9 +48,11 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "What's Tesla stock worth today?" },
         };
 
-        var transport = new TestPipelineTransport(HttpClientPipelineTransport.Shared, output);
+        var requests = new List<JsonNode>();
+        var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", new OpenAI.OpenAIClientOptions() { Transport = transport })
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3",
+                new OpenAI.OpenAIClientOptions().WriteTo(output, requests.Add, responses.Add))
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -69,7 +70,7 @@ public class GrokTests(ITestOutputHelper output)
         // "search_parameters": {
         //      "mode": "on"
         //}
-        Assert.All(transport.Requests, x =>
+        Assert.All(requests, x =>
         {
             var search = Assert.IsType<JsonObject>(x["search_parameters"]);
             Assert.Equal("on", search["mode"]?.GetValue<string>());
@@ -79,7 +80,7 @@ public class GrokTests(ITestOutputHelper output)
         Assert.Contains(response.Messages, x => x.Role == ChatRole.Tool);
 
         // Citations include nasdaq.com at least as a web search source
-        var node = transport.Responses.LastOrDefault();
+        var node = responses.LastOrDefault();
         Assert.NotNull(node);
         var citations = Assert.IsType<JsonArray>(node["citations"], false);
         var yahoo = citations.Where(x => x != null).Any(x => x!.ToString().Contains("https://finance.yahoo.com/quote/TSLA/", StringComparison.Ordinal));
@@ -100,16 +101,18 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
         };
 
-        var transport = new TestPipelineTransport(HttpClientPipelineTransport.Shared, output);
+        var requests = new List<JsonNode>();
+        var responses = new List<JsonNode>();
 
-        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", new OpenAI.OpenAIClientOptions() { Transport = transport });
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3",
+                new OpenAI.OpenAIClientOptions().WriteTo(output, requests.Add, responses.Add));
 
         var options = new ChatOptions
         {
             Tools = [new HostedWebSearchTool()]
         };
 
-        var response = await chat.GetResponseAsync(messages, options);
+        var response = await grok.GetResponseAsync(messages, options);
         var text = response.Text;
 
         Assert.Contains("TSLA", text);
@@ -118,15 +121,15 @@ public class GrokTests(ITestOutputHelper output)
         // "search_parameters": {
         //      "mode": "auto"
         //}
-        Assert.All(transport.Requests, x =>
+        Assert.All(requests, x =>
         {
             var search = Assert.IsType<JsonObject>(x["search_parameters"]);
             Assert.Equal("auto", search["mode"]?.GetValue<string>());
         });
 
         // Citations include nasdaq.com at least as a web search source
-        Assert.Single(transport.Responses);
-        var node = transport.Responses[0];
+        Assert.Single(responses);
+        var node = responses[0];
         Assert.NotNull(node);
         var citations = Assert.IsType<JsonArray>(node["citations"], false);
         var yahoo = citations.Where(x => x != null).Any(x => x!.ToString().Contains("https://finance.yahoo.com/quote/TSLA/", StringComparison.Ordinal));
