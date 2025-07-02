@@ -1,4 +1,4 @@
-![Icon](assets/img/icon-32.png) Devlooped.Extensions.AI
+﻿![Icon](assets/img/icon-32.png) Devlooped.Extensions.AI
 ============
 
 [![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
@@ -22,16 +22,14 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-IChatClient grok = new GrokClient(Env.Get("XAI_API_KEY")!)
-    .GetChatClient("grok-3-mini")
-    .AsIChatClient();
+var grok = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3-mini");
 
 var options = new GrokChatOptions
 {
-    ModelId = "grok-3-mini-fast",           // can override the model on the client
+    ModelId = "grok-3-mini-fast",           // 👈 can override the model on the client
     Temperature = 0.7f,
-    ReasoningEffort = ReasoningEffort.High, // or ReasoningEffort.Low
-    Search = GrokSearch.Auto,               // or GrokSearch.On or GrokSearch.Off
+    ReasoningEffort = ReasoningEffort.High, // 👈 or Low
+    Search = GrokSearch.Auto,               // 👈 or On/Off
 };
 
 var response = await grok.GetResponseAsync(messages, options);
@@ -48,17 +46,49 @@ var messages = new Chat()
     { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
 };
 
-var grok = new GrokClient(Env.Get("XAI_API_KEY")!)
-    .GetChatClient("grok-3")
-    .AsIChatClient();
+var grok = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3");
 
 var options = new ChatOptions
 {
-    Tools = [new HostedWebSearchTool()]
+    Tools = [new HostedWebSearchTool()]     // 👈 equals setting GrokSearch.Auto
 };
 
 var response = await grok.GetResponseAsync(messages, options);
 ```
+
+## OpenAI
+
+The support for OpenAI chat clients provided in [Microsoft.Extensions.AI.OpenAI](https://www.nuget.org/packages/Microsoft.Extensions.AI.OpenAI) fall short in some scenarios:
+
+* Specifying per-chat model identifier: the OpenAI client options only allow setting 
+  a single model identifier for all requests, at the time the `OpenAIClient.GetChatClient` is 
+  invoked.
+* Setting reasoning effort: the Microsoft.Extensions.AI API does not expose a way to set reasoning 
+  effort for reasoning-capable models, which is very useful for some models like `o4-mini`.
+
+So solve both issues, this package provides an `OpenAIChatClient` that wraps the underlying 
+`OpenAIClient` and allows setting the model identifier and reasoning effort per request, just 
+like the above Grok examples showed:
+
+```csharp
+var messages = new Chat()
+{
+    { "system", "You are a highly intelligent AI assistant." },
+    { "user", "What is 101*3?" },
+};
+
+IChatClient chat = new OpenAIChatClient(Env.Get("OPENAI_API_KEY")!, "o3-mini");
+
+var options = new GrokChatOptions
+{
+    ModelId = "o4-mini",                    // 👈 can override the model on the client
+    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low
+};
+
+var response = await grok.GetResponseAsync(messages, options);
+
+```
+
 
 ## Console Logging
 
