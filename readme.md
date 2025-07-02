@@ -35,6 +35,12 @@ var options = new GrokChatOptions
 var response = await grok.GetResponseAsync(messages, options);
 ```
 
+> [!TIP]
+> `Env` is a helper class from [Smith](https://www.nuget.org/packages/Smith), 
+> a higher level package typically used for `dotnet run program.cs` scenarios in 
+> .NET 10. You will typically use `IConfiguration` for reading API keys. 
+> This package does not depend on Smith.
+
 Search can alternatively be configured using a regular `ChatOptions` 
 and adding the `HostedWebSearchTool` to the tools collection, which 
 sets the live search mode to `auto` like above:
@@ -123,9 +129,7 @@ and more.
 The chat pipeline logging is added similar to other pipeline extensions:
 
 ```csharp
-IChatClient client = new GrokClient(Env.Get("XAI_API_KEY")!)
-    .GetChatClient("grok-3-mini")
-    .AsIChatClient()
+IChatClient client = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3-mini")
     .AsBuilder()
     .UseOpenTelemetry()
     // other extensions...
