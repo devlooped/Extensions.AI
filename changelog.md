@@ -1,5 +1,16 @@
 # Changelog
 
+## [v0.6.0](https://github.com/devlooped/Extensions.AI/tree/v0.6.0) (2025-07-02)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.5.2...v0.6.0)
+
+:sparkles: Implemented enhancements:
+
+- Improve JSON console logging at the client pipeline level [\#60](https://github.com/devlooped/Extensions.AI/pull/60) (@kzu)
+- Create a smarter OpenAI chat client that honors model ID [\#58](https://github.com/devlooped/Extensions.AI/pull/58) (@kzu)
+- Drop ctor overload not receiving a model [\#57](https://github.com/devlooped/Extensions.AI/pull/57) (@kzu)
+- Simplify approach to Grok chat client and dynamic clients [\#56](https://github.com/devlooped/Extensions.AI/pull/56) (@kzu)
+
 ## [v0.5.2](https://github.com/devlooped/Extensions.AI/tree/v0.5.2) (2025-07-02)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.5.1...v0.5.2)
