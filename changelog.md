@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.5.2](https://github.com/devlooped/Extensions.AI/tree/v0.5.2) (2025-07-02)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.5.1...v0.5.2)
+
+:sparkles: Implemented enhancements:
+
+- Improve integration with MEAI typical usage pattern [\#53](https://github.com/devlooped/Extensions.AI/pull/53) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Remove projects that belong elsewhere [\#55](https://github.com/devlooped/Extensions.AI/pull/55) (@kzu)
+
 ## [v0.5.1](https://github.com/devlooped/Extensions.AI/tree/v0.5.1) (2025-07-01)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.5.0...v0.5.1)
