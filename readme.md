@@ -85,13 +85,13 @@ var messages = new Chat()
 
 IChatClient chat = new OpenAIChatClient(Env.Get("OPENAI_API_KEY")!, "o3-mini");
 
-var options = new GrokChatOptions
+var options = new ChatOptions
 {
     ModelId = "o4-mini",                    // 👈 can override the model on the client
-    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low
+    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low, extension property
 };
 
-var response = await grok.GetResponseAsync(messages, options);
+var response = await chat.GetResponseAsync(messages, options);
 
 ```
 
