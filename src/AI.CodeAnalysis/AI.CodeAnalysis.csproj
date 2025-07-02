@@ -7,14 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="..\AI\ChatClientExtensions.cs" Link="ChatClientExtensions.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="NuGetizer" Version="1.2.4" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" Pack="false" />
     <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="All" />
     <PackageReference Include="ThisAssembly.Resources" Version="2.0.14" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="ChatClientExtensions.cs" />
+    <EmbeddedResource Include="ChatClientExtensions.cs" />
   </ItemGroup>
 
 </Project>
