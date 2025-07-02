@@ -16,7 +16,7 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "What day is today?" },
         };
 
-        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!);
+        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3");
 
         var options = new GrokChatOptions
         {
@@ -143,15 +143,12 @@ public class GrokTests(ITestOutputHelper output)
         var messages = new Chat()
         {
             { "system", "You are an intelligent AI assistant that's an expert on financial matters." },
-            { "user", "If you have a debt of 100k and accumulate a compounding 5% debt on top of it every year, how long before you are a negative millonaire?" },
+            { "user", "If you have a debt of 100k and accumulate a compounding 5% debt on top of it every year, how long before you are a negative millonaire? (round up to full integer value)" },
         };
 
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
             .GetChatClient("grok-3")
-            .AsIChatClient()
-            .AsBuilder()
-            .UseFunctionInvocation()
-            .Build();
+            .AsIChatClient();
 
         var options = new GrokChatOptions
         {
