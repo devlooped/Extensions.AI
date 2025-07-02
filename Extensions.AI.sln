@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Weaving", "src\Weaving\Weav
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Samples", "src\Samples\Samples.csproj", "{4B78F0E3-E03B-4283-AB0B-B1D76CAEF1BC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AI.CodeAnalysis", "src\AI.CodeAnalysis\AI.CodeAnalysis.csproj", "{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,18 @@ Global
 		{4B78F0E3-E03B-4283-AB0B-B1D76CAEF1BC}.Release|x64.Build.0 = Release|Any CPU
 		{4B78F0E3-E03B-4283-AB0B-B1D76CAEF1BC}.Release|x86.ActiveCfg = Release|Any CPU
 		{4B78F0E3-E03B-4283-AB0B-B1D76CAEF1BC}.Release|x86.Build.0 = Release|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Debug|x64.Build.0 = Debug|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Debug|x86.Build.0 = Debug|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Release|x64.ActiveCfg = Release|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Release|x64.Build.0 = Release|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Release|x86.ActiveCfg = Release|Any CPU
+		{F6A9F74B-5C63-4C53-9745-F00BE40AF8C8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

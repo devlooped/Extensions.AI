@@ -115,7 +115,9 @@ public class JsonConsoleOptions
         return panel;
     }
 
+#pragma warning disable CS9113 // Parameter is unread. BOGUS
     sealed class WrappedJsonText(string json, int maxWidth) : Renderable
+#pragma warning restore CS9113 // Parameter is unread. BOGUS
     {
         readonly JsonText jsonText = new(json);
 

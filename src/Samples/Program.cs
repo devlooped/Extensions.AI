@@ -6,16 +6,16 @@ var messages = new Chat()
 };
 
 // Env supports .env as well as all standard .NET configuration sources
-var grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")), new GrokClientOptions()
+var grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")), new OpenAI.OpenAIClientOptions()
     .UseJsonConsoleLogging(new() { WrapLength = 80 }));
 
 var options = new ChatOptions
 {
-    ModelId = "grok-3",
     // Enables Live Search
     Tools = [new HostedWebSearchTool()]
 };
 
-var response = await grok.GetResponseAsync(messages, options);
+var chat = grok.GetChatClient("grok-3").AsIChatClient();
+var response = await chat.GetResponseAsync(messages, options);
 
 AnsiConsole.MarkupLine($":robot: {response.Text.EscapeMarkup()}");
