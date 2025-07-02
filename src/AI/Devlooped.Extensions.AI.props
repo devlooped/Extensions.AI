@@ -1,15 +1,11 @@
 ﻿<Project>
-  <PropertyGroup>
-    <Nullable>enable</Nullable>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-  </PropertyGroup>
 
   <ItemGroup>
+    <Compile Update="@(Compile -> WithMetadataValue('NuGetPackageId', 'Devlooped.Extensions.AI'))" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>
-    <Using Include="Microsoft.Extensions.AI"/>
-    <Using Include="Devlooped.Extensions.AI"/>
+    <!--<Using Include="Devlooped.Extensions.AI"/>-->
   </ItemGroup>
-
+  
 </Project>

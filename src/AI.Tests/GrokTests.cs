@@ -1,9 +1,11 @@
-﻿namespace Devlooped.Extensions.AI;
-
+﻿using System.ClientModel.Primitives;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.AI;
 using static ConfigurationExtensions;
 
-public class GrokTests
+namespace Devlooped.Extensions.AI;
+
+public class GrokTests(ITestOutputHelper output)
 {
     [SecretsFact("XAI_API_KEY")]
     public async Task GrokInvokesTools()
@@ -23,12 +25,18 @@ public class GrokTests
             Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")]
         };
 
-        var response = await grok.GetResponseAsync(messages, options);
+        var client = grok.GetChatClient("grok-3");
+        var chat = Assert.IsType<IChatClient>(client, false);
+
+        var response = await chat.GetResponseAsync(messages, options);
         var getdate = response.Messages
             .SelectMany(x => x.Contents.OfType<FunctionCallContent>())
             .Any(x => x.Name == "get_date");
 
         Assert.True(getdate);
+        // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
+        // different model and the grok client honors that choice.
+        Assert.Equal("grok-3-mini", response.ModelId);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -40,7 +48,11 @@ public class GrokTests
             { "user", "What's Tesla stock worth today?" },
         };
 
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
+        var transport = new TestPipelineTransport(HttpClientPipelineTransport.Shared, output);
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!, new OpenAI.OpenAIClientOptions() { Transport = transport })
+            .GetChatClient("grok-3")
+            .AsIChatClient()
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -54,14 +66,30 @@ public class GrokTests
 
         var response = await grok.GetResponseAsync(messages, options);
 
+        // assert that the request contains the following node
+        // "search_parameters": {
+        //      "mode": "on"
+        //}
+        Assert.All(transport.Requests, x =>
+        {
+            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
+            Assert.Equal("on", search["mode"]?.GetValue<string>());
+        });
+
         // The get_date result shows up as a tool role
         Assert.Contains(response.Messages, x => x.Role == ChatRole.Tool);
 
-        var text = response.Text;
+        // Citations include nasdaq.com at least as a web search source
+        var node = transport.Responses.LastOrDefault();
+        Assert.NotNull(node);
+        var citations = Assert.IsType<JsonArray>(node["citations"], false);
+        var yahoo = citations.Where(x => x != null).Any(x => x!.ToString().Contains("https://finance.yahoo.com/quote/TSLA/", StringComparison.Ordinal));
 
-        Assert.Contains("TSLA", text);
-        Assert.Contains("$", text);
-        Assert.Contains("Nasdaq", text, StringComparison.OrdinalIgnoreCase);
+        Assert.True(yahoo, "Expected at least one citation to nasdaq.com");
+
+        // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
+        // different model and the grok client honors that choice.
+        Assert.Equal("grok-3-mini", response.ModelId);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -73,20 +101,43 @@ public class GrokTests
             { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
         };
 
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!);
+        var transport = new TestPipelineTransport(HttpClientPipelineTransport.Shared, output);
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!, new OpenAI.OpenAIClientOptions() { Transport = transport });
+        var client = grok.GetChatClient("grok-3");
+        var chat = Assert.IsType<IChatClient>(client, false);
 
         var options = new ChatOptions
         {
-            ModelId = "grok-3",
             Tools = [new HostedWebSearchTool()]
         };
 
-        var response = await grok.GetResponseAsync(messages, options);
+        var response = await chat.GetResponseAsync(messages, options);
         var text = response.Text;
 
         Assert.Contains("TSLA", text);
-        Assert.Contains("$", text);
-        Assert.Contains("Nasdaq", text, StringComparison.OrdinalIgnoreCase);
+
+        // assert that the request contains the following node
+        // "search_parameters": {
+        //      "mode": "auto"
+        //}
+        Assert.All(transport.Requests, x =>
+        {
+            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
+            Assert.Equal("auto", search["mode"]?.GetValue<string>());
+        });
+
+        // Citations include nasdaq.com at least as a web search source
+        Assert.Single(transport.Responses);
+        var node = transport.Responses[0];
+        Assert.NotNull(node);
+        var citations = Assert.IsType<JsonArray>(node["citations"], false);
+        var yahoo = citations.Where(x => x != null).Any(x => x!.ToString().Contains("https://finance.yahoo.com/quote/TSLA/", StringComparison.Ordinal));
+
+        Assert.True(yahoo, "Expected at least one citation to nasdaq.com");
+
+        // Uses the default model set by the client when we asked for it
+        Assert.Equal("grok-3", response.ModelId);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -99,6 +150,8 @@ public class GrokTests
         };
 
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
+            .GetChatClient("grok-3")
+            .AsIChatClient()
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -115,5 +168,8 @@ public class GrokTests
         var text = response.Text;
 
         Assert.Contains("48 years", text);
+        // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
+        // different model and the grok client honors that choice.
+        Assert.StartsWith("grok-3-mini", response.ModelId);
     }
 }
