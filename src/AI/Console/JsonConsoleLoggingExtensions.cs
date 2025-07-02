@@ -19,7 +19,7 @@ public static class JsonConsoleLoggingExtensions
     /// <typeparam name="TOptions">The options type to configure for HTTP logging.</typeparam>
     /// <param name="pipelineOptions">The options instance to configure.</param>
     /// <remarks>
-    /// NOTE: this is the lowst-level logging after all chat pipeline processing has been done.
+    /// NOTE: this is the lowest-level logging after all chat pipeline processing has been done.
     /// <para>
     /// If the options already provide a transport, it will be wrapped with the console 
     /// logging transport to minimize the impact on existing configurations.
@@ -36,8 +36,7 @@ public static class JsonConsoleLoggingExtensions
         if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)
             return pipelineOptions;
 
-        pipelineOptions.Transport = new ConsoleLoggingPipelineTransport(pipelineOptions.Transport ?? HttpClientPipelineTransport.Shared, consoleOptions);
-
+        pipelineOptions.AddPolicy(new JsonConsoleLoggingPipelinePolicy(consoleOptions), PipelinePosition.BeforeTransport);
         return pipelineOptions;
     }
 
@@ -62,16 +61,33 @@ public static class JsonConsoleLoggingExtensions
         return builder.Use(inner => new JsonConsoleLoggingChatClient(inner, consoleOptions));
     }
 
-    class ConsoleLoggingPipelineTransport(PipelineTransport inner, JsonConsoleOptions consoleOptions) : PipelineTransport
+    class JsonConsoleLoggingPipelinePolicy(JsonConsoleOptions consoleOptions) : PipelinePolicy
     {
-        public static PipelineTransport Default { get; } = new ConsoleLoggingPipelineTransport();
-
-        public ConsoleLoggingPipelineTransport() : this(HttpClientPipelineTransport.Shared, JsonConsoleOptions.Default) { }
-
-        protected override async ValueTask ProcessCoreAsync(PipelineMessage message)
+        public override void Process(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
         {
             message.BufferResponse = true;
-            await inner.ProcessAsync(message);
+            ProcessNext(message, pipeline, currentIndex);
+
+            if (message.Request.Content is not null)
+            {
+                using var memory = new MemoryStream();
+                message.Request.Content.WriteTo(memory);
+                memory.Position = 0;
+                using var reader = new StreamReader(memory);
+                var content = reader.ReadToEnd();
+                AnsiConsole.Write(consoleOptions.CreatePanel(content));
+            }
+
+            if (message.Response != null)
+            {
+                AnsiConsole.Write(consoleOptions.CreatePanel(message.Response.Content.ToString()));
+            }
+        }
+
+        public override async ValueTask ProcessAsync(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
+        {
+            message.BufferResponse = true;
+            await ProcessNextAsync(message, pipeline, currentIndex);
 
             if (message.Request.Content is not null)
             {
@@ -88,9 +104,6 @@ public static class JsonConsoleLoggingExtensions
                 AnsiConsole.Write(consoleOptions.CreatePanel(message.Response.Content.ToString()));
             }
         }
-
-        protected override PipelineMessage CreateMessageCore() => inner.CreateMessage();
-        protected override void ProcessCore(PipelineMessage message) => inner.Process(message);
     }
 
     class JsonConsoleLoggingChatClient(IChatClient inner, JsonConsoleOptions consoleOptions) : DelegatingChatClient(inner)
