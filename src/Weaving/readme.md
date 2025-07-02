@@ -11,13 +11,14 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-var grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")));
+IChatClient grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")))
+    .GetChatClient("grok-3-mini")  // or "grok-3-mini-fast"
+    .AsIChatClient();
 
 var options = new GrokChatOptions
 {
-    ModelId = "grok-3-mini", // or "grok-3-mini-fast"
     ReasoningEffort = ReasoningEffort.High, // or ReasoningEffort.Low
-    Search = GrokSearch.Auto, // or GrokSearch.On or GrokSearch.Off
+    Search = GrokSearch.Auto,               // or GrokSearch.On or GrokSearch.Off
 };
 
 var response = await grok.GetResponseAsync(messages, options);
