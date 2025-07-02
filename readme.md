@@ -25,14 +25,16 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-var grok = new GrokClient(Env.Get("XAI_API_KEY")!);
+IChatClient grok = new GrokClient(Env.Get("XAI_API_KEY")!)
+    .GetChatClient("grok-3-mini")
+    .AsIChatClient();
 
 var options = new GrokChatOptions
 {
-    ModelId = "grok-3-mini", // or "grok-3-mini-fast"
+    ModelId = "grok-3-mini-fast",           // can override the model on the client
     Temperature = 0.7f,
     ReasoningEffort = ReasoningEffort.High, // or ReasoningEffort.Low
-    Search = GrokSearch.Auto, // or GrokSearch.On or GrokSearch.Off
+    Search = GrokSearch.Auto,               // or GrokSearch.On or GrokSearch.Off
 };
 
 var response = await grok.GetResponseAsync(messages, options);
@@ -49,11 +51,12 @@ var messages = new Chat()
     { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
 };
 
-var grok = new GrokClient(Env.Get("XAI_API_KEY")!);
+var grok = new GrokClient(Env.Get("XAI_API_KEY")!)
+    .GetChatClient("grok-3")
+    .AsIChatClient();
 
 var options = new ChatOptions
 {
-    ModelId = "grok-3",
     Tools = [new HostedWebSearchTool()]
 };
 
@@ -94,6 +97,8 @@ The chat pipeline logging is added similar to other pipeline extensions:
 
 ```csharp
 IChatClient client = new GrokClient(Env.Get("XAI_API_KEY")!)
+    .GetChatClient("grok-3-mini")
+    .AsIChatClient()
     .AsBuilder()
     .UseOpenTelemetry()
     // other extensions...
@@ -105,7 +110,6 @@ IChatClient client = new GrokClient(Env.Get("XAI_API_KEY")!)
     })
     .Build();
 ```
-
 
 <!-- #content -->
 <!-- src/AI/readme.md#content -->
@@ -126,13 +130,14 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-var grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")));
+IChatClient grok = new GrokClient(Throw.IfNullOrEmpty(Env.Get("XAI_API_KEY")))
+    .GetChatClient("grok-3-mini")  // or "grok-3-mini-fast"
+    .AsIChatClient();
 
 var options = new GrokChatOptions
 {
-    ModelId = "grok-3-mini", // or "grok-3-mini-fast"
     ReasoningEffort = ReasoningEffort.High, // or ReasoningEffort.Low
-    Search = GrokSearch.Auto, // or GrokSearch.On or GrokSearch.Off
+    Search = GrokSearch.Auto,               // or GrokSearch.On or GrokSearch.Off
 };
 
 var response = await grok.GetResponseAsync(messages, options);
