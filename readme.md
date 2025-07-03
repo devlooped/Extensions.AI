@@ -95,6 +95,47 @@ var response = await chat.GetResponseAsync(messages, options);
 
 ```
 
+## Observing Request/Response
+
+The underlying HTTP pipeline provided by the Azure SDK allows setting up 
+policies that can observe requests and responses. This is useful for 
+monitoring the requests and responses sent to the AI service, regardless 
+of the chat pipeline configuration used. 
+
+This is added to the `OpenAIClientOptions` (or more properly, any 
+`ClientPipelineOptions`-derived options) using the `Observe` method:
+
+```csharp
+var openai = new OpenAIClient(
+    Env.Get("OPENAI_API_KEY")!,
+    new OpenAIClientOptions().Observe(
+        onRequest: request => Console.WriteLine($"Request: {request}"),
+        onResponse: response => Console.WriteLine($"Response: {response}"),
+    ));
+```
+
+You can for example trivially collect both requests and responses for 
+payload analysis in tests as follows:
+
+```csharp
+var requests = new List<JsonNode>();
+var responses = new List<JsonNode>();
+var openai = new OpenAIClient(
+    Env.Get("OPENAI_API_KEY")!,
+    new OpenAIClientOptions().Observe(requests.Add, responses.Add));
+```
+
+We also provide a shorthand factory method that creates the options 
+and observes is in a single call:
+
+```csharp
+var requests = new List<JsonNode>();
+var responses = new List<JsonNode>();
+var openai = new OpenAIClient(
+    Env.Get("OPENAI_API_KEY")!,
+    ClientOptions.Observe(requests.Add, responses.Add));
+```
+
 
 ## Console Logging
 
