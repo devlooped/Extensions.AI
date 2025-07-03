@@ -133,7 +133,7 @@ var requests = new List<JsonNode>();
 var responses = new List<JsonNode>();
 var openai = new OpenAIClient(
     Env.Get("OPENAI_API_KEY")!,
-    ClientOptions.Observe(requests.Add, responses.Add));
+    OpenAIClientOptions.Observable(requests.Add, responses.Add));
 ```
 
 

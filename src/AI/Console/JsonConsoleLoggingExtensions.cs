@@ -12,97 +12,52 @@ namespace Microsoft.Extensions.AI;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class JsonConsoleLoggingExtensions
 {
-    /// <summary>
-    /// Sets a <see cref="ClientPipelineOptions.Transport"/> that renders HTTP messages to the 
-    /// console using Spectre.Console rich JSON formatting, but only if the console is interactive.
-    /// </summary>
-    /// <typeparam name="TOptions">The options type to configure for HTTP logging.</typeparam>
-    /// <param name="pipelineOptions">The options instance to configure.</param>
-    /// <remarks>
-    /// NOTE: this is the lowest-level logging after all chat pipeline processing has been done.
-    /// <para>
-    /// If the options already provide a transport, it will be wrapped with the console 
-    /// logging transport to minimize the impact on existing configurations.
-    /// </para>
-    /// </remarks>
-    public static TOptions UseJsonConsoleLogging<TOptions>(this TOptions pipelineOptions, JsonConsoleOptions? consoleOptions = null)
-        where TOptions : ClientPipelineOptions
+    extension<TOptions>(TOptions pipelineOptions) where TOptions : ClientPipelineOptions
     {
-        consoleOptions ??= JsonConsoleOptions.Default;
-
-        if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable rich JSON console logging for HTTP pipeline messages?"))
-            return pipelineOptions;
-
-        if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)
-            return pipelineOptions;
-
-        pipelineOptions.AddPolicy(new JsonConsoleLoggingPipelinePolicy(consoleOptions), PipelinePosition.BeforeTransport);
-        return pipelineOptions;
-    }
-
-    /// <summary>
-    /// Renders chat messages and responses to the console using Spectre.Console rich JSON formatting.
-    /// </summary>
-    /// <param name="builder">The builder in use.</param>
-    /// <remarks>
-    /// Confirmation will be asked if the console is interactive, otherwise, it will be 
-    /// enabled unconditionally.
-    /// </remarks>
-    public static ChatClientBuilder UseJsonConsoleLogging(this ChatClientBuilder builder, JsonConsoleOptions? consoleOptions = null)
-    {
-        consoleOptions ??= JsonConsoleOptions.Default;
-
-        if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable rich JSON console logging for HTTP pipeline messages?"))
-            return builder;
-
-        if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)
-            return builder;
-
-        return builder.Use(inner => new JsonConsoleLoggingChatClient(inner, consoleOptions));
-    }
-
-    class JsonConsoleLoggingPipelinePolicy(JsonConsoleOptions consoleOptions) : PipelinePolicy
-    {
-        public override void Process(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
+        /// <summary>
+        /// Observes the HTTP request and response messages from the underlying pipeline and renders them 
+        /// to the console using Spectre.Console rich JSON formatting, but only if the console is interactive.
+        /// </summary>
+        /// <typeparam name="TOptions">The options type to configure for HTTP logging.</typeparam>
+        /// <param name="pipelineOptions">The options instance to configure.</param>
+        /// <see cref="ClientPipelineExtensions.Observe"/>
+        public TOptions UseJsonConsoleLogging(JsonConsoleOptions? consoleOptions = null)
         {
-            message.BufferResponse = true;
-            ProcessNext(message, pipeline, currentIndex);
+            consoleOptions ??= JsonConsoleOptions.Default;
 
-            if (message.Request.Content is not null)
-            {
-                using var memory = new MemoryStream();
-                message.Request.Content.WriteTo(memory);
-                memory.Position = 0;
-                using var reader = new StreamReader(memory);
-                var content = reader.ReadToEnd();
-                AnsiConsole.Write(consoleOptions.CreatePanel(content));
-            }
+            if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable rich JSON console logging for HTTP pipeline messages?"))
+                return pipelineOptions;
 
-            if (message.Response != null)
-            {
-                AnsiConsole.Write(consoleOptions.CreatePanel(message.Response.Content.ToString()));
-            }
+            if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)
+                return pipelineOptions;
+
+            return pipelineOptions.Observe(
+                request => AnsiConsole.Write(consoleOptions.CreatePanel(request)),
+                response => AnsiConsole.Write(consoleOptions.CreatePanel(response)));
         }
+    }
 
-        public override async ValueTask ProcessAsync(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
+    extension(ChatClientBuilder builder)
+    {
+        /// <summary>
+        /// Renders chat messages and responses to the console using Spectre.Console rich JSON formatting.
+        /// </summary>
+        /// <param name="builder">The builder in use.</param>
+        /// <remarks>
+        /// Confirmation will be asked if the console is interactive, otherwise, it will be 
+        /// enabled unconditionally.
+        /// </remarks>
+        public ChatClientBuilder UseJsonConsoleLogging(JsonConsoleOptions? consoleOptions = null)
         {
-            message.BufferResponse = true;
-            await ProcessNextAsync(message, pipeline, currentIndex);
+            consoleOptions ??= JsonConsoleOptions.Default;
 
-            if (message.Request.Content is not null)
-            {
-                using var memory = new MemoryStream();
-                message.Request.Content.WriteTo(memory);
-                memory.Position = 0;
-                using var reader = new StreamReader(memory);
-                var content = await reader.ReadToEndAsync();
-                AnsiConsole.Write(consoleOptions.CreatePanel(content));
-            }
+            if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable rich JSON console logging for HTTP pipeline messages?"))
+                return builder;
 
-            if (message.Response != null)
-            {
-                AnsiConsole.Write(consoleOptions.CreatePanel(message.Response.Content.ToString()));
-            }
+            if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)
+                return builder;
+
+            return builder.Use(inner => new JsonConsoleLoggingChatClient(inner, consoleOptions));
         }
     }
 
