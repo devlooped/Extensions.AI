@@ -3,19 +3,28 @@ using System.Text.Json;
 
 namespace Devlooped.Extensions.AI;
 
-public static class PipelineTestOutput
+public static class PipelineOutput
 {
-    static readonly JsonSerializerOptions options = new(JsonSerializerDefaults.General)
+    extension<TOptions>(TOptions) where TOptions : ClientPipelineOptions, new()
+    {
+        public static TOptions WriteTo(ITestOutputHelper output)
+            => new TOptions().WriteTo(output);
+    }
+}
+
+public static class PipelineOutputExtensions
+{
+    static readonly JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.General)
     {
         WriteIndented = true,
     };
 
-    public static TOptions WriteTo<TOptions>(this TOptions pipelineOptions, ITestOutputHelper output = default)
-        where TOptions : ClientPipelineOptions
+    extension<TOptions>(TOptions options) where TOptions : ClientPipelineOptions
     {
-        return pipelineOptions.Observe(
-            request => output.WriteLine(request.ToJsonString(options)),
-            response => output.WriteLine(response.ToJsonString(options))
-        );
+        public TOptions WriteTo(ITestOutputHelper output)
+            => options.Observe(
+                request => output.WriteLine(request.ToJsonString(jsonOptions)),
+                response => output.WriteLine(response.ToJsonString(jsonOptions))
+            );
     }
 }

@@ -91,6 +91,29 @@ public class JsonConsoleOptions
         return panel;
     }
 
+    internal Panel CreatePanel(JsonNode node)
+    {
+        string json;
+
+        // Determine if we need to pre-process the JSON node based on the settings.
+        if (TruncateLength.HasValue || !IncludeAdditionalProperties)
+        {
+            json = node.ToShortJsonString(TruncateLength, IncludeAdditionalProperties);
+        }
+        else
+        {
+            // i.e. we had no pre-processing to do
+            json = node.ToJsonString();
+        }
+
+        var panel = new Panel(WrapLength.HasValue ? new WrappedJsonText(json, WrapLength.Value) : new JsonText(json))
+        {
+            Border = Border,
+            BorderStyle = BorderStyle,
+        };
+        return panel;
+    }
+
     internal Panel CreatePanel(object value)
     {
         string? json = null;
