@@ -139,11 +139,6 @@
 
 	etag = c77e7b435ce1df06fb60a3b0e15a0833d8e45d4d19f366c6184140ebb4814b1a
 	weak
-[file "src/dotnet-meai/Sponsors/SponsorManifest.cs"]
-	url = https://github.com/devlooped/SponsorLink/blob/main/samples/dotnet/SponsorLink/SponsorManifest.cs
-	sha = a755e4be0f7cb73cfde208857e28f7cfeba2dcc3
-	etag = 55ef89e8441156541c1c74a50675b7f56633b56493031f0ffa877460839e3536
-	weak
 [file ".github/workflows/dotnet-env.yml"]
 	url = https://github.com/devlooped/oss/blob/main/.github/workflows/dotnet-env.yml
 	sha = 77e83f238196d2723640abef0c7b6f43994f9747
