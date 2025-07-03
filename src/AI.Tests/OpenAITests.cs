@@ -14,7 +14,8 @@ public class OpenAITests(ITestOutputHelper output)
             { "user", "What products does Tesla make?" },
         };
 
-        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1-nano", new OpenAI.OpenAIClientOptions().WriteTo(output));
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1-nano",
+            new OpenAI.OpenAIClientOptions().WriteTo(output));
 
         var options = new ChatOptions
         {
@@ -39,8 +40,8 @@ public class OpenAITests(ITestOutputHelper output)
 
         var requests = new List<JsonNode>();
 
-        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "o3-mini", new OpenAI.OpenAIClientOptions()
-            .WriteTo(output, requests.Add));
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "o3-mini",
+            ClientOptions.Observable(requests.Add).WriteTo(output));
 
         var options = new ChatOptions
         {

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.AI;
+﻿using Microsoft.Extensions.AI;
 using OpenAI.Responses;
 using static ConfigurationExtensions;
 
@@ -11,12 +6,12 @@ namespace Devlooped.Extensions.AI;
 
 public class RetrievalTests(ITestOutputHelper output)
 {
-    [SecretsTheory("OpenAI:Key")]
+    [SecretsTheory("OPENAI_API_KEY")]
     [InlineData("gpt-4.1-nano", "Qué es la rebeldía en el Código Procesal Civil y Comercial Nacional?")]
     [InlineData("gpt-4.1-nano", "What's the battery life in an iPhone 15?", true)]
     public async Task CanRetrieveContent(string model, string question, bool empty = false)
     {
-        var client = new OpenAI.OpenAIClient(Configuration["OpenAI:Key"]);
+        var client = new OpenAI.OpenAIClient(Configuration["OPENAI_API_KEY"]);
         var store = client.GetVectorStoreClient().CreateVectorStore(true);
         try
         {
@@ -25,7 +20,7 @@ public class RetrievalTests(ITestOutputHelper output)
             {
                 client.GetVectorStoreClient().AddFileToVectorStore(store.VectorStoreId, file.Value.Id, true);
 
-                var responses = new OpenAIResponseClient(model, Configuration["OpenAI:Key"]);
+                var responses = new OpenAIResponseClient(model, Configuration["OPENAI_API_KEY"]);
 
                 var chat = responses.AsIChatClient(
                         ResponseTool.CreateFileSearchTool([store.VectorStoreId]))
