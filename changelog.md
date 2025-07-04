@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.6.2](https://github.com/devlooped/Extensions.AI/tree/v0.6.2) (2025-07-04)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.6.1...v0.6.2)
+
+:sparkles: Implemented enhancements:
+
+- Add tool-focused extension to inspect calls and results [\#71](https://github.com/devlooped/Extensions.AI/pull/71) (@kzu)
+- Add generated JSON context for Chat model objects including additional properties [\#69](https://github.com/devlooped/Extensions.AI/pull/69) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Rename pipeline output helper class [\#70](https://github.com/devlooped/Extensions.AI/pull/70) (@kzu)
+
 ## [v0.6.1](https://github.com/devlooped/Extensions.AI/tree/v0.6.1) (2025-07-03)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.6.0...v0.6.1)
