@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.6.1](https://github.com/devlooped/Extensions.AI/tree/v0.6.1) (2025-07-03)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.6.0...v0.6.1)
+
+:sparkles: Implemented enhancements:
+
+- Add public API for observing the client pipeline [\#63](https://github.com/devlooped/Extensions.AI/pull/63) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Remove reference to SponsorLink manifest [\#67](https://github.com/devlooped/Extensions.AI/pull/67) (@kzu)
+- Simplify console HTTP pipeline logging using Observe/Observable [\#66](https://github.com/devlooped/Extensions.AI/pull/66) (@kzu)
+
 ## [v0.6.0](https://github.com/devlooped/Extensions.AI/tree/v0.6.0) (2025-07-02)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.5.2...v0.6.0)
