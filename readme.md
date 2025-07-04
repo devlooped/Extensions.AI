@@ -136,6 +136,54 @@ var openai = new OpenAIClient(
     OpenAIClientOptions.Observable(requests.Add, responses.Add));
 ```
 
+## Tool Results
+
+Given the following tool:
+
+```csharp
+MyResult RunTool(string name, string description, string content) { ... }
+```
+
+You can use the `ToolFactory` and `FindCall<MyResult>` extension method to 
+locate the function invocation, its outcome and the typed result for inspection:
+
+```csharp
+AIFunction tool = ToolFactory.Create(RunTool);
+var options = new ChatOptions
+{
+    ToolMode = ChatToolMode.RequireSpecific(tool.Name), // 👈 forces the tool to be used
+    Tools = [tool]
+};
+
+var response = await client.GetResponseAsync(chat, options);
+var result = response.FindCalls<MyResult>(tool).FirstOrDefault();
+
+if (result != null)
+{
+    // Successful tool call
+    Console.WriteLine($"Args: '{result.Call.Arguments.Count}'");
+    MyResult typed = result.Result;
+}
+else
+{
+    Console.WriteLine("Tool call not found in response.");
+}
+```
+
+If the typed result is not found, you can also inspect the raw outcomes by finding 
+untyped calls to the tool and checking their `Outcome.Exception` property:
+
+```csharp
+var result = response.FindCalls(tool).FirstOrDefault();
+if (result.Outcome.Exception is not null)
+{
+    Console.WriteLine($"Tool call failed: {result.Outcome.Exception.Message}");
+}
+else
+{
+    Console.WriteLine($"Tool call succeeded: {result.Outcome.Result}");
+}
+```
 
 ## Console Logging
 
