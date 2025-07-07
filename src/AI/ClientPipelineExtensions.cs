@@ -49,18 +49,36 @@ public static class ClientPipelineExtensions
         public override void Process(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
         {
             message.BufferResponse = true;
+            NotifyRequest(message);
             ProcessNext(message, pipeline, currentIndex);
-            NotifyObservers(message);
+            NotifyResponse(message);
         }
 
         public override async ValueTask ProcessAsync(PipelineMessage message, IReadOnlyList<PipelinePolicy> pipeline, int currentIndex)
         {
             message.BufferResponse = true;
+            NotifyRequest(message);
             await ProcessNextAsync(message, pipeline, currentIndex);
-            NotifyObservers(message);
+            NotifyResponse(message);
         }
 
-        void NotifyObservers(PipelineMessage message)
+        void NotifyResponse(PipelineMessage message)
+        {
+            if (onResponse != null && message.Response != null)
+            {
+                try
+                {
+                    if (JsonNode.Parse(message.Response.Content.ToString()) is { } node)
+                        onResponse.Invoke(node!);
+                }
+                catch (JsonException)
+                {
+                    // We ignore invalid JSON
+                }
+            }
+        }
+
+        void NotifyRequest(PipelineMessage message)
         {
             if (onRequest != null && message.Request.Content != null)
             {
@@ -73,19 +91,6 @@ public static class ClientPipelineExtensions
                 {
                     if (JsonNode.Parse(content) is { } node)
                         onRequest.Invoke(node!);
-                }
-                catch (JsonException)
-                {
-                    // We ignore invalid JSON
-                }
-            }
-
-            if (onResponse != null && message.Response != null)
-            {
-                try
-                {
-                    if (JsonNode.Parse(message.Response.Content.ToString()) is { } node)
-                        onResponse.Invoke(node!);
                 }
                 catch (JsonException)
                 {
