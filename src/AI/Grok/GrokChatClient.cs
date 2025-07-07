@@ -1,7 +1,9 @@
 ﻿using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using OpenAI;
 
@@ -10,7 +12,7 @@ namespace Devlooped.Extensions.AI;
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for Grok.
 /// </summary>
-public class GrokChatClient : IChatClient
+public partial class GrokChatClient : IChatClient
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
     readonly string modelId;
@@ -52,21 +54,39 @@ public class GrokChatClient : IChatClient
             var result = new GrokCompletionOptions();
             var grok = options as GrokChatOptions;
             var search = grok?.Search;
+            var tool = options.Tools?.OfType<GrokSearchTool>().FirstOrDefault();
+            GrokChatWebSearchOptions? searchOptions = default;
 
-            if (options.Tools != null)
+            if (search is not null && tool is null)
             {
-                if (options.Tools.OfType<GrokSearchTool>().FirstOrDefault() is GrokSearchTool grokSearch)
-                    search = grokSearch.Mode;
-                else if (options.Tools.OfType<HostedWebSearchTool>().FirstOrDefault() is HostedWebSearchTool webSearch)
-                    search = GrokSearch.Auto;
-
-                // Grok doesn't support any other hosted search tools, so remove remaining ones
-                // so they don't get copied over by the OpenAI client.
-                //options.Tools = [.. options.Tools.Where(tool => tool is not HostedWebSearchTool)];
+                searchOptions = new GrokChatWebSearchOptions
+                {
+                    Mode = search.Value
+                };
+            }
+            else if (tool is null && options.Tools?.OfType<HostedWebSearchTool>().FirstOrDefault() is not null)
+            {
+                searchOptions = new GrokChatWebSearchOptions
+                {
+                    Mode = GrokSearch.Auto
+                };
+            }
+            else if (tool is not null)
+            {
+                searchOptions = new GrokChatWebSearchOptions
+                {
+                    Mode = tool.Mode,
+                    FromDate = tool.FromDate,
+                    ToDate = tool.ToDate,
+                    MaxSearchResults = tool.MaxSearchResults,
+                    Sources = tool.Sources
+                };
             }
 
-            if (search != null)
-                result.Search = search.Value;
+            if (searchOptions is not null)
+            {
+                result.WebSearchOptions = searchOptions;
+            }
 
             if (grok?.ReasoningEffort != null)
             {
@@ -91,19 +111,76 @@ public class GrokChatClient : IChatClient
     // Allows creating the base OpenAIClient with a pre-created pipeline.
     class PipelineClient(ClientPipeline pipeline, OpenAIClientOptions options) : OpenAIClient(pipeline, options) { }
 
+    class GrokChatWebSearchOptions : OpenAI.Chat.ChatWebSearchOptions
+    {
+        public GrokSearch Mode { get; set; } = GrokSearch.Auto;
+        public DateOnly? FromDate { get; set; }
+        public DateOnly? ToDate { get; set; }
+        public int? MaxSearchResults { get; set; }
+        public IList<GrokSource>? Sources { get; set; }
+    }
+
+    [JsonSourceGenerationOptions(JsonSerializerDefaults.Web,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull | JsonIgnoreCondition.WhenWritingDefault,
+        UnmappedMemberHandling = JsonUnmappedMemberHandling.Skip,
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower
+#if DEBUG
+        , WriteIndented = true
+#endif
+    )]
+    [JsonSerializable(typeof(GrokChatWebSearchOptions))]
+    [JsonSerializable(typeof(GrokSearch))]
+    [JsonSerializable(typeof(GrokSource))]
+    [JsonSerializable(typeof(GrokRssSource))]
+    [JsonSerializable(typeof(GrokWebSource))]
+    [JsonSerializable(typeof(GrokNewsSource))]
+    [JsonSerializable(typeof(GrokXSource))]
+    partial class GrokJsonContext : JsonSerializerContext
+    {
+        static readonly Lazy<JsonSerializerOptions> options = new(CreateDefaultOptions);
+
+        /// <summary>
+        /// Provides a pre-configured instance of <see cref="JsonSerializerOptions"/> that aligns with the context's settings.
+        /// </summary>
+        public static JsonSerializerOptions DefaultOptions { get => options.Value; }
+
+        static JsonSerializerOptions CreateDefaultOptions()
+        {
+            JsonSerializerOptions options = new(Default.Options)
+            {
+                WriteIndented = Debugger.IsAttached,
+                Converters =
+                {
+                    new JsonStringEnumConverter(new LowercaseNamingPolicy()),
+                },
+            };
+
+            options.MakeReadOnly();
+            return options;
+        }
+
+        class LowercaseNamingPolicy : JsonNamingPolicy
+        {
+            public override string ConvertName(string name) => name.ToLowerInvariant();
+        }
+    }
+
     class GrokCompletionOptions : OpenAI.Chat.ChatCompletionOptions
     {
-        public GrokSearch Search { get; set; } = GrokSearch.Auto;
-
         protected override void JsonModelWriteCore(Utf8JsonWriter writer, ModelReaderWriterOptions? options)
         {
+            var search = WebSearchOptions as GrokChatWebSearchOptions;
+            // This avoids writing the default `web_search_options` property
+            WebSearchOptions = null;
+
             base.JsonModelWriteCore(writer, options);
 
-            // "search_parameters": { "mode": "auto" } 
-            writer.WritePropertyName("search_parameters");
-            writer.WriteStartObject();
-            writer.WriteString("mode", Search.ToString().ToLowerInvariant());
-            writer.WriteEndObject();
+            if (search != null)
+            {
+                writer.WritePropertyName("search_parameters");
+                JsonSerializer.Serialize(writer, search, GrokJsonContext.DefaultOptions);
+            }
         }
     }
 }
