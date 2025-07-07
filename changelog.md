@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.7.0](https://github.com/devlooped/Extensions.AI/tree/v0.7.0) (2025-07-07)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.6.2...v0.7.0)
+
+:sparkles: Implemented enhancements:
+
+- Add support for OpenAI web search options and Grok compat [\#74](https://github.com/devlooped/Extensions.AI/pull/74) (@kzu)
+- Enable full Live Search compatibility for Grok [\#72](https://github.com/devlooped/Extensions.AI/pull/72) (@kzu)
+
 ## [v0.6.2](https://github.com/devlooped/Extensions.AI/tree/v0.6.2) (2025-07-04)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.6.1...v0.6.2)
