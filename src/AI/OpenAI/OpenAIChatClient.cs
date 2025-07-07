@@ -5,7 +5,7 @@ using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Responses;
 
-namespace Devlooped.Extensions.AI;
+namespace Devlooped.Extensions.AI.OpenAI;
 
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for OpenAI.

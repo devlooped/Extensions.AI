@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 using OpenAI;
 
-namespace Devlooped.Extensions.AI;
+namespace Devlooped.Extensions.AI.Grok;
 
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for Grok.
@@ -64,6 +64,14 @@ public partial class GrokChatClient : IChatClient
                     Mode = search.Value
                 };
             }
+            else if (tool is null && options.Tools?.OfType<WebSearchTool>().FirstOrDefault() is { } web)
+            {
+                searchOptions = new GrokChatWebSearchOptions
+                {
+                    Mode = GrokSearch.Auto,
+                    Sources = [new GrokWebSource { Country = web.Country }]
+                };
+            }
             else if (tool is null && options.Tools?.OfType<HostedWebSearchTool>().FirstOrDefault() is not null)
             {
                 searchOptions = new GrokChatWebSearchOptions
@@ -92,9 +100,9 @@ public partial class GrokChatClient : IChatClient
             {
                 result.ReasoningEffortLevel = grok.ReasoningEffort switch
                 {
-                    ReasoningEffort.High => OpenAI.Chat.ChatReasoningEffortLevel.High,
+                    ReasoningEffort.High => global::OpenAI.Chat.ChatReasoningEffortLevel.High,
                     // Grok does not support Medium, so we map it to Low too
-                    _ => OpenAI.Chat.ChatReasoningEffortLevel.Low,
+                    _ => global::OpenAI.Chat.ChatReasoningEffortLevel.Low,
                 };
             }
 
@@ -111,7 +119,7 @@ public partial class GrokChatClient : IChatClient
     // Allows creating the base OpenAIClient with a pre-created pipeline.
     class PipelineClient(ClientPipeline pipeline, OpenAIClientOptions options) : OpenAIClient(pipeline, options) { }
 
-    class GrokChatWebSearchOptions : OpenAI.Chat.ChatWebSearchOptions
+    class GrokChatWebSearchOptions : global::OpenAI.Chat.ChatWebSearchOptions
     {
         public GrokSearch Mode { get; set; } = GrokSearch.Auto;
         public DateOnly? FromDate { get; set; }
@@ -166,7 +174,7 @@ public partial class GrokChatClient : IChatClient
         }
     }
 
-    class GrokCompletionOptions : OpenAI.Chat.ChatCompletionOptions
+    class GrokCompletionOptions : global::OpenAI.Chat.ChatCompletionOptions
     {
         protected override void JsonModelWriteCore(Utf8JsonWriter writer, ModelReaderWriterOptions? options)
         {

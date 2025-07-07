@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Nodes;
+using Devlooped.Extensions.AI.Grok;
 using Microsoft.Extensions.AI;
 using static ConfigurationExtensions;
+using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
 namespace Devlooped.Extensions.AI;
 
@@ -51,7 +53,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAI.OpenAIClientOptions
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
                     .Observable(requests.Add, responses.Add)
                     .WriteTo(output))
             .AsBuilder()
@@ -105,7 +107,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAI.OpenAIClientOptions
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
             .Observable(requests.Add, responses.Add)
             .WriteTo(output));
 
@@ -185,7 +187,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAI.OpenAIClientOptions
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
             .Observable(requests.Add, responses.Add)
             .WriteTo(output));
 

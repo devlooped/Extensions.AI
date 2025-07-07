@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.AI;
 
-namespace Devlooped.Extensions.AI;
+namespace Devlooped.Extensions.AI.Grok;
 
 /// <summary>
 /// Grok-specific chat options that extend the base <see cref="ChatOptions"/>

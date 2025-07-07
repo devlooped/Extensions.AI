@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Nodes;
+using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using OpenAI;
+using OpenAI.Responses;
 using static ConfigurationExtensions;
 
 namespace Devlooped.Extensions.AI;
@@ -65,5 +67,57 @@ public class OpenAITests(ITestOutputHelper output)
             var search = Assert.IsType<JsonObject>(x["reasoning"]);
             Assert.Equal("medium", search["effort"]?.GetValue<string>());
         });
+    }
+
+    [SecretsFact("OPENAI_API_KEY")]
+    public async Task WebSearchCountryHighContext()
+    {
+        var messages = new Chat()
+        {
+            { "system", "Sos un asistente del Cerro Catedral, usas la funcionalidad de Live Search en el sitio oficial." },
+            { "system", $"Hoy es {DateTime.Now.ToString("o")}." },
+            { "system",
+                """
+                Web search sources: 
+                https://catedralaltapatagonia.com/parte-de-nieve/
+                https://catedralaltapatagonia.com/tarifas/
+                https://catedralaltapatagonia.com/
+
+                DO NOT USE https://partediario.catedralaltapatagonia.com/partediario for web search, it's **OBSOLETE**.
+                """},
+            { "user", "Cuanto cuesta el pase diario en el Catedral hoy?" },
+        };
+
+        var requests = new List<JsonNode>();
+        var responses = new List<JsonNode>();
+
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
+            OpenAIClientOptions.Observable(requests.Add, responses.Add).WriteTo(output));
+
+        var options = new ChatOptions
+        {
+            Tools = [new WebSearchTool("AR")
+            {
+                Region = "Bariloche",
+                TimeZone = "America/Argentina/Buenos_Aires",
+                ContextSize = WebSearchContextSize.High
+            }]
+        };
+
+        var response = await chat.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        var raw = Assert.IsType<OpenAIResponse>(response.RawRepresentation);
+        Assert.NotEmpty(raw.OutputItems.OfType<WebSearchCallResponseItem>());
+
+        var assistant = raw.OutputItems.OfType<MessageResponseItem>().Where(x => x.Role == MessageRole.Assistant).FirstOrDefault();
+        Assert.NotNull(assistant);
+
+        var content = Assert.Single(assistant.Content);
+        Assert.NotEmpty(content.OutputTextAnnotations);
+        Assert.Contains(content.OutputTextAnnotations,
+            x => x.Kind == ResponseMessageAnnotationKind.UriCitation &&
+                x.UriCitationUri.StartsWith("https://catedralaltapatagonia.com/tarifas/"));
+
     }
 }
