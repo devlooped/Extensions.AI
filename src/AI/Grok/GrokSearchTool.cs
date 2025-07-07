@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using Microsoft.Extensions.AI;
 
-namespace Devlooped.Extensions.AI;
+namespace Devlooped.Extensions.AI.Grok;
 
 /// <summary>
 /// Enables or disables Grok's live search capabilities.

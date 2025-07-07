@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using static ConfigurationExtensions;
 
@@ -18,7 +19,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            OpenAI.OpenAIClientOptions.WriteTo(output))
+            global::OpenAI.OpenAIClientOptions.WriteTo(output))
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -50,7 +51,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            OpenAI.OpenAIClientOptions.WriteTo(output))
+            global::OpenAI.OpenAIClientOptions.WriteTo(output))
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -82,7 +83,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            OpenAI.OpenAIClientOptions.WriteTo(output))
+            global::OpenAI.OpenAIClientOptions.WriteTo(output))
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();

@@ -11,11 +11,11 @@ public class RetrievalTests(ITestOutputHelper output)
     [InlineData("gpt-4.1-nano", "What's the battery life in an iPhone 15?", true)]
     public async Task CanRetrieveContent(string model, string question, bool empty = false)
     {
-        var client = new OpenAI.OpenAIClient(Configuration["OPENAI_API_KEY"]);
+        var client = new global::OpenAI.OpenAIClient(Configuration["OPENAI_API_KEY"]);
         var store = client.GetVectorStoreClient().CreateVectorStore(true);
         try
         {
-            var file = client.GetOpenAIFileClient().UploadFile("Content/LNS0004592.md", OpenAI.Files.FileUploadPurpose.Assistants);
+            var file = client.GetOpenAIFileClient().UploadFile("Content/LNS0004592.md", global::OpenAI.Files.FileUploadPurpose.Assistants);
             try
             {
                 client.GetVectorStoreClient().AddFileToVectorStore(store.VectorStoreId, file.Value.Id, true);

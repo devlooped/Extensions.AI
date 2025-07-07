@@ -62,6 +62,25 @@ var options = new ChatOptions
 var response = await grok.GetResponseAsync(messages, options);
 ```
 
+We also provide an OpenAI-compatible `WebSearchTool` that can be used to restrict 
+the search to a specific country in a way that works with both Grok and OpenAI:
+
+```csharp
+var options = new ChatOptions
+{
+    Tools = [new WebSearchTool("AR")] // 👈 search in Argentina
+};
+```
+
+This is equivalent to the following when used with a Grok client:
+```csharp
+var options = new ChatOptions
+{
+    //                                           👇 search in Argentina
+    Tools = [new GrokSearchTool(GrokSearch.On) { Country = "AR" }] 
+};
+```
+
 ### Advanced Live Search
 
 To configure advanced live search options, beyond the `On|Auto|Off` settings 
@@ -127,8 +146,33 @@ var options = new ChatOptions
 };
 
 var response = await chat.GetResponseAsync(messages, options);
-
 ```
+
+### Web Search
+
+Similar to the Grok client, we provide the `WebSearchTool` to enable search customization 
+in OpenAI too:
+
+```csharp
+var options = new ChatOptions
+{
+    //                          👇 search in Argentina, Bariloche region
+    Tools = [new WebSearchTool("AR")
+    {
+        Region = "Bariloche",   // 👈 Bariloche region
+        TimeZone = "America/Argentina/Buenos_Aires", // 👈 IANA timezone
+        ContextSize = WebSearchContextSize.High      // 👈 high search context size
+    }]
+};
+```
+
+> [!NOTE]
+> This enables all features supported by the [Web search](https://platform.openai.com/docs/guides/tools-web-search) 
+> feature in OpenAI.
+
+If advanced search settings are not needed, you can use the built-in M.E.AI `HostedWebSearchTool` 
+instead, which is a more generic tool and provides the basics out of the box.
+
 
 ## Observing Request/Response
 

@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.AI;
 using OpenAI;
 
-namespace Devlooped.Extensions.AI;
+namespace Devlooped.Extensions.AI.Grok;
 
 /// <summary>
 /// Provides an OpenAI compability client for Grok. It's recommended you 
@@ -26,7 +26,7 @@ public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
     /// Returns an adapter that surfaces an <see cref="IChatClient"/> interface that 
     /// can be used directly in the <see cref="ChatClientBuilder"/> pipeline builder.
     /// </summary>
-    public override OpenAI.Chat.ChatClient GetChatClient(string model) => new GrokChatClientAdapter(this, model);
+    public override global::OpenAI.Chat.ChatClient GetChatClient(string model) => new GrokChatClientAdapter(this, model);
 
     static OpenAIClientOptions EnsureEndpoint(OpenAIClientOptions? options)
     {
@@ -39,7 +39,7 @@ public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
     // OpenAI in MEAI docs. Most typical case would be to just create an <see cref="GrokChatClient"/> directly.
     // This throws on any non-IChatClient invoked methods in the AsIChatClient adapter, and 
     // forwards the IChatClient methods to the GrokChatClient implementation which is cached per client.
-    class GrokChatClientAdapter(GrokClient client, string model) : OpenAI.Chat.ChatClient, IChatClient
+    class GrokChatClientAdapter(GrokClient client, string model) : global::OpenAI.Chat.ChatClient, IChatClient
     {
         void IDisposable.Dispose() { }
 
@@ -60,10 +60,10 @@ public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
             => client.GetChatClientImpl(options?.ModelId ?? model).GetStreamingResponseAsync(messages, options, cancellation);
 
         // These are the only two methods actually invoked by the AsIChatClient adapter from M.E.AI.OpenAI
-        public override Task<ClientResult<OpenAI.Chat.ChatCompletion>> CompleteChatAsync(IEnumerable<OpenAI.Chat.ChatMessage>? messages, OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
+        public override Task<ClientResult<global::OpenAI.Chat.ChatCompletion>> CompleteChatAsync(IEnumerable<global::OpenAI.Chat.ChatMessage>? messages, global::OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)} instead of invoking {nameof(OpenAIClientExtensions.AsIChatClient)} on this instance.");
 
-        public override AsyncCollectionResult<OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreamingAsync(IEnumerable<OpenAI.Chat.ChatMessage>? messages, OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
+        public override AsyncCollectionResult<global::OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreamingAsync(IEnumerable<global::OpenAI.Chat.ChatMessage>? messages, global::OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)} instead of invoking {nameof(OpenAIClientExtensions.AsIChatClient)} on this instance.");
 
         #region Unsupported
@@ -71,25 +71,25 @@ public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
         public override ClientResult CompleteChat(BinaryContent? content, RequestOptions? options = null)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
-        public override ClientResult<OpenAI.Chat.ChatCompletion> CompleteChat(IEnumerable<OpenAI.Chat.ChatMessage>? messages, OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
+        public override ClientResult<global::OpenAI.Chat.ChatCompletion> CompleteChat(IEnumerable<global::OpenAI.Chat.ChatMessage>? messages, global::OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
-        public override ClientResult<OpenAI.Chat.ChatCompletion> CompleteChat(params OpenAI.Chat.ChatMessage[] messages)
+        public override ClientResult<global::OpenAI.Chat.ChatCompletion> CompleteChat(params global::OpenAI.Chat.ChatMessage[] messages)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
         public override Task<ClientResult> CompleteChatAsync(BinaryContent? content, RequestOptions? options = null)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
-        public override Task<ClientResult<OpenAI.Chat.ChatCompletion>> CompleteChatAsync(params OpenAI.Chat.ChatMessage[] messages)
+        public override Task<ClientResult<global::OpenAI.Chat.ChatCompletion>> CompleteChatAsync(params global::OpenAI.Chat.ChatMessage[] messages)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
-        public override CollectionResult<OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreaming(IEnumerable<OpenAI.Chat.ChatMessage>? messages, OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
+        public override CollectionResult<global::OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreaming(IEnumerable<global::OpenAI.Chat.ChatMessage>? messages, global::OpenAI.Chat.ChatCompletionOptions? options = null, CancellationToken cancellationToken = default)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
-        public override CollectionResult<OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreaming(params OpenAI.Chat.ChatMessage[] messages)
+        public override CollectionResult<global::OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreaming(params global::OpenAI.Chat.ChatMessage[] messages)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
-        public override AsyncCollectionResult<OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreamingAsync(params OpenAI.Chat.ChatMessage[] messages)
+        public override AsyncCollectionResult<global::OpenAI.Chat.StreamingChatCompletionUpdate> CompleteChatStreamingAsync(params global::OpenAI.Chat.ChatMessage[] messages)
             => throw new NotSupportedException($"Consume directly as an {nameof(IChatClient)}.");
 
         #endregion
