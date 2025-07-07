@@ -62,6 +62,41 @@ var options = new ChatOptions
 var response = await grok.GetResponseAsync(messages, options);
 ```
 
+### Advanced Live Search
+
+To configure advanced live search options, beyond the `On|Auto|Off` settings 
+in `GrokChatOptions`, you can use the `GrokSearchTool` instead, which exposes 
+the full breath of [live search options](https://docs.x.ai/docs/guides/live-search) 
+available in the Grok API. 
+
+```csharp
+var options = new ChatOptions
+{
+    Tools = [new GrokSearchTool(GrokSearch.On)
+    {
+        FromDate = new DateOnly(2025, 1, 1),
+        ToDate = DateOnly.FromDateTime(DateTime.Now),
+        MaxSearchResults = 10,
+        Sources =
+        [
+            new GrokWebSource
+            {
+                AllowedWebsites =
+                [
+                    "https://catedralaltapatagonia.com",
+                    "https://catedralaltapatagonia.com/parte-de-nieve/",
+                    "https://catedralaltapatagonia.com/tarifas/"
+                ]
+            },
+        ]
+    }]
+};
+```
+
+> [!TIP]
+> You can configure multiple sources including `GrokWebSource`, `GrokNewsSource`,
+> `GrokRssSource` and `GrokXSource`, each containing granular options.
+
 ## OpenAI
 
 The support for OpenAI chat clients provided in [Microsoft.Extensions.AI.OpenAI](https://www.nuget.org/packages/Microsoft.Extensions.AI.OpenAI) fall short in some scenarios:
