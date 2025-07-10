@@ -9,7 +9,6 @@ namespace Devlooped.Extensions.AI;
 public class WebSearchTool : HostedWebSearchTool
 {
     Dictionary<string, object?> additionalProperties;
-    string? region;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="WebSearchTool"/> class with the specified country.
@@ -20,7 +19,7 @@ public class WebSearchTool : HostedWebSearchTool
         Country = country;
         additionalProperties = new Dictionary<string, object?>
         {
-            { nameof(WebSearchToolLocation), WebSearchToolLocation.CreateApproximateLocation(country) }
+            { nameof(WebSearchUserLocation), WebSearchUserLocation.CreateApproximateLocation(country) }
         };
     }
 
@@ -29,14 +28,14 @@ public class WebSearchTool : HostedWebSearchTool
     /// </summary>
     public string Country { get; }
 
-    internal WebSearchToolLocation Location
+    internal WebSearchUserLocation Location
     {
-        set => additionalProperties[nameof(WebSearchToolLocation)] = value;
+        set => additionalProperties[nameof(WebSearchUserLocation)] = value;
     }
 
-    internal WebSearchToolContextSize ContextSize
+    internal WebSearchContextSize ContextSize
     {
-        set => additionalProperties[nameof(WebSearchToolContextSize)] = value;
+        set => additionalProperties[nameof(WebSearchContextSize)] = value;
     }
 
     internal IDictionary<string, object?> Properties => additionalProperties;

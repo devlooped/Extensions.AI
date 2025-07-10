@@ -2,25 +2,6 @@
 
 namespace Devlooped.Extensions.AI.OpenAI;
 
-/// <summary>
-/// Controls how much context is retrieved from the web to help the tool formulate a response. 
-/// </summary>
-public enum WebSearchContextSize
-{
-    /// <summary>
-    /// Least context, lowest cost, fastest response, but potentially lower answer quality.
-    /// </summary>
-    Low,
-    /// <summary>
-    /// (default): Balanced context, cost, and latency.
-    /// </summary>
-    Medium,
-    /// <summary>
-    /// Most comprehensive context, highest cost, slower response.
-    /// </summary>
-    High
-}
-
 public static class OpenAIWebSearchToolExtensions
 {
     extension(WebSearchTool web)
@@ -35,7 +16,7 @@ public static class OpenAIWebSearchToolExtensions
             set
             {
                 web.Properties["Region"] = value;
-                web.Location = WebSearchToolLocation.CreateApproximateLocation(web.Country, value, web.City, web.TimeZone);
+                web.Location = WebSearchUserLocation.CreateApproximateLocation(web.Country, value, web.City, web.TimeZone);
             }
         }
 
@@ -49,7 +30,7 @@ public static class OpenAIWebSearchToolExtensions
             set
             {
                 web.Properties["City"] = value;
-                web.Location = WebSearchToolLocation.CreateApproximateLocation(web.Country, web.Region, value, web.TimeZone);
+                web.Location = WebSearchUserLocation.CreateApproximateLocation(web.Country, web.Region, value, web.TimeZone);
             }
         }
 
@@ -63,7 +44,7 @@ public static class OpenAIWebSearchToolExtensions
             set
             {
                 web.Properties["TimeZone"] = value;
-                web.Location = WebSearchToolLocation.CreateApproximateLocation(web.Country, web.Region, web.City, value);
+                web.Location = WebSearchUserLocation.CreateApproximateLocation(web.Country, web.Region, web.City, value);
             }
         }
 
@@ -72,20 +53,14 @@ public static class OpenAIWebSearchToolExtensions
         /// </summary>
         public WebSearchContextSize? ContextSize
         {
-            get => web.Properties.TryGetValue("ContextSize", out var size) && size is WebSearchContextSize contextSize
+            get => web.Properties.TryGetValue(nameof(WebSearchContextSize), out var size) && size is WebSearchContextSize contextSize
                 ? contextSize : null;
             set
             {
-                web.Properties["ContextSize"] = value;
-                if (value != null)
-                {
-                    web.ContextSize = value.Value switch
-                    {
-                        WebSearchContextSize.Low => WebSearchToolContextSize.Low,
-                        WebSearchContextSize.High => WebSearchToolContextSize.High,
-                        _ => WebSearchToolContextSize.Medium
-                    };
-                }
+                if (value.HasValue)
+                    web.ContextSize = value.Value;
+                else
+                    web.Properties.Remove(nameof(WebSearchContextSize));
             }
         }
     }
