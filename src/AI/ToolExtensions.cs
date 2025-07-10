@@ -39,29 +39,32 @@ public static class ToolExtensions
         => FindCalls(messages, tool.Name);
 
     /// <summary>
-    /// Looks for calls to a tool and their outcome.
+    /// Looks for calls to a tool and their outcome, optionally filtering by tool name.
     /// </summary>
-    public static IEnumerable<ToolCall> FindCalls(this IEnumerable<ChatMessage> messages, string tool)
+    public static IEnumerable<ToolCall> FindCalls(this IEnumerable<ChatMessage> messages, string? tool = default)
     {
-        var calls = messages
+        var filtered = messages
             .Where(x => x.Role == ChatRole.Assistant)
             .SelectMany(x => x.Contents)
-            .OfType<FunctionCallContent>()
-            .Where(x => x.Name == tool)
-            .ToDictionary(x => x.CallId);
+            .OfType<FunctionCallContent>();
+
+        if (!string.IsNullOrEmpty(tool))
+            filtered = filtered.Where(x => x.Name == tool);
+
+        var calls = filtered.ToDictionary(x => x.CallId);
 
         var results = messages
             .Where(x => x.Role == ChatRole.Tool)
             .SelectMany(x => x.Contents)
             .OfType<FunctionResultContent>()
-            .Where(x => calls.TryGetValue(x.CallId, out var call) && call.Name == tool)
+            .Where(x => calls.ContainsKey(x.CallId))
             .Select(x => new ToolCall(calls[x.CallId], x));
 
         return results;
     }
 
     /// <summary>
-    /// Looks for a user prompt in the chat response messages. 
+    /// Looks for calls to a tool where the result is of a given type <typeparamref name="TResult"/>
     /// </summary>
     /// <remarks>
     /// In order for this to work, the <see cref="AIFunctionFactory"/> must have been invoked using 
@@ -73,7 +76,19 @@ public static class ToolExtensions
         => FindCalls<TResult>(response.Messages, tool.Name);
 
     /// <summary>
-    /// Looks for a user prompt in the chat response messages. 
+    /// Looks for calls where the result is of a given type <typeparamref name="TResult"/> regadless of the tool.
+    /// </summary>
+    /// <remarks>
+    /// In order for this to work, the <see cref="AIFunctionFactory"/> must have been invoked using 
+    /// the <see cref="ToolJsonOptions.Default"/> or with a <see cref="JsonSerializerOptions"/> configured 
+    /// with <see cref="TypeInjectingResolverExtensions.WithTypeInjection(JsonSerializerOptions)"/> so 
+    /// that the tool result type can be properly inspected.
+    /// </remarks>
+    public static IEnumerable<ToolCall<TResult>> FindCalls<TResult>(this ChatResponse response)
+        => FindCalls<TResult>(response.Messages);
+
+    /// <summary>
+    /// Looks for calls to a tool where the result is of a given type <typeparamref name="TResult"/>
     /// </summary>
     /// <remarks>
     /// In order for this to work, the <see cref="AIFunctionFactory"/> must have been invoked using 
@@ -85,7 +100,7 @@ public static class ToolExtensions
         => FindCalls<TResult>(messages, tool.Name);
 
     /// <summary>
-    /// Looks for a user prompt in the chat response messages. 
+    /// Looks for calls to a tool where the result is of a given type <typeparamref name="TResult"/>
     /// </summary>
     /// <remarks>
     /// In order for this to work, the <see cref="AIFunctionFactory"/> must have been invoked using 
@@ -105,6 +120,32 @@ public static class ToolExtensions
                 Outcome: x.Outcome,
                 Result: JsonSerializer.Deserialize<TResult>((JsonElement)x.Outcome.Result!, ToolJsonOptions.Default) ??
                     throw new InvalidOperationException($"Failed to deserialize result for tool '{tool}' to {typeof(TResult).FullName}.")));
+
+        return calls;
+    }
+
+    /// <summary>
+    /// Looks for calls to a tool where the result is of a given type <typeparamref name="TResult"/> 
+    /// regardless of the tool name.
+    /// </summary>
+    /// <remarks>
+    /// In order for this to work, the <see cref="AIFunctionFactory"/> must have been invoked using 
+    /// the <see cref="ToolJsonOptions.Default"/> or with a <see cref="JsonSerializerOptions"/> configured 
+    /// with <see cref="TypeInjectingResolverExtensions.WithTypeInjection(JsonSerializerOptions)"/> so 
+    /// that the tool result type can be properly inspected.
+    /// </remarks>
+    public static IEnumerable<ToolCall<TResult>> FindCalls<TResult>(this IEnumerable<ChatMessage> messages)
+    {
+        var calls = FindCalls(messages)
+            .Where(x => x.Outcome.Result is JsonElement element &&
+                        element.ValueKind == JsonValueKind.Object &&
+                        element.TryGetProperty("$type", out var type) &&
+                        type.GetString() == typeof(TResult).FullName)
+            .Select(x => new ToolCall<TResult>(
+                Call: x.Call,
+                Outcome: x.Outcome,
+                Result: JsonSerializer.Deserialize<TResult>((JsonElement)x.Outcome.Result!, ToolJsonOptions.Default) ??
+                    throw new InvalidOperationException($"Failed to deserialize result for tool '{x.Call.Name}' to {typeof(TResult).FullName}.")));
 
         return calls;
     }
