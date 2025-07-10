@@ -50,19 +50,22 @@ public class OpenAIChatClient : IChatClient
         {
             options.RawRepresentationFactory = _ => new ResponseCreationOptions
             {
-                ReasoningOptions = new ResponseReasoningOptions(effort switch
+                ReasoningOptions = new ResponseReasoningOptions()
                 {
-                    ReasoningEffort.High => ResponseReasoningEffortLevel.High,
-                    ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
-                    _ => ResponseReasoningEffortLevel.Low
-                })
+                    ReasoningEffortLevel = effort switch
+                    {
+                        ReasoningEffort.High => ResponseReasoningEffortLevel.High,
+                        ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
+                        _ => ResponseReasoningEffortLevel.Low
+                    },
+                }
             };
         }
 
         return options;
     }
 
-    void IDisposable.Dispose() { }
+    void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
     public object? GetService(Type serviceType, object? serviceKey = null) => null;
 

@@ -117,7 +117,7 @@ public class OpenAITests(ITestOutputHelper output)
         Assert.NotEmpty(content.OutputTextAnnotations);
         Assert.Contains(content.OutputTextAnnotations,
             x => x.Kind == ResponseMessageAnnotationKind.UriCitation &&
-                x.UriCitationUri.StartsWith("https://catedralaltapatagonia.com/tarifas/"));
+                x.UriCitationUri.AbsoluteUri.StartsWith("https://catedralaltapatagonia.com/tarifas/"));
 
     }
 }
