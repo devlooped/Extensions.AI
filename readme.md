@@ -264,6 +264,11 @@ else
 }
 ```
 
+> [!IMPORTANT]
+> The `ToolFactory` will also automatically sanitize the tool name 
+> when using local functions to avoid invalid characters and honor 
+> its original name.
+
 ## Console Logging
 
 Additional `UseJsonConsoleLogging` extension for rich JSON-formatted console logging of AI requests 

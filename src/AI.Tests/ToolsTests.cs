@@ -9,6 +9,16 @@ public class ToolsTests(ITestOutputHelper output)
 {
     public record ToolResult(string Name, string Description, string Content);
 
+    [Fact]
+    public void SanitizesToolName()
+    {
+        static void DoSomething() { }
+
+        var tool = ToolFactory.Create(DoSomething);
+
+        Assert.Equal("do_something", tool.Name);
+    }
+
     [SecretsFact("OPENAI_API_KEY")]
     public async Task RunToolResult()
     {
