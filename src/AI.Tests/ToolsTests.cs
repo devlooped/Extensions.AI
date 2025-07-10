@@ -52,6 +52,39 @@ public class ToolsTests(ITestOutputHelper output)
     }
 
     [SecretsFact("OPENAI_API_KEY")]
+    public async Task FindToolResultByTypeOnly()
+    {
+        var chat = new Chat()
+        {
+            { "system", "You make up a tool run by making up a name, description and content based on whatever the user says." },
+            { "user", "I want to create an order for a dozen eggs" },
+        };
+
+        var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
+            global::OpenAI.OpenAIClientOptions.WriteTo(output))
+            .AsBuilder()
+            .UseFunctionInvocation()
+            .Build();
+
+        var tool = ToolFactory.Create(RunTool);
+        var options = new ChatOptions
+        {
+            ToolMode = ChatToolMode.RequireSpecific(tool.Name),
+            Tools = [tool]
+        };
+
+        var response = await client.GetResponseAsync(chat, options);
+        var result = response.FindCalls<ToolResult>().FirstOrDefault();
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.Call);
+        Assert.Equal(tool.Name, result.Call.Name);
+        Assert.NotNull(result.Outcome);
+        Assert.Null(result.Outcome.Exception);
+    }
+
+
+    [SecretsFact("OPENAI_API_KEY")]
     public async Task RunToolTerminateResult()
     {
         var chat = new Chat()
