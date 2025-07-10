@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.7.1](https://github.com/devlooped/Extensions.AI/tree/v0.7.1) (2025-07-10)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.0...v0.7.1)
+
+:sparkles: Implemented enhancements:
+
+- Sanitize local function names in tools [\#79](https://github.com/devlooped/Extensions.AI/pull/79) (@kzu)
+- Add overload to find calls in a chat response by tool name [\#77](https://github.com/devlooped/Extensions.AI/pull/77) (@kzu)
+
 ## [v0.7.0](https://github.com/devlooped/Extensions.AI/tree/v0.7.0) (2025-07-07)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.6.2...v0.7.0)
