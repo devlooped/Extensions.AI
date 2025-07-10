@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.7.2](https://github.com/devlooped/Extensions.AI/tree/v0.7.2) (2025-07-10)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.1...v0.7.2)
+
+:sparkles: Implemented enhancements:
+
+- Allow finding tool calls by the result type only [\#80](https://github.com/devlooped/Extensions.AI/pull/80) (@kzu)
+
 ## [v0.7.1](https://github.com/devlooped/Extensions.AI/tree/v0.7.1) (2025-07-10)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.0...v0.7.1)
