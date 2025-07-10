@@ -29,6 +29,12 @@ public static class ToolExtensions
     /// <summary>
     /// Looks for calls to a tool and their outcome.
     /// </summary>
+    public static IEnumerable<ToolCall> FindCalls(this ChatResponse response, string tool)
+        => FindCalls(response.Messages, tool);
+
+    /// <summary>
+    /// Looks for calls to a tool and their outcome.
+    /// </summary>
     public static IEnumerable<ToolCall> FindCalls(this IEnumerable<ChatMessage> messages, AIFunction tool)
         => FindCalls(messages, tool.Name);
 
