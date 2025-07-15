@@ -349,6 +349,7 @@ IChatClient client = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3-mini")
 [![Justin Wendlandt](https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/jwendl.png "Justin Wendlandt")](https://github.com/jwendl)
 [![Adrian Alonso](https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/adalon.png "Adrian Alonso")](https://github.com/adalon)
 [![Michael Hagedorn](https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/Eule02.png "Michael Hagedorn")](https://github.com/Eule02)
+[![Alex Rønne Petersen](https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/alexrp.png "Alex Rønne Petersen")](https://github.com/alexrp)
 
 
 <!-- sponsors.md -->
