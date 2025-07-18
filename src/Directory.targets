@@ -16,7 +16,7 @@
     </ParameterGroup>
     <Task>
       <Using Namespace="System" />
-      <Using Namespace="Microsoft.Build.Framework"/>
+      <Using Namespace="Microsoft.Build.Framework" />
       <Code Type="Fragment" Language="cs">
         <![CDATA[
         var version = this.BuildEngine4.GetRegisteredTaskObject("Version", RegisteredTaskObjectLifetime.Build);
