@@ -5,7 +5,7 @@ using OpenAI.Chat;
 /// Smarter casting to <see cref="IChatClient"/> when the target <see cref="ChatClient"/> 
 /// already implements the interface.
 /// </summary>
-static class ChatClientExtensions
+static class DevloopedChatClientExtensions
 {
 #if NET9_0_OR_GREATER
     [System.Runtime.CompilerServices.OverloadResolutionPriority(100)]

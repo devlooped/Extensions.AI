@@ -20,7 +20,7 @@ public class ChatClientExtensionsGenerator : IIncrementalGenerator
             (spc, _) =>
             {
                 spc.AddSource(
-                    $"{nameof(ThisAssembly.Resources.ChatClientExtensions)}.g.cs",
+                    $"Devlooped.{nameof(ThisAssembly.Resources.ChatClientExtensions)}.g.cs",
                     SourceText.From(ThisAssembly.Resources.ChatClientExtensions.Text, Encoding.UTF8));
             });
     }
