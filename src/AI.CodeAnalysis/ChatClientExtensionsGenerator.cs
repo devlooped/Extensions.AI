@@ -23,6 +23,11 @@ public class ChatClientExtensionsGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(provider,
             (spc, source) =>
             {
+                // TODO: the condition should actually be: ALWAYS ensure our extension method 
+                // is accessible in the current compilation. If it's via a project reference and 
+                // internals visible to, don't emit the source code, but if it's not available, 
+                // we need to emit it. Since analyzers are transitive, we'd Just Work without 
+                // the user having to determine if they need to add the package reference or not.
                 if (!source.Left)
                     return;
 
