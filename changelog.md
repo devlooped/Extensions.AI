@@ -1,5 +1,14 @@
 # Changelog
 
+## [v0.7.4](https://github.com/devlooped/Extensions.AI/tree/v0.7.4) (2025-08-06)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.3...v0.7.4)
+
+:sparkles: Implemented enhancements:
+
+- Target net9/10 in package [\#90](https://github.com/devlooped/Extensions.AI/pull/90) (@kzu)
+- Leverage overload resolution attribute to direct compiler [\#89](https://github.com/devlooped/Extensions.AI/pull/89) (@kzu)
+
 ## [v0.7.3](https://github.com/devlooped/Extensions.AI/tree/v0.7.3) (2025-07-18)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.2...v0.7.3)
