@@ -1,7 +1,12 @@
 ﻿<Project>
 
+  <PropertyGroup>
+    <HasDevloopedExtensionsAI>true</HasDevloopedExtensionsAI>
+  </PropertyGroup>
+
   <ItemGroup>
     <Compile Update="@(Compile -> WithMetadataValue('NuGetPackageId', 'Devlooped.Extensions.AI'))" Visible="false" />
+    <CompilerVisibleProperty Include="HasDevloopedExtensionsAI" />
   </ItemGroup>
 
   <ItemGroup>
