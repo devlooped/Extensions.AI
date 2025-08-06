@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.ClientModel;
+using System.Text.Json.Nodes;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using OpenAI;
@@ -9,6 +10,18 @@ namespace Devlooped.Extensions.AI;
 
 public class OpenAITests(ITestOutputHelper output)
 {
+    [SecretsFact("OPENAI_API_KEY")]
+    public void CanGetAsIChatClient()
+    {
+        var inner = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
+            new OpenAIClientOptions
+            {
+                //Endpoint = new Uri("https://api.x.ai/v1"),
+            }).GetChatClient("grok-4").AsIChatClient();
+
+        Assert.NotNull(inner);
+    }
+
     [SecretsFact("OPENAI_API_KEY")]
     public async Task OpenAISwitchesModel()
     {
