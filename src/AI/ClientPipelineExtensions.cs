@@ -23,6 +23,9 @@ public static class ClientPipelineExtensions
 
     extension<TOptions>(TOptions options) where TOptions : ClientPipelineOptions
     {
+#if NET9_0_OR_GREATER
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(100)]
+#endif
         /// <summary>
         /// Adds a <see cref="PipelinePolicy"/> that observes requests and response 
         /// messages from the <see cref="ClientPipeline"/> and notifies the provided 
