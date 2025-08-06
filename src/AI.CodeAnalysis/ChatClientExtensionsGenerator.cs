@@ -16,9 +16,16 @@ public class ChatClientExtensionsGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        context.RegisterSourceOutput(context.CompilationProvider,
-            (spc, _) =>
+        var provider = context.AnalyzerConfigOptionsProvider
+            .Select((options, _) => options.GlobalOptions.TryGetValue("build_property.HasDevloopedExtensionsAI", out var hasExtensions) ? !string.IsNullOrEmpty(hasExtensions) : false)
+            .Combine(context.CompilationProvider);
+
+        context.RegisterSourceOutput(provider,
+            (spc, source) =>
             {
+                if (!source.Left)
+                    return;
+
                 spc.AddSource(
                     $"Devlooped.{nameof(ThisAssembly.Resources.ChatClientExtensions)}.g.cs",
                     SourceText.From(ThisAssembly.Resources.ChatClientExtensions.Text, Encoding.UTF8));
