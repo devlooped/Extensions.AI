@@ -6,6 +6,10 @@
 public enum ReasoningEffort
 {
     /// <summary>
+    /// Minimal reasoning effort, which may result in faster responses. Support depends on the model.
+    /// </summary>
+    Minimal,
+    /// <summary>
     /// Low effort reasoning, which may result in faster responses but less detailed or accurate answers.
     /// </summary>
     Low,

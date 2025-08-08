@@ -83,6 +83,43 @@ public class OpenAITests(ITestOutputHelper output)
     }
 
     [SecretsFact("OPENAI_API_KEY")]
+    public async Task GPT5_ThinksFast()
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an intelligent AI assistant that's an expert on financial matters." },
+            { "user", "If you have a debt of 100k and accumulate a compounding 5% debt on top of it every year, how long before you are a negative millonaire? (round up to full integer value)" },
+        };
+
+        var requests = new List<JsonNode>();
+
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-5-nano",
+            OpenAIClientOptions.Observable(requests.Add).WriteTo(output));
+
+        var options = new ChatOptions
+        {
+            ModelId = "gpt-5",
+            ReasoningEffort = ReasoningEffort.Minimal
+        };
+
+        var response = await chat.GetResponseAsync(messages, options);
+
+        var text = response.Text;
+
+        Assert.Contains("48 years", text);
+        // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
+        // different model and the grok client honors that choice.
+        Assert.StartsWith("gpt-5", response.ModelId);
+        Assert.DoesNotContain("nano", response.ModelId);
+
+        // Reasoning should have been set to medium
+        Assert.All(requests, x =>
+        {
+            var search = Assert.IsType<JsonObject>(x["reasoning"]);
+            Assert.Equal("minimal", search["effort"]?.GetValue<string>());
+        });
+    }
+    [SecretsFact("OPENAI_API_KEY")]
     public async Task WebSearchCountryHighContext()
     {
         var messages = new Chat()

@@ -1,6 +1,7 @@
 ﻿using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Collections.Concurrent;
+using System.Text.Json;
 using Microsoft.Extensions.AI;
 using OpenAI;
 using OpenAI.Responses;
@@ -50,15 +51,18 @@ public class OpenAIChatClient : IChatClient
         {
             options.RawRepresentationFactory = _ => new ResponseCreationOptions
             {
-                ReasoningOptions = new ResponseReasoningOptions()
-                {
-                    ReasoningEffortLevel = effort switch
-                    {
-                        ReasoningEffort.High => ResponseReasoningEffortLevel.High,
-                        ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
-                        _ => ResponseReasoningEffortLevel.Low
-                    },
-                }
+                ReasoningOptions = new ReasoningEffortOptions(effort)
+                //ReasoningOptions = new ResponseReasoningOptions()
+                //{
+                //    ReasoningEffortLevel = effort switch
+                //    {
+                //        ReasoningEffort.High => ResponseReasoningEffortLevel.High,
+                //        ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
+                //        // TODO: not exposed yet in the OpenAI package
+                //        // ReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
+                //        _ => ResponseReasoningEffortLevel.Low
+                //    },
+                //}
             };
         }
 
@@ -71,4 +75,14 @@ public class OpenAIChatClient : IChatClient
 
     // Allows creating the base OpenAIClient with a pre-created pipeline.
     class PipelineClient(ClientPipeline pipeline, OpenAIClientOptions? options) : OpenAIClient(pipeline, options) { }
+
+    class ReasoningEffortOptions(ReasoningEffort effort) : ResponseReasoningOptions
+    {
+        protected override void JsonModelWriteCore(Utf8JsonWriter writer, ModelReaderWriterOptions options)
+        {
+            writer.WritePropertyName("effort"u8);
+            writer.WriteStringValue(effort.ToString().ToLowerInvariant());
+            base.JsonModelWriteCore(writer, options);
+        }
+    }
 }
