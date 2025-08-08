@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.8.0](https://github.com/devlooped/Extensions.AI/tree/v0.8.0) (2025-08-08)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.4...v0.8.0)
+
+:sparkles: Implemented enhancements:
+
+- Add support for GPT-5 minimal reasoning effort [\#95](https://github.com/devlooped/Extensions.AI/pull/95) (@kzu)
+
+:bug: Fixed bugs:
+
+- Only emit the ChatClientExtensions if package is referenced [\#93](https://github.com/devlooped/Extensions.AI/pull/93) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Introduce OSMF EULA [\#96](https://github.com/devlooped/Extensions.AI/pull/96) (@kzu)
+- Rename extension so users can tell ours apart [\#92](https://github.com/devlooped/Extensions.AI/pull/92) (@kzu)
+
 ## [v0.7.4](https://github.com/devlooped/Extensions.AI/tree/v0.7.4) (2025-08-06)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.3...v0.7.4)
