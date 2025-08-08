@@ -6,6 +6,9 @@
     <PackageId>Devlooped.Extensions.AI</PackageId>
     <Description>Extensions for Microsoft.Extensions.AI</Description>
     <NoWarn>$(NoWarn);OPENAI001</NoWarn>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseFile>OSMFEULA.txt</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +28,7 @@
   <ItemGroup>
     <None Update="Devlooped.Extensions.AI.targets" PackFolder="build" />
     <None Update="Devlooped.Extensions.AI.props" PackFolder="build" />
+    <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
   </ItemGroup>
 
 </Project>

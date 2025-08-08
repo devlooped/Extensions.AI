@@ -6,9 +6,23 @@
 [![License](https://img.shields.io/github/license/devlooped/Extensions.AI.svg?color=blue)](https://github.com//devlooped/Extensions.AI/blob/main/license.txt)
 [![Build](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml)
 
-<!-- #content -->
+<!-- #description -->
 Extensions for Microsoft.Extensions.AI
+<!-- #description -->
 
+## Open Source Maintenance Fee
+
+To ensure the long-term sustainability of this project, use of this project requires an 
+[Open Source Maintenance Fee](https://opensourcemaintenancefee.org). While the source 
+code is freely available under the terms of the [MIT License](./license.txt), all other aspects of the 
+project --including opening or commenting on issues, participating in discussions and 
+downloading releases-- require [adherence to the Maintenance Fee](./osmfeula.txt).
+
+In short, if you use this project to generate revenue, the [Maintenance Fee is required](./osmfeula.txt).
+
+To pay the Maintenance Fee, [become a Sponsor](https://github.com/sponsors/devlooped).
+
+<!-- #content -->
 ## Grok
 
 Full support for Grok [Live Search](https://docs.x.ai/docs/guides/live-search) 
@@ -137,16 +151,20 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-IChatClient chat = new OpenAIChatClient(Env.Get("OPENAI_API_KEY")!, "o3-mini");
+IChatClient chat = new OpenAIChatClient(Env.Get("OPENAI_API_KEY")!, "gpt-5");
 
 var options = new ChatOptions
 {
-    ModelId = "o4-mini",                    // 👈 can override the model on the client
-    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low, extension property
+    ModelId = "gpt-5-mini",                 // 👈 can override the model on the client
+    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low/Minimal, extension property
 };
 
 var response = await chat.GetResponseAsync(messages, options);
 ```
+
+> [!TIP]
+> We provide support for the newest `Minimal` reasoning effort in the just-released
+> GPT-5 model family.
 
 ### Web Search
 
@@ -159,7 +177,7 @@ var options = new ChatOptions
     //                          👇 search in Argentina, Bariloche region
     Tools = [new WebSearchTool("AR")
     {
-        Region = "Bariloche",   // 👈 Bariloche region
+        Region = "Bariloche",                        // 👈 Bariloche region
         TimeZone = "America/Argentina/Buenos_Aires", // 👈 IANA timezone
         ContextSize = WebSearchContextSize.High      // 👈 high search context size
     }]
@@ -235,6 +253,7 @@ var options = new ChatOptions
 };
 
 var response = await client.GetResponseAsync(chat, options);
+// 👇 finds the expected result of the tool call
 var result = response.FindCalls<MyResult>(tool).FirstOrDefault();
 
 if (result != null)
