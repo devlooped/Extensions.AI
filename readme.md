@@ -36,7 +36,7 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-var grok = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3-mini");
+var grok = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!, "grok-3-mini");
 
 var options = new GrokChatOptions
 {
@@ -49,12 +49,6 @@ var options = new GrokChatOptions
 var response = await grok.GetResponseAsync(messages, options);
 ```
 
-> [!TIP]
-> `Env` is a helper class from [Smith](https://www.nuget.org/packages/Smith), 
-> a higher level package typically used for `dotnet run program.cs` scenarios in 
-> .NET 10. You will typically use `IConfiguration` for reading API keys. 
-> This package does not depend on Smith.
-
 Search can alternatively be configured using a regular `ChatOptions` 
 and adding the `HostedWebSearchTool` to the tools collection, which 
 sets the live search mode to `auto` like above:
@@ -66,7 +60,7 @@ var messages = new Chat()
     { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
 };
 
-var grok = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3");
+var grok = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!, "grok-3");
 
 var options = new ChatOptions
 {
@@ -151,7 +145,7 @@ var messages = new Chat()
     { "user", "What is 101*3?" },
 };
 
-IChatClient chat = new OpenAIChatClient(Env.Get("OPENAI_API_KEY")!, "gpt-5");
+IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY")!, "gpt-5");
 
 var options = new ChatOptions
 {
@@ -204,7 +198,7 @@ This is added to the `OpenAIClientOptions` (or more properly, any
 
 ```csharp
 var openai = new OpenAIClient(
-    Env.Get("OPENAI_API_KEY")!,
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
     new OpenAIClientOptions().Observe(
         onRequest: request => Console.WriteLine($"Request: {request}"),
         onResponse: response => Console.WriteLine($"Response: {response}"),
@@ -218,7 +212,7 @@ payload analysis in tests as follows:
 var requests = new List<JsonNode>();
 var responses = new List<JsonNode>();
 var openai = new OpenAIClient(
-    Env.Get("OPENAI_API_KEY")!,
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
     new OpenAIClientOptions().Observe(requests.Add, responses.Add));
 ```
 
@@ -229,7 +223,7 @@ and observes is in a single call:
 var requests = new List<JsonNode>();
 var responses = new List<JsonNode>();
 var openai = new OpenAIClient(
-    Env.Get("OPENAI_API_KEY")!,
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
     OpenAIClientOptions.Observable(requests.Add, responses.Add));
 ```
 
@@ -306,7 +300,7 @@ client options passed to the client constructor:
 
 ```csharp
 var openai = new OpenAIClient(
-    Env.Get("OPENAI_API_KEY")!,
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
     new OpenAIClientOptions().UseJsonConsoleLogging());
 ```
 
@@ -321,7 +315,7 @@ and more.
 The chat pipeline logging is added similar to other pipeline extensions:
 
 ```csharp
-IChatClient client = new GrokChatClient(Env.Get("XAI_API_KEY")!, "grok-3-mini")
+IChatClient client = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!, "grok-3-mini")
     .AsBuilder()
     .UseOpenTelemetry()
     // other extensions...
