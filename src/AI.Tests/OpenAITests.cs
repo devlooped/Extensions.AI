@@ -156,7 +156,7 @@ public class OpenAITests(ITestOutputHelper output)
         Assert.StartsWith("gpt-5", response.ModelId);
         Assert.DoesNotContain("nano", response.ModelId);
 
-        // Reasoning should have been set to medium
+        // Reasoning should have been set to expected value
         Assert.All(requests, x =>
         {
             var search = Assert.IsType<JsonObject>(x["reasoning"]);
@@ -166,6 +166,48 @@ public class OpenAITests(ITestOutputHelper output)
         output.WriteLine($"Effort: {effort}, Time: {watch.ElapsedMilliseconds}ms, Tokens: {response.Usage?.TotalTokenCount}");
     }
 
+    [SecretsTheory("OPENAI_API_KEY")]
+    [InlineData(Verbosity.Low)]
+    [InlineData(Verbosity.Medium)]
+    [InlineData(Verbosity.High)]
+    public async Task GPT5_Verbosity(Verbosity verbosity)
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an intelligent AI assistant that's an expert on everything." },
+            { "user", "What's the answer to the universe and everything?" },
+        };
+
+        var requests = new List<JsonNode>();
+
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-5-nano",
+            OpenAIClientOptions.Observable(requests.Add).WriteTo(output));
+
+        var options = new ChatOptions
+        {
+            ModelId = "gpt-5-mini",
+            Verbosity = verbosity
+        };
+
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        var response = await chat.GetResponseAsync(messages, options);
+        watch.Stop();
+
+        var text = response.Text;
+        output.WriteLine(text);
+
+        Assert.StartsWith("gpt-5", response.ModelId);
+        Assert.DoesNotContain("nano", response.ModelId);
+
+        // Verbosity should have been set to the expected value
+        Assert.All(requests, x =>
+        {
+            var text = Assert.IsType<JsonObject>(x["text"]);
+            Assert.Equal(verbosity.ToString().ToLowerInvariant(), text["verbosity"]?.GetValue<string>());
+        });
+
+        output.WriteLine($"Verbosity: {verbosity}, Time: {watch.ElapsedMilliseconds}ms, Tokens: {response.Usage?.TotalTokenCount}");
+    }
 
     [SecretsFact("OPENAI_API_KEY")]
     public async Task WebSearchCountryHighContext()
