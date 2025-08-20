@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.8.1](https://github.com/devlooped/Extensions.AI/tree/v0.8.1) (2025-08-20)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.8.0...v0.8.1)
+
+:sparkles: Implemented enhancements:
+
+- Add support for Verbosity introduced in GPT-5 [\#100](https://github.com/devlooped/Extensions.AI/pull/100) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Add simple benchmark test for GPT-5 reasoning efforts [\#97](https://github.com/devlooped/Extensions.AI/pull/97) (@kzu)
+
 ## [v0.8.0](https://github.com/devlooped/Extensions.AI/tree/v0.8.0) (2025-08-08)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.7.4...v0.8.0)
