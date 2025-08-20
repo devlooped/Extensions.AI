@@ -43,5 +43,25 @@ public static class ChatExtensions
                 }
             }
         }
+
+        /// <summary>
+        /// Sets the <see cref="Verbosity"/> level for a GPT-5 model when generating responses, if supported
+        /// </summary>
+        public Verbosity? Verbosity
+        {
+            get => options.AdditionalProperties?.TryGetValue("verbosity", out var value) == true && value is Verbosity verbosity ? verbosity : null;
+            set
+            {
+                if (value is not null)
+                {
+                    options.AdditionalProperties ??= [];
+                    options.AdditionalProperties["verbosity"] = value;
+                }
+                else
+                {
+                    options.AdditionalProperties?.Remove("verbosity");
+                }
+            }
+        }
     }
 }

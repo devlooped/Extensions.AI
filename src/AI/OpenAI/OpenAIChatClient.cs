@@ -47,22 +47,18 @@ public class OpenAIChatClient : IChatClient
         if (options is null)
             return null;
 
-        if (options.ReasoningEffort is ReasoningEffort effort)
+        if (options.ReasoningEffort.HasValue || options.Verbosity.HasValue)
         {
-            options.RawRepresentationFactory = _ => new ResponseCreationOptions
+            options.RawRepresentationFactory = _ =>
             {
-                ReasoningOptions = new ReasoningEffortOptions(effort)
-                //ReasoningOptions = new ResponseReasoningOptions()
-                //{
-                //    ReasoningEffortLevel = effort switch
-                //    {
-                //        ReasoningEffort.High => ResponseReasoningEffortLevel.High,
-                //        ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
-                //        // TODO: not exposed yet in the OpenAI package
-                //        // ReasoningEffort.Minimal => ResponseReasoningEffortLevel.Minimal,
-                //        _ => ResponseReasoningEffortLevel.Low
-                //    },
-                //}
+                var creation = new ResponseCreationOptions();
+                if (options.ReasoningEffort.HasValue)
+                    creation.ReasoningOptions = new ReasoningEffortOptions(options.ReasoningEffort!.Value);
+
+                if (options.Verbosity.HasValue)
+                    creation.TextOptions = new VerbosityOptions(options.Verbosity!.Value);
+
+                return creation;
             };
         }
 
@@ -82,6 +78,16 @@ public class OpenAIChatClient : IChatClient
         {
             writer.WritePropertyName("effort"u8);
             writer.WriteStringValue(effort.ToString().ToLowerInvariant());
+            base.JsonModelWriteCore(writer, options);
+        }
+    }
+
+    class VerbosityOptions(Verbosity verbosity) : ResponseTextOptions
+    {
+        protected override void JsonModelWriteCore(Utf8JsonWriter writer, ModelReaderWriterOptions options)
+        {
+            writer.WritePropertyName("verbosity"u8);
+            writer.WriteStringValue(verbosity.ToString().ToLowerInvariant());
             base.JsonModelWriteCore(writer, options);
         }
     }
