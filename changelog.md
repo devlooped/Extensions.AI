@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.8.2](https://github.com/devlooped/Extensions.AI/tree/v0.8.2) (2025-08-21)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.8.1...v0.8.2)
+
+:sparkles: Implemented enhancements:
+
+- Friendly error when non-matching SDK is used [\#101](https://github.com/devlooped/Extensions.AI/pull/101) (@kzu)
+
 ## [v0.8.1](https://github.com/devlooped/Extensions.AI/tree/v0.8.1) (2025-08-20)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.8.0...v0.8.1)
