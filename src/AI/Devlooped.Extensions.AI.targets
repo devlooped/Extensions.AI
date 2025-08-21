@@ -1,3 +1,9 @@
-﻿<Project>
-
+<Project>
+  <PropertyGroup>
+    <BuiltWithSdkPreview>true</BuiltWithSdkPreview>
+    <BuiltSdkPreviewVersion>10.0.100-preview.7.25380.108</BuiltSdkPreviewVersion>
+  </PropertyGroup>
+  <Target Name="EnsureSamePreviewSdkVersion" BeforeTargets="Build" Condition="'$(BuiltWithSdkPreview)' == 'true'">
+    <Error Condition="'$(_NETCoreSdkIsPreview)' == 'false' or '$(NETCoreSdkVersion)' != '$(BuiltSdkPreviewVersion)'" Text="This version was built with a preview SDK and requires a matching one. Please install SDK version $(BuiltSdkPreviewVersion) or update to a newer package version." />
+  </Target>
 </Project>

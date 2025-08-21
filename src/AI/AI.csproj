@@ -31,4 +31,14 @@
     <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
   </ItemGroup>
 
+  <Target Name="UpdateSdkPreviewVersion" BeforeTargets="GetPackageContents">
+    <!-- Update packaging version targets -->
+    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets"
+				 Query="/Project/PropertyGroup/BuiltWithSdkPreview"
+				 Value="$(_NETCoreSdkIsPreview)"/>
+    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets"
+				 Query="/Project/PropertyGroup/BuiltSdkPreviewVersion"
+				 Value="$(NETCoreSdkVersion)"/>
+  </Target>
+
 </Project>
