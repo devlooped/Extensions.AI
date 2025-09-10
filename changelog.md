@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.8.3](https://github.com/devlooped/Extensions.AI/tree/v0.8.3) (2025-09-10)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.8.2...v0.8.3)
+
 ## [v0.8.2](https://github.com/devlooped/Extensions.AI/tree/v0.8.2) (2025-08-21)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.8.1...v0.8.2)
