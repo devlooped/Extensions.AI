@@ -1,0 +1,10 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="src/AI.CodeAnalysis/AI.CodeAnalysis.csproj" />
+  <Project Path="src/AI.Tests/AI.Tests.csproj" />
+  <Project Path="src/AI/AI.csproj" />
+</Solution>
