@@ -17,6 +17,7 @@ public class OpenAIChatClient : IChatClient
     readonly string modelId;
     readonly ClientPipeline pipeline;
     readonly OpenAIClientOptions? options;
+    readonly ChatClientMetadata? metadata;
 
     /// <summary>
     /// Initializes the client with the specified API key, model ID, and optional OpenAI client options.
@@ -28,7 +29,12 @@ public class OpenAIChatClient : IChatClient
 
         // NOTE: by caching the pipeline, we speed up creation of new chat clients per model, 
         // since the pipeline will be the same for all of them.
-        pipeline = new OpenAIClient(new ApiKeyCredential(apiKey), options).Pipeline;
+        var client = new OpenAIClient(new ApiKeyCredential(apiKey), options);
+        metadata = client.GetChatClient(modelId)
+            .AsIChatClient()
+            .GetService(typeof(ChatClientMetadata)) as ChatClientMetadata;
+
+        pipeline = client.Pipeline;
     }
 
     /// <inheritdoc/>
@@ -67,7 +73,12 @@ public class OpenAIChatClient : IChatClient
 
     void IDisposable.Dispose() => GC.SuppressFinalize(this);
 
-    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+    /// <inheritdoc />
+    public object? GetService(Type serviceType, object? serviceKey = null) => serviceType switch
+    {
+        Type t when t == typeof(ChatClientMetadata) => metadata,
+        _ => null
+    };
 
     // Allows creating the base OpenAIClient with a pre-created pipeline.
     class PipelineClient(ClientPipeline pipeline, OpenAIClientOptions? options) : OpenAIClient(pipeline, options) { }
