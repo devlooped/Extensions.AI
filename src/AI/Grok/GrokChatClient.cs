@@ -28,7 +28,7 @@ public partial class GrokChatClient : IChatClient
         this.modelId = modelId;
         this.options = options ?? new();
         this.options.Endpoint ??= new Uri("https://api.x.ai/v1");
-        metadata = new ChatClientMetadata("x.ai", this.options.Endpoint, modelId);
+        metadata = new ChatClientMetadata("xai", this.options.Endpoint, modelId);
 
         // NOTE: by caching the pipeline, we speed up creation of new chat clients per model, 
         // since the pipeline will be the same for all of them.
