@@ -18,6 +18,7 @@ public partial class GrokChatClient : IChatClient
     readonly string modelId;
     readonly ClientPipeline pipeline;
     readonly OpenAIClientOptions options;
+    readonly ChatClientMetadata metadata;
 
     /// <summary>
     /// Initializes the client with the specified API key, model ID, and optional OpenAI client options.
@@ -27,6 +28,7 @@ public partial class GrokChatClient : IChatClient
         this.modelId = modelId;
         this.options = options ?? new();
         this.options.Endpoint ??= new Uri("https://api.x.ai/v1");
+        metadata = new ChatClientMetadata("x.ai", this.options.Endpoint, modelId);
 
         // NOTE: by caching the pipeline, we speed up creation of new chat clients per model, 
         // since the pipeline will be the same for all of them.
@@ -114,7 +116,12 @@ public partial class GrokChatClient : IChatClient
 
     void IDisposable.Dispose() { }
 
-    public object? GetService(Type serviceType, object? serviceKey = null) => null;
+    /// <inheritdoc />
+    public object? GetService(Type serviceType, object? serviceKey = null) => serviceType switch
+    {
+        Type t when t == typeof(ChatClientMetadata) => metadata,
+        _ => null
+    };
 
     // Allows creating the base OpenAIClient with a pre-created pipeline.
     class PipelineClient(ClientPipeline pipeline, OpenAIClientOptions options) : OpenAIClient(pipeline, options) { }
