@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using Microsoft.Extensions.AI;
+﻿using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,7 +7,7 @@ namespace Devlooped.Extensions.AI;
 public class ConfigurableTests
 {
     [Fact]
-    public async Task CanConfigureClients()
+    public void CanConfigureClients()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -32,6 +31,6 @@ public class ConfigurableTests
         var grok = services.GetRequiredKeyedService<IChatClient>("grok");
 
         Assert.Equal("openai", openai.GetRequiredService<ChatClientMetadata>().ProviderName);
-        Assert.Equal("x.ai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
 }
