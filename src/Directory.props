@@ -1,8 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <AssemblyName>Devlooped.Extensions.$(MSBuildProjectName)</AssemblyName>
-    <RootNamespace>Devlooped.Extensions.AI</RootNamespace>
+    <Product>Devlooped AI Extensions</Product>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>6eb457f9-16bc-49c5-81f2-33399b254e04</UserSecretsId>
 
