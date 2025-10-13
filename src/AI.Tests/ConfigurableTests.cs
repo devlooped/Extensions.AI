@@ -1,10 +1,11 @@
 ﻿using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Devlooped.Extensions.AI;
 
-public class ConfigurableTests
+public class ConfigurableTests(ITestOutputHelper output)
 {
     [Fact]
     public void CanConfigureClients()
@@ -19,8 +20,6 @@ public class ConfigurableTests
                 ["ai:clients:grok:endpoint"] = "https://api.x.ai",
             })
             .Build();
-
-        var calls = new List<string>();
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
@@ -47,8 +46,6 @@ public class ConfigurableTests
             })
             .Build();
 
-        var calls = new List<string>();
-
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .UseChatClients(configuration)
@@ -71,8 +68,6 @@ public class ConfigurableTests
                 ["ai:clients:grok:endpoint"] = "https://api.x.ai",
             })
             .Build();
-
-        var calls = new List<string>();
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
@@ -97,8 +92,6 @@ public class ConfigurableTests
             })
             .Build();
 
-        var calls = new List<string>();
-
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .UseChatClients(configuration)
@@ -107,5 +100,67 @@ public class ConfigurableTests
         var grok = services.GetRequiredKeyedService<IChatClient>("grok");
 
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
+    }
+
+    [Fact]
+    public void CanChangeAndReloadModelId()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddLogging(builder => builder.AddTestOutput(output))
+            .UseChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+
+        Assert.Equal("openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Equal("gpt-4.1", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+
+        configuration["ai:clients:openai:modelid"] = "gpt-5";
+        // NOTE: the in-memory provider does not support reload on change, so we must trigger it manually.
+        configuration.Reload();
+
+        Assert.Equal("gpt-5", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
+
+    [Fact]
+    public void CanChangeAndSwapProvider()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:chat:modelid"] = "gpt-4.1",
+                ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddLogging(builder => builder.AddTestOutput(output))
+            .UseChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+
+        Assert.Equal("openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Equal("gpt-4.1", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+
+        configuration["ai:clients:chat:modelid"] = "grok-4";
+        configuration["ai:clients:chat:apikey"] = "xai-asdfasdf";
+        configuration["ai:clients:chat:endpoint"] = "https://api.x.ai";
+
+        // NOTE: the in-memory provider does not support reload on change, so we must trigger it manually.
+        configuration.Reload();
+
+        Assert.Equal("xai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Equal("grok-4", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
     }
 }
