@@ -1,14 +1,10 @@
-![Icon](assets/img/icon-32.png) Devlooped.Extensions.AI
+![Icon](assets/img/icon-32.png) Devlooped AI Extensions
 ============
 
-[![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
-[![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.svg?color=green)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
-[![License](https://img.shields.io/github/license/devlooped/Extensions.AI.svg?color=blue)](https://github.com//devlooped/Extensions.AI/blob/main/license.txt)
-[![Build](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/devlooped/Extensions.AI/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/devlooped/AI.svg?color=blue)](https://github.com//devlooped/AI/blob/main/license.txt)
+[![Build](https://github.com/devlooped/AI/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/devlooped/AI/actions/workflows/build.yml)
 
-<!-- #description -->
-Extensions for Microsoft.Extensions.AI
-<!-- #description -->
+Extensions for Microsoft.Agents.AI and Microsoft.Extensions.AI.
 
 ## Open Source Maintenance Fee
 
@@ -21,6 +17,15 @@ downloading releases-- require [adherence to the Maintenance Fee](./osmfeula.txt
 In short, if you use this project to generate revenue, the [Maintenance Fee is required](./osmfeula.txt).
 
 To pay the Maintenance Fee, [become a Sponsor](https://github.com/sponsors/devlooped).
+
+# Devlooped.Extensions.AI
+
+[![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
+[![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.svg?color=green)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
+
+<!-- #description -->
+Extensions for Microsoft.Extensions.AI
+<!-- #description -->
 
 <!-- #content -->
 ## Grok
