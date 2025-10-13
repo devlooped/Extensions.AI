@@ -4,7 +4,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="src/AI.CodeAnalysis/AI.CodeAnalysis.csproj" />
-  <Project Path="src/AI.Tests/AI.Tests.csproj" />
-  <Project Path="src/AI/AI.csproj" />
+  <Project Path="src/Agents/Agents.csproj" Id="90827430-b415-47d6-aac9-2dbe4911b348" />
+  <Project Path="src/Extensions.CodeAnalysis/Extensions.CodeAnalysis.csproj" />
+  <Project Path="src/Extensions/Extensions.csproj" />
+  <Project Path="src/Tests/Tests.csproj" />
 </Solution>

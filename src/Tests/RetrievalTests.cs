@@ -12,32 +12,41 @@ public class RetrievalTests(ITestOutputHelper output)
     public async Task CanRetrieveContent(string model, string question, bool empty = false)
     {
         var client = new global::OpenAI.OpenAIClient(Configuration["OPENAI_API_KEY"]);
-        var store = client.GetVectorStoreClient().CreateVectorStore(true);
+        var store = client.GetVectorStoreClient().CreateVectorStore();
         try
         {
             var file = client.GetOpenAIFileClient().UploadFile("Content/LNS0004592.md", global::OpenAI.Files.FileUploadPurpose.Assistants);
             try
             {
-                client.GetVectorStoreClient().AddFileToVectorStore(store.VectorStoreId, file.Value.Id, true);
+                client.GetVectorStoreClient().AddFileToVectorStore(store.Value.Id, file.Value.Id);
 
                 var responses = new OpenAIResponseClient(model, Configuration["OPENAI_API_KEY"]);
 
-                var chat = responses.AsIChatClient(
-                        ResponseTool.CreateFileSearchTool([store.VectorStoreId]))
+                var options = new ChatOptions();
+                options.Tools ??= [];
+                options.Tools.Add(new HostedFileSearchTool
+                {
+                    Inputs =
+                    [
+                        new HostedVectorStoreContent(store.Value.Id),
+                    ],
+                    MaximumResultCount = 10,
+                });
+
+                var chat = responses.AsIChatClient()
                     .AsBuilder()
                     .UseLogging(output.AsLoggerFactory())
-                    .Use((messages, options, next, cancellationToken) =>
-                    {
-
-                        return next.Invoke(messages, options, cancellationToken);
-                    })
+                    //.Use((messages, options, next, cancellationToken) =>
+                    //{
+                    //    return next.Invoke(messages, options, cancellationToken);
+                    //})
                     .Build();
 
                 var response = await chat.GetResponseAsync(
                     [
                         new ChatMessage(ChatRole.System, "Use file search tool to respond, exclusively. If no content was found, respond just with the string 'N/A' and nothing else."),
                         new ChatMessage(ChatRole.User, question),
-                    ]);
+                    ], options);
 
                 output.WriteLine(response.Text);
                 if (empty)
@@ -52,7 +61,7 @@ public class RetrievalTests(ITestOutputHelper output)
         }
         finally
         {
-            client.GetVectorStoreClient().DeleteVectorStore(store.VectorStoreId);
+            client.GetVectorStoreClient().DeleteVectorStore(store.Value.Id);
         }
     }
 }
