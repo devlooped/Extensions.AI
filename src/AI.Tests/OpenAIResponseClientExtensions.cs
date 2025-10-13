@@ -24,8 +24,11 @@ public static class OpenAIResponseClientExtensions
         public override AsyncCollectionResult<StreamingResponseUpdate> CreateResponseStreamingAsync(IEnumerable<ResponseItem> inputItems, ResponseCreationOptions? options = null, CancellationToken cancellationToken = default)
             => inner.CreateResponseStreamingAsync(inputItems, AddTools(options), cancellationToken);
 
-        ResponseCreationOptions AddTools(ResponseCreationOptions options)
+        ResponseCreationOptions? AddTools(ResponseCreationOptions? options)
         {
+            if (options == null)
+                return null;
+
             foreach (var tool in tools)
                 options.Tools.Add(tool);
 
