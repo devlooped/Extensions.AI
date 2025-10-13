@@ -17,9 +17,9 @@
 	skip
 [file ".editorconfig"]
 	url = https://github.com/devlooped/oss/blob/main/.editorconfig
-	sha = 2d0e5a5e0bb259dfb00b2b27fe4af2dd5c58c693
+	sha = a62c45934ac2952f2f5d54d8aea4a7ebc1babaff
 
-	etag = 160587f1ec0a7d68f1e4bc49605f8c7033c5d7991776003d9f2bc916ea7aa817
+	etag = b5e919b472a52d4b522f86494f0f2c0ba74a6d9601454e20e4cbaf744317ff62
 	weak
 [file ".gitattributes"]
 	url = https://github.com/devlooped/oss/blob/main/.gitattributes
