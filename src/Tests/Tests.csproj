@@ -26,8 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AI.CodeAnalysis\AI.CodeAnalysis.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\AI\AI.csproj" />
+    <ProjectReference Include="..\Agents\Agents.csproj" />
+    <ProjectReference Include="..\Extensions.CodeAnalysis\Extensions.CodeAnalysis.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Extensions\Extensions.csproj" />
   </ItemGroup>
 
   <ItemGroup>

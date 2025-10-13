@@ -19,7 +19,7 @@ public class WebSearchTool : HostedWebSearchTool
         Country = country;
         additionalProperties = new Dictionary<string, object?>
         {
-            { nameof(WebSearchUserLocation), WebSearchUserLocation.CreateApproximateLocation(country) }
+            { nameof(WebSearchToolLocation), WebSearchToolLocation.CreateApproximateLocation(country) }
         };
     }
 
@@ -28,14 +28,14 @@ public class WebSearchTool : HostedWebSearchTool
     /// </summary>
     public string Country { get; }
 
-    internal WebSearchUserLocation Location
+    internal WebSearchToolLocation Location
     {
-        set => additionalProperties[nameof(WebSearchUserLocation)] = value;
+        set => additionalProperties[nameof(WebSearchToolLocation)] = value;
     }
 
-    internal WebSearchContextSize ContextSize
+    internal WebSearchToolContextSize ContextSize
     {
-        set => additionalProperties[nameof(WebSearchContextSize)] = value;
+        set => additionalProperties[nameof(WebSearchToolContextSize)] = value;
     }
 
     internal IDictionary<string, object?> Properties => additionalProperties;

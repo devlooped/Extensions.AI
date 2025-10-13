@@ -16,7 +16,7 @@ public static class OpenAIWebSearchToolExtensions
             set
             {
                 web.Properties["Region"] = value;
-                web.Location = WebSearchUserLocation.CreateApproximateLocation(web.Country, value, web.City, web.TimeZone);
+                web.Location = WebSearchToolLocation.CreateApproximateLocation(web.Country, value, web.City, web.TimeZone);
             }
         }
 
@@ -30,7 +30,7 @@ public static class OpenAIWebSearchToolExtensions
             set
             {
                 web.Properties["City"] = value;
-                web.Location = WebSearchUserLocation.CreateApproximateLocation(web.Country, web.Region, value, web.TimeZone);
+                web.Location = WebSearchToolLocation.CreateApproximateLocation(web.Country, web.Region, value, web.TimeZone);
             }
         }
 
@@ -44,23 +44,23 @@ public static class OpenAIWebSearchToolExtensions
             set
             {
                 web.Properties["TimeZone"] = value;
-                web.Location = WebSearchUserLocation.CreateApproximateLocation(web.Country, web.Region, web.City, value);
+                web.Location = WebSearchToolLocation.CreateApproximateLocation(web.Country, web.Region, web.City, value);
             }
         }
 
         /// <summary>
         /// Controls how much context is retrieved from the web to help the tool formulate a response. 
         /// </summary>
-        public WebSearchContextSize? ContextSize
+        public WebSearchToolContextSize? ContextSize
         {
-            get => web.Properties.TryGetValue(nameof(WebSearchContextSize), out var size) && size is WebSearchContextSize contextSize
+            get => web.Properties.TryGetValue(nameof(WebSearchToolContextSize), out var size) && size is WebSearchToolContextSize contextSize
                 ? contextSize : null;
             set
             {
                 if (value.HasValue)
                     web.ContextSize = value.Value;
                 else
-                    web.Properties.Remove(nameof(WebSearchContextSize));
+                    web.Properties.Remove(nameof(WebSearchToolContextSize));
             }
         }
     }
