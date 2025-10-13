@@ -21,6 +21,7 @@ public static class UseChatClientsExtensions
             var id = configuration[$"{section}:id"] ?? section[(prefix.Length + 1)..];
 
             var options = configuration.GetRequiredSection(section).Get<ChatClientOptions>();
+            // We need logging set up for the configurable client to log changes
             services.AddLogging();
 
             var builder = services.AddKeyedChatClient(id,

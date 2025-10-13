@@ -1,4 +1,7 @@
-﻿using Devlooped.Extensions.AI.Grok;
+﻿using Azure;
+using Azure.AI.Inference;
+using Azure.AI.OpenAI;
+using Devlooped.Extensions.AI.Grok;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -46,7 +49,7 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
 
     IChatClient Configure(IConfigurationSection configSection)
     {
-        var options = configSection.Get<ConfigurableChatClientOptions>();
+        var options = configSection.Get<ConfigurableClientOptions>();
         Throw.IfNullOrEmpty(options?.ModelId, $"{configSection}:modelid");
 
         // If there was a custom id, we must validate it didn't change since that's not supported.
@@ -74,6 +77,10 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
 
         IChatClient client = options.Endpoint?.Host == "api.x.ai"
             ? new GrokChatClient(apikey, options.ModelId, options)
+            : options.Endpoint?.Host == "ai.azure.com"
+            ? new ChatCompletionsClient(options.Endpoint, new AzureKeyCredential(apikey), configSection.Get<ConfigurableInferenceOptions>()).AsIChatClient(options.ModelId)
+            : options.Endpoint?.Host.EndsWith("openai.azure.com") == true
+            ? new AzureOpenAIChatClient(options.Endpoint, new AzureKeyCredential(apikey), options.ModelId, configSection.Get<ConfigurableAzureOptions>())
             : new OpenAIChatClient(apikey, options.ModelId, options);
 
         configure?.Invoke(id, client);
@@ -98,7 +105,19 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
     [LoggerMessage(LogLevel.Information, "ChatClient {Id} configured.")]
     private partial void LogConfigured(string id);
 
-    class ConfigurableChatClientOptions : OpenAIClientOptions
+    class ConfigurableClientOptions : OpenAIClientOptions
+    {
+        public string? ApiKey { get; set; }
+        public string? ModelId { get; set; }
+    }
+
+    class ConfigurableInferenceOptions : AzureAIInferenceClientOptions
+    {
+        public string? ApiKey { get; set; }
+        public string? ModelId { get; set; }
+    }
+
+    class ConfigurableAzureOptions : AzureOpenAIClientOptions
     {
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }

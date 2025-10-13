@@ -163,4 +163,53 @@ public class ConfigurableTests(ITestOutputHelper output)
         Assert.Equal("xai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("grok-4", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
     }
+
+    [Fact]
+    public void CanConfigureAzureInference()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:chat:modelid"] = "gpt-5",
+                ["ai:clients:chat:apikey"] = "asdfasdf",
+                ["ai:clients:chat:endpoint"] = "https://ai.azure.com/.default"
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddLogging(builder => builder.AddTestOutput(output))
+            .UseChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+
+        Assert.Equal("azure.ai.inference", client.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Equal("gpt-5", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
+
+    [Fact]
+    public void CanConfigureAzureOpenAI()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:chat:modelid"] = "gpt-5",
+                ["ai:clients:chat:apikey"] = "asdfasdf",
+                ["ai:clients:chat:endpoint"] = "https://chat.openai.azure.com/",
+                ["ai:clients:chat:UserAgentApplicationId"] = "myapp/1.0"
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddLogging(builder => builder.AddTestOutput(output))
+            .UseChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+
+        Assert.Equal("azure.ai.openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Equal("gpt-5", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
 }
