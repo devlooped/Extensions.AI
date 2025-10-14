@@ -23,7 +23,7 @@ public class ConfigurableTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var openai = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -48,7 +48,7 @@ public class ConfigurableTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("xai");
@@ -71,7 +71,7 @@ public class ConfigurableTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("grok");
@@ -94,7 +94,7 @@ public class ConfigurableTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("grok");
@@ -116,7 +116,7 @@ public class ConfigurableTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -145,7 +145,7 @@ public class ConfigurableTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -179,7 +179,7 @@ public class ConfigurableTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -204,7 +204,7 @@ public class ConfigurableTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .UseChatClients(configuration)
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
