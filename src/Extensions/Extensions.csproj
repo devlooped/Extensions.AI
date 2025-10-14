@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
     <LangVersion>Preview</LangVersion>
-    <NoWarn>$(NoWarn);OPENAI001</NoWarn>
     <AssemblyName>Devlooped.Extensions.AI</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <PackageId>$(AssemblyName)</PackageId>
@@ -12,6 +11,11 @@
     <PackageLicenseFile>OSMFEULA.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <!-- OPENAI001: responses API -->
+    <!-- AOAI001: Azure.AI.OpenAI.AzureOpenAIClientOptions.DefaultHeaders -->
+    <!-- SYSLIB1100/SYSLIB1101: not all ChatOptions are supported for binder gen: ResponseFormat, ToolMode, Tools -->
+    <NoWarn>$(NoWarn);OPENAI001;AOAI001;SYSLIB1100;SYSLIB1101</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -36,6 +40,7 @@
     <None Update="Devlooped.Extensions.AI.targets" PackFolder="build" />
     <None Update="Devlooped.Extensions.AI.props" PackFolder="build" />
     <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
+    <InternalsVisibleTo Include="Devlooped.Agents.AI" />
   </ItemGroup>
 
   <Target Name="UpdateSdkPreviewVersion" BeforeTargets="GetPackageContents">

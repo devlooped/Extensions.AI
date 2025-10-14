@@ -22,7 +22,8 @@ public static class AddAIAgentsExtensions
     /// <param name="configureOptions">Optional action to configure options for each agent.</param>
     /// <param name="prefix">The configuration prefix for agents, defaults to "ai:agents".</param>
     /// <returns>The host application builder with AI agents added.</returns>
-    public static IHostApplicationBuilder AddAIAgents(this IHostApplicationBuilder builder, Action<string, AIAgentBuilder>? configurePipeline = default, Action<string, ChatClientAgentOptions>? configureOptions = default, string prefix = "ai:agents")
+    public static TBuilder AddAIAgents<TBuilder>(this TBuilder builder, Action<string, AIAgentBuilder>? configurePipeline = default, Action<string, ChatClientAgentOptions>? configureOptions = default, string prefix = "ai:agents")
+        where TBuilder : IHostApplicationBuilder
     {
         builder.AddChatClients();
 
