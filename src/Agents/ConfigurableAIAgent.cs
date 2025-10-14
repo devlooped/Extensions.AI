@@ -7,6 +7,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Devlooped.Agents.AI;
 
+/// <summary>
+/// A configuration-driven <see cref="AIAgent"/> which monitors configuration changes and 
+/// re-applies them to the inner agent automatically.
+/// </summary>
 public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
 {
     readonly IServiceProvider services;
@@ -36,8 +40,10 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
+    /// <summary>Disposes the client and stops monitoring configuration changes.</summary>
     public void Dispose() => reloadToken?.Dispose();
 
+    /// <inheritdoc/>
     public override object? GetService(Type serviceType, object? serviceKey = null) => serviceType switch
     {
         Type t when t == typeof(ChatClientAgentOptions) => options,
@@ -45,15 +51,23 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
         _ => agent.GetService(serviceType, serviceKey)
     };
 
+    /// <inheritdoc/>
     public override string Id => agent.Id;
+    /// <inheritdoc/>
     public override string? Description => agent.Description;
+    /// <inheritdoc/>
     public override string DisplayName => agent.DisplayName;
-    public override string? Name => agent.Name;
+    /// <inheritdoc/>
+    public override string? Name => this.name;
+    /// <inheritdoc/>
     public override AgentThread DeserializeThread(JsonElement serializedThread, JsonSerializerOptions? jsonSerializerOptions = null)
         => agent.DeserializeThread(serializedThread, jsonSerializerOptions);
+    /// <inheritdoc/>
     public override AgentThread GetNewThread() => agent.GetNewThread();
+    /// <inheritdoc/>
     public override Task<AgentRunResponse> RunAsync(IEnumerable<ChatMessage> messages, AgentThread? thread = null, AgentRunOptions? options = null, CancellationToken cancellationToken = default)
         => agent.RunAsync(messages, thread, options, cancellationToken);
+    /// <inheritdoc/>
     public override IAsyncEnumerable<AgentRunResponseUpdate> RunStreamingAsync(IEnumerable<ChatMessage> messages, AgentThread? thread = null, AgentRunOptions? options = null, CancellationToken cancellationToken = default)
         => agent.RunStreamingAsync(messages, thread, options, cancellationToken);
 
@@ -74,6 +88,15 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
             options.ChatOptions = chat;
 
         configure?.Invoke(name, options);
+
+        if (options.AIContextProviderFactory is null)
+        {
+            var contextFactory = services.GetKeyedService<AIContextProviderFactory>(name) ??
+                services.GetService<AIContextProviderFactory>();
+
+            if (contextFactory is not null)
+                options.AIContextProviderFactory = contextFactory.CreateProvider;
+        }
 
         LogConfigured(name);
 
