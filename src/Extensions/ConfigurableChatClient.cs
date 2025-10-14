@@ -102,7 +102,7 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
-    [LoggerMessage(LogLevel.Information, "ChatClient {Id} configured.")]
+    [LoggerMessage(LogLevel.Information, "ChatClient '{Id}' configured.")]
     private partial void LogConfigured(string id);
 
     class ConfigurableClientOptions : OpenAIClientOptions
