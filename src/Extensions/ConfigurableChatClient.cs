@@ -119,19 +119,19 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
     [LoggerMessage(LogLevel.Information, "ChatClient '{Id}' configured.")]
     private partial void LogConfigured(string id);
 
-    class ConfigurableClientOptions : OpenAIClientOptions
+    internal class ConfigurableClientOptions : OpenAIClientOptions
     {
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }
     }
 
-    class ConfigurableInferenceOptions : AzureAIInferenceClientOptions
+    internal class ConfigurableInferenceOptions : AzureAIInferenceClientOptions
     {
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }
     }
 
-    class ConfigurableAzureOptions : AzureOpenAIClientOptions
+    internal class ConfigurableAzureOptions : AzureOpenAIClientOptions
     {
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }

@@ -65,3 +65,23 @@ public static class ChatExtensions
         }
     }
 }
+
+// Workaround to get the config binder to set these extension properties.
+/// <summary>
+/// Defines extended <see cref="ChatOptions"/> we provide via extension properties.
+/// </summary>
+/// <devdoc>This should ideally even be auto-generated from the available extensions so it's always in sync.</devdoc>
+[EditorBrowsable(EditorBrowsableState.Never)]
+public class ExtendedChatOptions : ChatOptions
+{
+    public ReasoningEffort? ReasoningEffort
+    {
+        get => ((ChatOptions)this).ReasoningEffort;
+        set => ((ChatOptions)this).ReasoningEffort = value;
+    }
+    public Verbosity? Verbosity
+    {
+        get => ((ChatOptions)this).Verbosity;
+        set => ((ChatOptions)this).Verbosity = value;
+    }
+}

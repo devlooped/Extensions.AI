@@ -73,7 +73,7 @@ public static class AddChatClientsExtensions
         return services;
     }
 
-    class ChatClientOptions : OpenAIClientOptions
+    internal class ChatClientOptions : OpenAIClientOptions
     {
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }

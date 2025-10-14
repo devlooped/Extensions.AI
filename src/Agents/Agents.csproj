@@ -11,6 +11,10 @@
     <PackageLicenseFile>OSMFEULA.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <!-- CS0436: IVT Extensions > Agents -->
+    <!-- SYSLIB1100/SYSLIB1101: not all ChatOptions are supported for binder gen: ResponseFormat, ToolMode, Tools -->
+    <NoWarn>$(NoWarn);CS0436;SYSLIB1100;SYSLIB1101</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

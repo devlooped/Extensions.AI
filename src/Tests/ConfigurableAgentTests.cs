@@ -189,5 +189,27 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.NotNull(options?.ChatMessageStoreFactory);
         Assert.Same(context, options?.ChatMessageStoreFactory?.Invoke(new()));
     }
+
+    [Fact]
+    public void CanSetOpenAIReasoningAndVerbosity()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:openai:modelid"] = "gpt-4.1",
+            ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "openai",
+            ["ai:agents:bot:options:reasoningeffort"] = "minimal",
+            ["ai:agents:bot:options:verbosity"] = "low",
+        });
+
+        var app = builder.AddAIAgents().Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.Equal(Verbosity.Low, options?.ChatOptions?.Verbosity);
+        Assert.Equal(ReasoningEffort.Minimal, options?.ChatOptions?.ReasoningEffort);
+    }
 }
 

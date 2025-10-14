@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel;
+using System.Text.Json;
+using Devlooped.Extensions.AI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -80,10 +82,13 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
         if (configuration[$"{section}:name"] is { } newname && newname != name)
             throw new InvalidOperationException($"The name of a configured agent cannot be changed at runtime. Expected '{name}' but was '{newname}'.");
 
-        var client = services.GetRequiredKeyedService<IChatClient>(options?.Client
-            ?? throw new InvalidOperationException($"A client must be specified for agent '{name}' in configuration section '{section}'."));
+        var client = services.GetKeyedService<IChatClient>(options?.Client
+            ?? throw new InvalidOperationException($"A client must be specified for agent '{name}' in configuration section '{section}'."))
+            ?? throw new InvalidOperationException($"Specified chat client '{options?.Client}' for agent '{name}' is not registered.");
 
-        var chat = configSection.GetSection("options").Get<ChatOptions>();
+#pragma warning disable SYSLIB1100
+        var chat = configSection.GetSection("options").Get<ExtendedChatOptions>();
+#pragma warning restore SYSLIB1100
         if (chat is not null)
             options.ChatOptions = chat;
 
@@ -124,8 +129,8 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     [LoggerMessage(LogLevel.Information, "AIAgent '{Id}' configured.")]
     private partial void LogConfigured(string id);
 
-    class AgentClientOptions : ChatClientAgentOptions
+    internal class AgentClientOptions : ChatClientAgentOptions
     {
-        public required string Client { get; set; }
+        public string? Client { get; set; }
     }
 }
