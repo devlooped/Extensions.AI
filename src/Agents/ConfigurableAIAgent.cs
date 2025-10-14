@@ -98,6 +98,15 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
                 options.AIContextProviderFactory = contextFactory.CreateProvider;
         }
 
+        if (options.ChatMessageStoreFactory is null)
+        {
+            var storeFactory = services.GetKeyedService<ChatMessageStoreFactory>(name) ??
+                services.GetService<ChatMessageStoreFactory>();
+
+            if (storeFactory is not null)
+                options.ChatMessageStoreFactory = storeFactory.CreateStore;
+        }
+
         LogConfigured(name);
 
         return (new ChatClientAgent(client, options, services.GetRequiredService<ILoggerFactory>(), services), options, client);
