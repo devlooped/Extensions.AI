@@ -133,7 +133,7 @@
 
 	etag = da7c0104131bd474b52fc9bc9f9bda6470e24ae38d4fb9f5c4f719bc01370ab5
 	weak
-[file "src/AI.Tests/Extensions/Attributes.cs"]
+[file "src/Tests/Extensions/Attributes.cs"]
 	url = https://github.com/devlooped/catbag/blob/main/Xunit/Attributes.cs
 	sha = 40914971d4d6b42d6f8a90923b131136f7e609a5
 
@@ -144,20 +144,15 @@
 	sha = 77e83f238196d2723640abef0c7b6f43994f9747
 	etag = fcb9759a96966df40dcd24906fd328ddec05953b7e747a6bb8d0d1e4c3865274
 	weak
-[file "src/AI/Extensions/System/Throw.cs"]
-	url = https://github.com/devlooped/catbag/blob/main/System/Throw.cs
-	sha = 3012d56be7554c483e5c5d277144c063969cada9
-	etag = 43c81c6c6dcdf5baee40a9e3edc5e871e473e6c954c901b82bb87a3a48888ea0
-	weak
-[file "src/Weaving/Extensions/System/Throw.cs"]
-	url = https://github.com/devlooped/catbag/blob/main/System/Throw.cs
-	sha = 3012d56be7554c483e5c5d277144c063969cada9
-	etag = 43c81c6c6dcdf5baee40a9e3edc5e871e473e6c954c901b82bb87a3a48888ea0
-	weak
 [file "osmfeula.txt"]
 	url = https://github.com/devlooped/.github/blob/main/osmfeula.txt
 	sha = 666a2a7c315f72199c418f11482a950fc69a8901
 	etag = 91ea15c07bfd784036c6ca931f5b2df7e9767b8367146d96c79caef09d63899f
+	weak
+[file "src/Extensions/Extensions/System/Throw.cs"]
+	url = https://github.com/devlooped/catbag/blob/main/System/Throw.cs
+	sha = 3012d56be7554c483e5c5d277144c063969cada9
+	etag = 43c81c6c6dcdf5baee40a9e3edc5e871e473e6c954c901b82bb87a3a48888ea0
 	weak
 [file "src/Agents/Extensions/Throw.cs"]
 	url = https://github.com/devlooped/catbag/blob/main/System/Throw.cs
