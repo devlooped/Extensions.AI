@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Text.Json;
 using Devlooped.Extensions.AI;
+using Devlooped.Extensions.AI.Grok;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -86,9 +87,11 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
             ?? throw new InvalidOperationException($"A client must be specified for agent '{name}' in configuration section '{section}'."))
             ?? throw new InvalidOperationException($"Specified chat client '{options?.Client}' for agent '{name}' is not registered.");
 
-#pragma warning disable SYSLIB1100
-        var chat = configSection.GetSection("options").Get<ExtendedChatOptions>();
-#pragma warning restore SYSLIB1100
+        var provider = client.GetService<ChatClientMetadata>()?.ProviderName;
+        ChatOptions? chat = provider == "xai"
+            ? configSection.GetSection("options").Get<GrokChatOptions>()
+            : configSection.GetSection("options").Get<ExtendedChatOptions>();
+
         if (chat is not null)
             options.ChatOptions = chat;
 
