@@ -4,6 +4,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Moq;
 
 namespace Devlooped.Agents.AI;
 
@@ -76,5 +77,62 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.Equal("You are a very helpful chat agent.", agent.GetService<ChatClientAgentOptions>()?.Instructions);
         Assert.Equal("xai", agent.GetService<AIAgentMetadata>()?.ProviderName);
     }
+
+    [Fact]
+    public void AssignsContextProviderFromKeyedService()
+    {
+        var builder = new HostApplicationBuilder();
+        var context = Mock.Of<AIContextProvider>();
+
+        builder.Services.AddKeyedSingleton<AIContextProviderFactory>("bot",
+            Mock.Of<AIContextProviderFactory>(x
+                => x.CreateProvider(It.IsAny<ChatClientAgentOptions.AIContextProviderFactoryContext>()) == context));
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+            ["ai:agents:bot:options:temperature"] = "0.5",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        Assert.Same(context, options?.AIContextProviderFactory?.Invoke(new ChatClientAgentOptions.AIContextProviderFactoryContext()));
+    }
+
+    [Fact]
+    public void AssignsContextProviderFromService()
+    {
+        var builder = new HostApplicationBuilder();
+        var context = Mock.Of<AIContextProvider>();
+
+        builder.Services.AddSingleton<AIContextProviderFactory>(
+            Mock.Of<AIContextProviderFactory>(x
+                => x.CreateProvider(It.IsAny<ChatClientAgentOptions.AIContextProviderFactoryContext>()) == context));
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+            ["ai:agents:bot:options:temperature"] = "0.5",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        Assert.Same(context, options?.AIContextProviderFactory?.Invoke(new ChatClientAgentOptions.AIContextProviderFactoryContext()));
+    }
+
 }
 

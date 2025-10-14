@@ -1,4 +1,5 @@
-﻿using Devlooped.Extensions.AI.OpenAI;
+﻿using System.ComponentModel;
+using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,14 +10,35 @@ using OpenAI;
 
 namespace Devlooped.Extensions.AI;
 
+/// <summary>
+/// Adds configuration-driven chat clients to an application host or service collection.
+/// </summary>
+[EditorBrowsable(EditorBrowsableState.Never)]
 public static class AddChatClientsExtensions
 {
+    /// <summary>
+    /// Adds configuration-driven chat clients to the host application builder.
+    /// </summary>
+    /// <param name="builder">The host application builder.</param>
+    /// <param name="configurePipeline">Optional action to configure the pipeline for each client.</param>
+    /// <param name="configureClient">Optional action to configure each client.</param>
+    /// <param name="prefix">The configuration prefix for clients. Defaults to "ai:clients".</param>
+    /// <returns>The host application builder.</returns>
     public static IHostApplicationBuilder AddChatClients(this IHostApplicationBuilder builder, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients")
     {
         AddChatClients(builder.Services, builder.Configuration, configurePipeline, configureClient, prefix);
         return builder;
     }
 
+    /// <summary>
+    /// Adds configuration-driven chat clients to the service collection.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="configuration">The configuration.</param>
+    /// <param name="configurePipeline">Optional action to configure the pipeline for each client.</param>
+    /// <param name="configureClient">Optional action to configure each client.</param>
+    /// <param name="prefix">The configuration prefix for clients. Defaults to "ai:clients".</param>
+    /// <returns>The service collection.</returns>
     public static IServiceCollection AddChatClients(this IServiceCollection services, IConfiguration configuration, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients")
     {
         foreach (var entry in configuration.AsEnumerable().Where(x =>

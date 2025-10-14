@@ -1,4 +1,5 @@
-﻿using Devlooped.Extensions.AI;
+﻿using System.ComponentModel;
+using Devlooped.Extensions.AI;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -7,8 +8,20 @@ using Microsoft.Extensions.Hosting;
 
 namespace Devlooped.Agents.AI;
 
+/// <summary>
+/// Adds configuration-driven agents to an application host.
+/// </summary>
+[EditorBrowsable(EditorBrowsableState.Never)]
 public static class AddAIAgentsExtensions
 {
+    /// <summary>
+    /// Adds AI agents to the host application builder based on configuration.
+    /// </summary>
+    /// <param name="builder">The host application builder.</param>
+    /// <param name="configurePipeline">Optional action to configure the pipeline for each agent.</param>
+    /// <param name="configureOptions">Optional action to configure options for each agent.</param>
+    /// <param name="prefix">The configuration prefix for agents, defaults to "ai:agents".</param>
+    /// <returns>The host application builder with AI agents added.</returns>
     public static IHostApplicationBuilder AddAIAgents(this IHostApplicationBuilder builder, Action<string, AIAgentBuilder>? configurePipeline = default, Action<string, ChatClientAgentOptions>? configureOptions = default, string prefix = "ai:agents")
     {
         builder.AddChatClients();
