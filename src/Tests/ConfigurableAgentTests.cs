@@ -131,8 +131,63 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         var options = agent.GetService<ChatClientAgentOptions>();
 
         Assert.NotNull(options?.AIContextProviderFactory);
-        Assert.Same(context, options?.AIContextProviderFactory?.Invoke(new ChatClientAgentOptions.AIContextProviderFactoryContext()));
+        Assert.Same(context, options?.AIContextProviderFactory?.Invoke(new()));
     }
 
+    [Fact]
+    public void AssignsMessageStoreFactoryFromKeyedService()
+    {
+        var builder = new HostApplicationBuilder();
+        var context = Mock.Of<ChatMessageStore>();
+
+        builder.Services.AddKeyedSingleton<ChatMessageStoreFactory>("bot",
+            Mock.Of<ChatMessageStoreFactory>(x
+                => x.CreateStore(It.IsAny<ChatClientAgentOptions.ChatMessageStoreFactoryContext>()) == context));
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+            ["ai:agents:bot:options:temperature"] = "0.5",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.ChatMessageStoreFactory);
+        Assert.Same(context, options?.ChatMessageStoreFactory?.Invoke(new()));
+    }
+
+    [Fact]
+    public void AssignsMessageStoreFactoryFromService()
+    {
+        var builder = new HostApplicationBuilder();
+        var context = Mock.Of<ChatMessageStore>();
+
+        builder.Services.AddSingleton<ChatMessageStoreFactory>(
+            Mock.Of<ChatMessageStoreFactory>(x
+                => x.CreateStore(It.IsAny<ChatClientAgentOptions.ChatMessageStoreFactoryContext>()) == context));
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+            ["ai:agents:bot:options:temperature"] = "0.5",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.ChatMessageStoreFactory);
+        Assert.Same(context, options?.ChatMessageStoreFactory?.Invoke(new()));
+    }
 }
 
