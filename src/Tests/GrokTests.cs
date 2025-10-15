@@ -187,7 +187,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
             .Observable(requests.Add, responses.Add)
             .WriteTo(output));
 
@@ -236,6 +236,65 @@ public class GrokTests(ITestOutputHelper output)
         Assert.True(catedral, "Expected at least one citation to catedralaltapatagonia.com");
 
         // Uses the default model set by the client when we asked for it
-        Assert.Equal("grok-3", response.ModelId);
+        Assert.Equal("grok-4-fast-non-reasoning", response.ModelId);
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task CanAvoidCitations()
+    {
+        var messages = new Chat()
+        {
+            { "system", "Sos un asistente del Cerro Catedral, usas la funcionalidad de Live Search en el sitio oficial." },
+            { "system", $"Hoy es {DateTime.Now.ToString("o")}" },
+            { "user", "Que calidad de nieve hay hoy?" },
+        };
+
+        var requests = new List<JsonNode>();
+        var responses = new List<JsonNode>();
+
+        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
+            .Observable(requests.Add, responses.Add)
+            .WriteTo(output));
+
+        var options = new ChatOptions
+        {
+            Tools = [new GrokSearchTool(GrokSearch.On)
+            {
+                ReturnCitations = false,
+                Sources =
+                [
+                    new GrokWebSource
+                    {
+                        AllowedWebsites =
+                        [
+                            "https://catedralaltapatagonia.com",
+                            "https://catedralaltapatagonia.com/parte-de-nieve/",
+                            "https://catedralaltapatagonia.com/tarifas/"
+                        ]
+                    },
+                ]
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        // assert that the request contains the following node
+        // "search_parameters": {
+        //      "mode": "auto"
+        //      "return_citations": "false"
+        //}
+        Assert.All(requests, x =>
+        {
+            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
+            Assert.Equal("on", search["mode"]?.GetValue<string>());
+            Assert.False(search["return_citations"]?.GetValue<bool>());
+        });
+
+        // Citations are not included
+        Assert.Single(responses);
+        var node = responses[0];
+        Assert.NotNull(node);
+        Assert.Null(node["citations"]);
     }
 }

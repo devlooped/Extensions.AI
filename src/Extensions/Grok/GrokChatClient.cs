@@ -89,7 +89,8 @@ public partial class GrokChatClient : IChatClient
                     FromDate = tool.FromDate,
                     ToDate = tool.ToDate,
                     MaxSearchResults = tool.MaxSearchResults,
-                    Sources = tool.Sources
+                    Sources = tool.Sources,
+                    ReturnCitations = tool.ReturnCitations
                 };
             }
 
@@ -133,6 +134,7 @@ public partial class GrokChatClient : IChatClient
         public DateOnly? ToDate { get; set; }
         public int? MaxSearchResults { get; set; }
         public IList<GrokSource>? Sources { get; set; }
+        public bool? ReturnCitations { get; set; }
     }
 
     [JsonSourceGenerationOptions(JsonSerializerDefaults.Web,
