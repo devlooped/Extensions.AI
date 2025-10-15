@@ -178,7 +178,7 @@ var options = new ChatOptions
     {
         Region = "Bariloche",                        // 👈 Bariloche region
         TimeZone = "America/Argentina/Buenos_Aires", // 👈 IANA timezone
-        ContextSize = WebSearchContextSize.High      // 👈 high search context size
+        ContextSize = WebSearchToolContextSize.High      // 👈 high search context size
     }]
 };
 ```
