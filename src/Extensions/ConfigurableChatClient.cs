@@ -1,6 +1,9 @@
-﻿using Azure;
+﻿using System.ClientModel.Primitives;
+using System.ComponentModel;
+using Azure;
 using Azure.AI.Inference;
 using Azure.AI.OpenAI;
+using Azure.Core;
 using Devlooped.Extensions.AI.Grok;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
@@ -14,7 +17,7 @@ namespace Devlooped.Extensions.AI;
 /// A configuration-driven <see cref="IChatClient"/> which monitors configuration changes and 
 /// re-applies them to the inner client automatically.
 /// </summary>
-public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
+public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
 {
     readonly IConfiguration configuration;
     readonly string section;
@@ -23,7 +26,7 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
     readonly Action<string, IChatClient>? configure;
     IDisposable reloadToken;
     IChatClient innerClient;
-
+    object? options;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ConfigurableChatClient"/> class.
@@ -61,9 +64,13 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         => innerClient.GetStreamingResponseAsync(messages, options, cancellationToken);
 
+    /// <summary>Exposes the optional <see cref="ClientPipelineOptions"/> configured for the client.</summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    public object? Options => options;
+
     IChatClient Configure(IConfigurationSection configSection)
     {
-        var options = configSection.Get<ConfigurableClientOptions>();
+        var options = SetOptions<ConfigurableClientOptions>(configSection);
         Throw.IfNullOrEmpty(options?.ModelId, $"{configSection}:modelid");
 
         // If there was a custom id, we must validate it didn't change since that's not supported.
@@ -92,9 +99,9 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
         IChatClient client = options.Endpoint?.Host == "api.x.ai"
             ? new GrokChatClient(apikey, options.ModelId, options)
             : options.Endpoint?.Host == "ai.azure.com"
-            ? new ChatCompletionsClient(options.Endpoint, new AzureKeyCredential(apikey), configSection.Get<ConfigurableInferenceOptions>()).AsIChatClient(options.ModelId)
+            ? new ChatCompletionsClient(options.Endpoint, new AzureKeyCredential(apikey), SetOptions<ConfigurableInferenceOptions>(configSection)).AsIChatClient(options.ModelId)
             : options.Endpoint?.Host.EndsWith("openai.azure.com") == true
-            ? new AzureOpenAIChatClient(options.Endpoint, new AzureKeyCredential(apikey), options.ModelId, configSection.Get<ConfigurableAzureOptions>())
+            ? new AzureOpenAIChatClient(options.Endpoint, new AzureKeyCredential(apikey), options.ModelId, SetOptions<ConfigurableAzureOptions>(configSection))
             : new OpenAIChatClient(apikey, options.ModelId, options);
 
         configure?.Invoke(id, client);
@@ -102,6 +109,22 @@ public sealed partial class ConfigurableChatClient : IDisposable, IChatClient
         LogConfigured(id);
 
         return client;
+    }
+
+    TOptions? SetOptions<TOptions>(IConfigurationSection section) where TOptions : class
+    {
+        var options = typeof(TOptions) switch
+        {
+            var t when t == typeof(ConfigurableClientOptions) => section.Get<ConfigurableClientOptions>() as TOptions,
+            var t when t == typeof(ConfigurableInferenceOptions) => section.Get<ConfigurableInferenceOptions>() as TOptions,
+            var t when t == typeof(ConfigurableAzureOptions) => section.Get<ConfigurableAzureOptions>() as TOptions,
+#pragma warning disable SYSLIB1104 // The target type for a binder call could not be determined
+            _ => section.Get<TOptions>()
+#pragma warning restore SYSLIB1104 // The target type for a binder call could not be determined
+        };
+
+        this.options = options;
+        return options;
     }
 
     void OnReload(object? state)

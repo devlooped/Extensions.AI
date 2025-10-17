@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Devlooped.Extensions.AI;
 using Devlooped.Extensions.AI.Grok;
 using Microsoft.Agents.AI;
@@ -61,7 +60,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     /// <inheritdoc/>
     public override string DisplayName => agent.DisplayName;
     /// <inheritdoc/>
-    public override string? Name => this.name;
+    public override string? Name => name;
     /// <inheritdoc/>
     public override AgentThread DeserializeThread(JsonElement serializedThread, JsonSerializerOptions? jsonSerializerOptions = null)
         => agent.DeserializeThread(serializedThread, jsonSerializerOptions);
@@ -73,6 +72,11 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     /// <inheritdoc/>
     public override IAsyncEnumerable<AgentRunResponseUpdate> RunStreamingAsync(IEnumerable<ChatMessage> messages, AgentThread? thread = null, AgentRunOptions? options = null, CancellationToken cancellationToken = default)
         => agent.RunStreamingAsync(messages, thread, options, cancellationToken);
+
+    /// <summary>
+    /// Configured agent options.
+    /// </summary>
+    public ChatClientAgentOptions Options => options;
 
     (ChatClientAgent, ChatClientAgentOptions, IChatClient) Configure(IConfigurationSection configSection)
     {

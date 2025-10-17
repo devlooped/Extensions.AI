@@ -7,5 +7,6 @@
   <Project Path="src/Agents/Agents.csproj" Id="90827430-b415-47d6-aac9-2dbe4911b348" />
   <Project Path="src/Extensions.CodeAnalysis/Extensions.CodeAnalysis.csproj" />
   <Project Path="src/Extensions/Extensions.csproj" />
+  <Project Path="src/SampleChat/SampleChat.csproj" Id="63ca9077-db60-473a-813d-d3bb5befdf35" />
   <Project Path="src/Tests/Tests.csproj" />
 </Solution>

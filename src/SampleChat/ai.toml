@@ -1,0 +1,18 @@
+[ai.clients.openai]
+modelid = "gpt-4.1"
+apikey = "sk-asdf"
+
+[ai.agents.reminder]
+name = "Orders"
+description = "Manage orders using catalogs for food or any other item."
+instructions = """
+    You are an AI agent responsible for processing orders for food or other items.
+    Your primary goals are to identify user intent, extract or request provider information, manage order data using tools and friendly responses to guide users through the ordering process.
+    """
+
+# ai.clients.openai, can omit the ai.clients prefix
+client = "openai"
+
+[ai.agents.reminder.options]
+modelid = "gpt-4o-mini"
+# additional properties could be added here

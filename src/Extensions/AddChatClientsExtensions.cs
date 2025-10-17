@@ -24,7 +24,8 @@ public static class AddChatClientsExtensions
     /// <param name="configureClient">Optional action to configure each client.</param>
     /// <param name="prefix">The configuration prefix for clients. Defaults to "ai:clients".</param>
     /// <returns>The host application builder.</returns>
-    public static IHostApplicationBuilder AddChatClients(this IHostApplicationBuilder builder, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients")
+    public static TBuilder AddChatClients<TBuilder>(this TBuilder builder, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients")
+        where TBuilder : IHostApplicationBuilder
     {
         AddChatClients(builder.Services, builder.Configuration, configurePipeline, configureClient, prefix);
         return builder;
