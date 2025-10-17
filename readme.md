@@ -1,33 +1,141 @@
 ![Icon](assets/img/icon-32.png) Devlooped AI Extensions
 ============
 
-[![License](https://img.shields.io/github/license/devlooped/AI.svg?color=blue)](https://github.com//devlooped/AI/blob/main/license.txt)
-[![Build](https://github.com/devlooped/AI/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/devlooped/AI/actions/workflows/build.yml)
+[![EULA](https://img.shields.io/badge/EULA-OSMF-blue?labelColor=black&color=C9FF30)](osmfeula.txt)
+[![OSS](https://img.shields.io/github/license/devlooped/oss.svg?color=blue)](license.txt) 
 
 Extensions for Microsoft.Agents.AI and Microsoft.Extensions.AI.
 
-## Open Source Maintenance Fee
+<!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
 
-To ensure the long-term sustainability of this project, use of this project requires an 
-[Open Source Maintenance Fee](https://opensourcemaintenancefee.org). While the source 
-code is freely available under the terms of the [MIT License](./license.txt), all other aspects of the 
-project --including opening or commenting on issues, participating in discussions and 
-downloading releases-- require [adherence to the Maintenance Fee](./osmfeula.txt).
+# Devlooped.Agents.AI
 
-In short, if you use this project to generate revenue, the [Maintenance Fee is required](./osmfeula.txt).
+[![Version](https://img.shields.io/nuget/vpre/Devlooped.Agents.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Agents.AI)
+[![Downloads](https://img.shields.io/nuget/dt/Devlooped.Agents.AI.svg?color=green)](https://www.nuget.org/packages/Devlooped.Agents.AI)
 
-To pay the Maintenance Fee, [become a Sponsor](https://github.com/sponsors/devlooped).
+<!-- #agents-title -->
+Extensions for Microsoft.Agents.AI, such as configuration-driven auto-reloading agents.
+<!-- #agents-title -->
+
+<!-- #agents -->
+## Overview
+
+Microsoft.Agents.AI (aka [Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview) 
+is a comprehensive API for building AI agents. Its programatic model (which follows closely 
+the [Microsoft.Extensions.AI](https://learn.microsoft.com/en-us/dotnet/ai/microsoft-extensions-ai) 
+approach) provides maximum flexibility with little prescriptive structure.
+
+This package provides additional extensions to make developing agents easier and more 
+declarative.
+
+## Configurable Agents
+
+Tweaking agent options such as description, instructions, chat client to use and its 
+options, etc. is very common during development/testing. This package provides the ability to 
+drive those settings from configuration (with auto-reload support). This makes it far easier 
+to experiment with various combinations of agent instructions, chat client providers and 
+options, and model parameters without changing code, recompiling or even restarting the application:
+
+> [!NOTE]
+> This example shows integration with configurable chat clients feature from the 
+> Devlooped.Extensions.AI package, but any `IChatClient` registered in the DI container 
+> with a matching key can be used.
+
+```json
+{
+  "AI": {
+    "Agents": {
+      "MyAgent": {
+        "Description": "An AI agent that helps with customer support.",
+        "Instructions": "You are a helpful assistant for customer support.",
+        "Client": "Grok",
+        "Options": {
+          "ModelId": "grok-4",
+          "Temperature": 0.5,
+        }
+      }
+    },
+    "Clients": {
+      "Grok": {
+        "Endpoint": "https://api.grok.ai/v1",
+        "ModelId": "grok-4-fast-non-reasoning",
+        "ApiKey": "xai-asdf"
+      }
+    }
+  }
+}
+````
+
+```csharp
+var host = new HostApplicationBuilder(args);
+host.Configuration.AddJsonFile("appsettings.json, optional: false, reloadOnChange: true);
+
+// 👇 implicitly calls AddChatClients
+host.AddAIAgents(); 
+
+var app = host.Build();
+var agent = app.Services.GetRequiredKeyedService<AIAgent>("MyAgent");
+```
+
+Agents are also properly registered in the corresponding Microsoft Agent Framework 
+[AgentCatalog](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.hosting.agentcatalog):
+
+```csharp
+var catalog = app.Services.GetRequiredService<AgentCatalog>();
+await foreach (AIAgent agent in catalog.GetAgentsAsync())
+{
+    var metadata = agent.GetService<AIAgentMetadata>();
+    Console.WriteLine($"Agent: {agent.Name} by {metadata.ProviderName}");
+}
+```
+
+<!-- #agents -->
 
 # Devlooped.Extensions.AI
 
 [![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
 [![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.svg?color=green)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
 
-<!-- #description -->
+<!-- #extensions-title -->
 Extensions for Microsoft.Extensions.AI
-<!-- #description -->
+<!-- #extensions-title -->
 
-<!-- #content -->
+<!-- #extensions -->
+## Configurable Chat Clients
+
+Since tweaking chat options such as model identifier, reasoning effort, verbosity 
+and other model settings is very common, this package provides the ability to 
+drive those settings from configuration (with auto-reload support), both per-client 
+as well as per-request. This makes local development and testing much easier and 
+boosts the dev loop:
+
+```json
+{
+  "AI": {
+    "Clients": {
+      "Grok": {
+        "Endpoint": "https://api.grok.ai/v1",
+        "ModelId": "grok-4-fast-non-reasoning",
+        "ApiKey": "xai-asdf"
+      }
+    }
+  }
+}
+````
+
+```csharp
+var host = new HostApplicationBuilder(args);
+host.Configuration.AddJsonFile("appsettings.json, optional: false, reloadOnChange: true);
+host.AddChatClients();
+
+var app = host.Build();
+var grok = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
+```
+
+Changing the `appsettings.json` file will automatically update the client 
+configuration without restarting the application.
+
+
 ## Grok
 
 Full support for Grok [Live Search](https://docs.x.ai/docs/guides/live-search) 
@@ -332,7 +440,7 @@ IChatClient client = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_
     })
     .Build();
 ```
-<!-- #content -->
+<!-- #extensions -->
 
 <!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
 # Sponsors 

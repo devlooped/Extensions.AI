@@ -44,9 +44,22 @@
   </ItemGroup>
 
   <Target Name="UpdateSdkPreviewVersion" BeforeTargets="GetPackageContents">
-    <!-- Update packaging version targets -->
-    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltWithSdkPreview" Value="$(_NETCoreSdkIsPreview)" />
-    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltSdkPreviewVersion" Value="$(NETCoreSdkVersion)" />
+    <XmlPeek XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltWithSdkPreview">
+      <Output TaskParameter="Result" PropertyName="BuiltWithSdkPreview" />
+    </XmlPeek>
+    <XmlPeek XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltSdkPreviewVersion">
+      <Output TaskParameter="Result" PropertyName="BuiltSdkPreviewVersion" />
+    </XmlPeek>
+    
+    <!-- Update packaging version targets if changed -->
+    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" 
+             Query="/Project/PropertyGroup/BuiltWithSdkPreview" 
+             Value="$(_NETCoreSdkIsPreview)" 
+             Condition="'$(_NETCoreSdkIsPreview)' != '$(BuiltWithSdkPreview)'"/>
+    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" 
+             Query="/Project/PropertyGroup/BuiltSdkPreviewVersion" 
+             Value="$(NETCoreSdkVersion)"
+             Condition="'$(NETCoreSdkVersion)' != '$(BuiltSdkPreviewVersion)'"/>
   </Target>
 
 </Project>
