@@ -62,6 +62,30 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void CanGetSectionAndIdFromMetadata()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var metadata = agent.GetService<ConfigurableAIAgentMetadata>();
+
+        Assert.NotNull(metadata);
+        Assert.Equal("bot", metadata.Name);
+        Assert.Equal("ai:agents:bot", metadata.ConfigurationSection);
+    }
+
+    [Fact]
     public void DedentsDescriptionAndInstructions()
     {
         var builder = new HostApplicationBuilder();

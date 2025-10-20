@@ -56,6 +56,31 @@ public class ConfigurableTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void CanGetSectionAndIdFromMetadata()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:Grok:id"] = "groked",
+                ["ai:clients:Grok:modelid"] = "grok-4-fast",
+                ["ai:clients:Grok:ApiKey"] = "xai-asdfasdf",
+                ["ai:clients:Grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var grok = services.GetRequiredKeyedService<IChatClient>("groked");
+        var metadata = grok.GetRequiredService<ConfigurableChatClientMetadata>();
+
+        Assert.Equal("groked", metadata.Id);
+        Assert.Equal("ai:clients:Grok", metadata.ConfigurationSection);
+    }
+
+    [Fact]
     public void CanOverrideClientId()
     {
         var configuration = new ConfigurationBuilder()
