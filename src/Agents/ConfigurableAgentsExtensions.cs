@@ -1,18 +1,20 @@
 ﻿using System.ComponentModel;
+using Devlooped.Agents.AI;
 using Devlooped.Extensions.AI;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
-namespace Devlooped.Agents.AI;
+namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Adds configuration-driven agents to an application host.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
-public static class AddAIAgentsExtensions
+public static class ConfigurableAgentsExtensions
 {
     /// <summary>
     /// Adds AI agents to the host application builder based on configuration.
@@ -52,8 +54,17 @@ public static class AddAIAgentsExtensions
 
                 return agent;
             });
+
+            // Also register for case-insensitive lookup, but without duplicating the entry in 
+            // the AgentCatalog, since that will always resolve from above.
+            builder.Services.TryAdd(ServiceDescriptor.KeyedSingleton(new ServiceKey(name), (sp, key)
+                => sp.GetRequiredKeyedService<AIAgent>(name)));
         }
 
         return builder;
     }
+
+    /// <summary>Gets an AI agent by name (case-insensitive) from the service provider.</summary>
+    public static AIAgent? GetIAAgent(this IServiceProvider services, string name)
+        => services.GetKeyedService<AIAgent>(name) ?? services.GetKeyedService<AIAgent>(new ServiceKey(name));
 }

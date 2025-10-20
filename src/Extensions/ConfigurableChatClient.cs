@@ -3,7 +3,6 @@ using System.ComponentModel;
 using Azure;
 using Azure.AI.Inference;
 using Azure.AI.OpenAI;
-using Azure.Core;
 using Devlooped.Extensions.AI.Grok;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
@@ -58,11 +57,11 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         => innerClient.GetResponseAsync(messages, options, cancellationToken);
     /// <inheritdoc/>
-    public object? GetService(Type serviceType, object? serviceKey = null)
-        => innerClient.GetService(serviceType, serviceKey);
-    /// <inheritdoc/>
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         => innerClient.GetStreamingResponseAsync(messages, options, cancellationToken);
+    /// <inheritdoc/>
+    public object? GetService(Type serviceType, object? serviceKey = null)
+        => innerClient.GetService(serviceType, serviceKey);
 
     /// <summary>Exposes the optional <see cref="ClientPipelineOptions"/> configured for the client.</summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
