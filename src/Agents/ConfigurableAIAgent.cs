@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text.Json;
 using Devlooped.Extensions.AI;
 using Devlooped.Extensions.AI.Grok;
 using Microsoft.Agents.AI;
@@ -23,8 +24,9 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     readonly Action<string, ChatClientAgentOptions>? configure;
     IDisposable reloadToken;
     ChatClientAgent agent;
-    IChatClient chat;
     ChatClientAgentOptions options;
+    IChatClient chat;
+    AIAgentMetadata metadata;
 
     public ConfigurableAIAgent(IServiceProvider services, string section, string name, Action<string, ChatClientAgentOptions>? configure)
     {
@@ -38,7 +40,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
         this.name = Throw.IfNullOrEmpty(name);
         this.configure = configure;
 
-        (agent, options, chat) = Configure(configuration.GetRequiredSection(section));
+        (agent, options, chat, metadata) = Configure(configuration.GetRequiredSection(section));
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
@@ -50,6 +52,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     {
         Type t when t == typeof(ChatClientAgentOptions) => options,
         Type t when t == typeof(IChatClient) => chat,
+        Type t when typeof(AIAgentMetadata).IsAssignableFrom(t) => metadata,
         _ => agent.GetService(serviceType, serviceKey)
     };
 
@@ -78,7 +81,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     /// </summary>
     public ChatClientAgentOptions Options => options;
 
-    (ChatClientAgent, ChatClientAgentOptions, IChatClient) Configure(IConfigurationSection configSection)
+    (ChatClientAgent, ChatClientAgentOptions, IChatClient, AIAgentMetadata) Configure(IConfigurationSection configSection)
     {
         var options = configSection.Get<AgentClientOptions>();
         options?.Name ??= name;
@@ -124,7 +127,10 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
 
         LogConfigured(name);
 
-        return (new ChatClientAgent(client, options, services.GetRequiredService<ILoggerFactory>(), services), options, client);
+        var agent = new ChatClientAgent(client, options, services.GetRequiredService<ILoggerFactory>(), services);
+        var metadata = agent.GetService<AIAgentMetadata>() ?? new AIAgentMetadata(provider);
+
+        return (agent, options, client, new ConfigurableAIAgentMetadata(name, section, metadata.ProviderName));
     }
 
     void OnReload(object? state)
@@ -132,7 +138,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
         var configSection = configuration.GetRequiredSection(section);
         reloadToken?.Dispose();
         chat?.Dispose();
-        (agent, options, chat) = Configure(configSection);
+        (agent, options, chat, metadata) = Configure(configSection);
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
@@ -143,4 +149,15 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     {
         public string? Client { get; set; }
     }
+}
+
+/// <summary>Metadata for a <see cref="ConfigurableAIAgent"/>.</summary>
+
+[DebuggerDisplay("Name = {Name}, Section = {ConfigurationSection}, ProviderName = {ProviderName}")]
+public class ConfigurableAIAgentMetadata(string name, string configurationSection, string? providerName) : AIAgentMetadata(providerName)
+{
+    /// <summary>Name of the agent.</summary>
+    public string Name => name;
+    /// <summary>Configuration section where the agent is defined.</summary>
+    public string ConfigurationSection = configurationSection;
 }

@@ -1,4 +1,5 @@
-﻿using System.ClientModel.Primitives;
+﻿using System;
+using System.ClientModel.Primitives;
 using System.ComponentModel;
 using Azure;
 using Azure.AI.Inference;
@@ -25,6 +26,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     readonly Action<string, IChatClient>? configure;
     IDisposable reloadToken;
     IChatClient innerClient;
+    ChatClientMetadata metadata;
     object? options;
 
     /// <summary>
@@ -46,7 +48,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         this.id = Throw.IfNullOrEmpty(id);
         this.configure = configure;
 
-        innerClient = Configure(configuration.GetRequiredSection(section));
+        (innerClient, metadata) = Configure(configuration.GetRequiredSection(section));
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
@@ -54,20 +56,25 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     public void Dispose() => reloadToken?.Dispose();
 
     /// <inheritdoc/>
+    public object? GetService(Type serviceType, object? serviceKey = null) => serviceType switch
+    {
+        Type t when typeof(ChatClientMetadata).IsAssignableFrom(t) => metadata,
+        Type t when t == typeof(IChatClient) => this,
+        _ => innerClient.GetService(serviceType, serviceKey)
+    };
+
+    /// <inheritdoc/>
     public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         => innerClient.GetResponseAsync(messages, options, cancellationToken);
     /// <inheritdoc/>
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         => innerClient.GetStreamingResponseAsync(messages, options, cancellationToken);
-    /// <inheritdoc/>
-    public object? GetService(Type serviceType, object? serviceKey = null)
-        => innerClient.GetService(serviceType, serviceKey);
 
     /// <summary>Exposes the optional <see cref="ClientPipelineOptions"/> configured for the client.</summary>
     [EditorBrowsable(EditorBrowsableState.Never)]
     public object? Options => options;
 
-    IChatClient Configure(IConfigurationSection configSection)
+    (IChatClient, ChatClientMetadata) Configure(IConfigurationSection configSection)
     {
         var options = SetOptions<ConfigurableClientOptions>(configSection);
         Throw.IfNullOrEmpty(options?.ModelId, $"{configSection}:modelid");
@@ -107,7 +114,9 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
 
         LogConfigured(id);
 
-        return client;
+        var metadata = client.GetService<ChatClientMetadata>() ?? new ChatClientMetadata(null, null, null);
+
+        return (client, new ConfigurableChatClientMetadata(id, section, metadata.ProviderName, metadata.ProviderUri, metadata.DefaultModelId));
     }
 
     TOptions? SetOptions<TOptions>(IConfigurationSection section) where TOptions : class
@@ -133,7 +142,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         (innerClient as IDisposable)?.Dispose();
         reloadToken?.Dispose();
 
-        innerClient = Configure(configSection);
+        (innerClient, metadata) = Configure(configSection);
 
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
@@ -158,4 +167,14 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }
     }
+}
+
+/// <summary>Metadata for a <see cref="ConfigurableChatClient"/>.</summary>
+public class ConfigurableChatClientMetadata(string id, string configurationSection, string? providerName, Uri? providerUri, string? defaultModelId)
+    : ChatClientMetadata(providerName, providerUri, defaultModelId)
+{
+    /// <summary>The unique identifier of the configurable client.</summary>
+    public string Id => id;
+    /// <summary>The configuration section used to configure the client.</summary>
+    public string ConfigurationSection => configurationSection;
 }
