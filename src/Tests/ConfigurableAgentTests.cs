@@ -39,6 +39,29 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void CanGetFromAlternativeKey()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:Chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:Chat:apikey"] = "sk-asdfasdf",
+            // NOTE: mismatched case in client id
+            ["ai:agents:bot:client"] = "chat",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>(new ServiceKey("Bot"));
+
+        Assert.Equal("bot", agent.Name);
+        Assert.Same(agent, app.Services.GetIAAgent("Bot"));
+    }
+
+    [Fact]
     public void DedentsDescriptionAndInstructions()
     {
         var builder = new HostApplicationBuilder();

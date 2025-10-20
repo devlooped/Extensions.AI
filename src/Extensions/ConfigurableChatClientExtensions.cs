@@ -1,20 +1,20 @@
 ﻿using System.ComponentModel;
+using Devlooped.Extensions.AI;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 
-namespace Devlooped.Extensions.AI;
+namespace Microsoft.Extensions.DependencyInjection;
 
 /// <summary>
 /// Adds configuration-driven chat clients to an application host or service collection.
 /// </summary>
 [EditorBrowsable(EditorBrowsableState.Never)]
-public static class AddChatClientsExtensions
+public static class ConfigurableChatClientExtensions
 {
     /// <summary>
     /// Adds configuration-driven chat clients to the host application builder.
@@ -69,10 +69,18 @@ public static class AddChatClientsExtensions
                     return client;
                 },
                 options?.Lifetime ?? ServiceLifetime.Singleton));
+
+            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), new ServiceKey(id),
+                factory: (sp, _) => sp.GetRequiredKeyedService<IChatClient>(id),
+                options?.Lifetime ?? ServiceLifetime.Singleton));
         }
 
         return services;
     }
+
+    /// <summary>Gets a chat client by id (case-insensitive) from the service provider.</summary>
+    public static IChatClient? GetChatClient(this IServiceProvider services, string id)
+        => services.GetKeyedService<IChatClient>(id) ?? services.GetKeyedService<IChatClient>(new ServiceKey(id));
 
     internal class ChatClientOptions : OpenAIClientOptions
     {

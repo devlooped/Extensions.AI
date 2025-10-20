@@ -91,7 +91,8 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
 
         var client = services.GetKeyedService<IChatClient>(options?.Client
             ?? throw new InvalidOperationException($"A client must be specified for agent '{name}' in configuration section '{section}'."))
-            ?? throw new InvalidOperationException($"Specified chat client '{options?.Client}' for agent '{name}' is not registered.");
+            ?? services.GetKeyedService<IChatClient>(new ServiceKey(options!.Client))
+            ?? throw new InvalidOperationException($"Specified chat client '{options!.Client}' for agent '{name}' is not registered.");
 
         var provider = client.GetService<ChatClientMetadata>()?.ProviderName;
         ChatOptions? chat = provider == "xai"

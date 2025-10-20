@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Devlooped.Extensions.AI;
 
@@ -31,6 +30,29 @@ public class ConfigurableTests(ITestOutputHelper output)
 
         Assert.Equal("openai", openai.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
+    }
+
+    [Fact]
+    public void CanGetFromAlternativeKey()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:Grok:modelid"] = "grok-4-fast",
+                ["ai:clients:Grok:ApiKey"] = "xai-asdfasdf",
+                ["ai:clients:Grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var grok = services.GetRequiredKeyedService<IChatClient>(new ServiceKey("grok"));
+
+        Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
+        Assert.Same(grok, services.GetChatClient("grok"));
     }
 
     [Fact]
