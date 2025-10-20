@@ -39,6 +39,58 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public void DedentsDescriptionAndInstructions()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+            ["ai:agents:bot:name"] = "chat",
+            ["ai:agents:bot:description"] =
+                """
+
+
+                    Line 1
+                    Line 2
+                    Line 3
+
+                """,
+            ["ai:agents:bot:instructions"] =
+                """
+                        Agent Instructions:
+                            - Step 1
+                            - Step 2
+                            - Step 3
+                """,
+            ["ai:agents:bot:options:temperature"] = "0.5",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+
+        Assert.Equal(
+            """
+            Line 1
+            Line 2
+            Line 3
+            """, agent.Description);
+
+        Assert.Equal(
+            """
+            Agent Instructions:
+                - Step 1
+                - Step 2
+                - Step 3
+            """, agent.GetService<ChatClientAgentOptions>()?.Instructions);
+    }
+
+    [Fact]
     public void CanReloadConfiguration()
     {
         var builder = new HostApplicationBuilder();
