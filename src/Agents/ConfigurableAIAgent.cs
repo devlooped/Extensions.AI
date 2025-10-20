@@ -82,6 +82,8 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     {
         var options = configSection.Get<AgentClientOptions>();
         options?.Name ??= name;
+        options?.Description = options?.Description?.Dedent();
+        options?.Instructions = options?.Instructions?.Dedent();
 
         // If there was a custom id, we must validate it didn't change since that's not supported.
         if (configuration[$"{section}:name"] is { } newname && newname != name)
