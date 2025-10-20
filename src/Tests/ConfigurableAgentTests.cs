@@ -249,5 +249,14 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.Equal(ReasoningEffort.High, grok.ReasoningEffort);
         Assert.Equal(GrokSearch.Off, grok.Search);
     }
+
+    [Fact]
+    public void Task()
+    {
+        var agent = new AgentRunResponse() { AgentId = "agent-123" };
+        var chat = agent.AsChatResponse();
+
+        Assert.Equal("agent-123", chat.AdditionalProperties!["AgentId"]);
+    }
 }
 
