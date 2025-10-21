@@ -1,0 +1,22 @@
+<Project>
+
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkWeb)' == 'true'">
+    <DefineConstants>$(DefineConstants);WEB</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectProperty Include="MSBuildProjectDirectory" />
+    <ProjectProperty Include="BaseOutputPath" />
+    <ProjectProperty Include="BaseIntermediateOutputPath" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update=".env" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
+    <Content Include="*.json;*.ini;*.toml" Exclude="@(Content)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(IsAspireHost)' != 'true'">
+    <Compile Include="$(MSBuildThisFileDirectory)ServiceDefaults.cs" Link="ServiceDefaults.cs" Visible="false" />
+  </ItemGroup>
+
+</Project>

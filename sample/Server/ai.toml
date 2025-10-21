@@ -1,9 +1,11 @@
 [ai.clients.openai]
 modelid = "gpt-4.1"
-apikey = "sk-asdf"
 
-[ai.agents.reminder]
-name = "Orders"
+[ai.clients.grok]
+endpoint = "https://api.x.ai/v1"
+modelid = "grok-4-fast-non-reasoning"
+
+[ai.agents.orders]
 description = "Manage orders using catalogs for food or any other item."
 instructions = """
     You are an AI agent responsible for processing orders for food or other items.

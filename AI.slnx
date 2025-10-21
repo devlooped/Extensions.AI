@@ -4,9 +4,13 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Sample/">
+    <Project Path="sample/Aspire/Aspire.csproj" Id="6166be22-a13f-4074-91a9-b0f3b3a6c4fe" />
+    <Project Path="sample/Client/Client.csproj" />
+    <Project Path="sample/Server/Server.csproj" Id="34619937-085f-453d-bc12-9ab2d4abccb7" />
+  </Folder>
   <Project Path="src/Agents/Agents.csproj" Id="90827430-b415-47d6-aac9-2dbe4911b348" />
   <Project Path="src/Extensions.CodeAnalysis/Extensions.CodeAnalysis.csproj" />
   <Project Path="src/Extensions/Extensions.csproj" />
-  <Project Path="src/SampleChat/SampleChat.csproj" Id="63ca9077-db60-473a-813d-d3bb5befdf35" />
   <Project Path="src/Tests/Tests.csproj" />
 </Solution>
