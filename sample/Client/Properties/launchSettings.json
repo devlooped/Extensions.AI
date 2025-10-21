@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Client": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "applicationUrl": "http://localhost:5117"
+      }
+    }
+  }
+}

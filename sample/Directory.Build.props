@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>b420aaad-e6e3-43d7-8d91-5a07b19f20ab</UserSecretsId>
+  </PropertyGroup>
+</Project>
