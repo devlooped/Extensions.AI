@@ -100,6 +100,42 @@ await foreach (AIAgent agent in catalog.GetAgentsAsync())
 }
 ```
 
+You can of course use any config format supported by .NET configuration, such as 
+TOML which is arguably more human-friendly for hand-editing:
+
+```toml
+[ai.clients.openai]
+modelid = "gpt-4.1"
+
+[ai.clients.grok]
+endpoint = "https://api.x.ai/v1"
+modelid = "grok-4-fast-non-reasoning"
+
+[ai.agents.orders]
+description = "Manage orders using catalogs for food or any other item."
+instructions = """
+
+        You are an AI agent responsible for processing orders for food or other items.
+        Your primary goals are to identify user intent, extract or request provider information, manage order data using tools and friendly responses to guide users through the ordering process.
+
+    """
+
+# ai.clients.openai, can omit the ai.clients prefix
+client = "openai"
+
+[ai.agents.reminder.options]
+modelid = "gpt-4o-mini"
+```
+
+This can be used by leveraging [Tomlyn.Extensions.Configuration](https://www.nuget.org/packages/Tomlyn.Extensions.Configuration).
+
+> [!NOTE]
+> This package will automatically dedent and trim start and end newlines from 
+> multi-line instructions and descriptions when applying the configuration, 
+> avoiding unnecessary tokens being used for indentation while allowing flexible 
+> formatting in the config file.
+
+
 <!-- #agents -->
 
 # Devlooped.Extensions.AI
