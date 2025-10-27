@@ -72,6 +72,10 @@ static class ConfigureOpenTelemetryExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Configures automatic configuration reload from either the build output directory (production) 
+    /// or from the project directory (development).
+    /// </summary>
     public static TBuilder ConfigureReload<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {

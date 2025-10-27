@@ -114,10 +114,8 @@ modelid = "grok-4-fast-non-reasoning"
 [ai.agents.orders]
 description = "Manage orders using catalogs for food or any other item."
 instructions = """
-
         You are an AI agent responsible for processing orders for food or other items.
         Your primary goals are to identify user intent, extract or request provider information, manage order data using tools and friendly responses to guide users through the ordering process.
-
     """
 
 # ai.clients.openai, can omit the ai.clients prefix
@@ -134,6 +132,86 @@ This can be used by leveraging [Tomlyn.Extensions.Configuration](https://www.nug
 > multi-line instructions and descriptions when applying the configuration, 
 > avoiding unnecessary tokens being used for indentation while allowing flexible 
 > formatting in the config file.
+
+### Extensible AI Contexts
+
+The Microsoft [agent framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview) allows extending 
+agents with dynamic context via [AIContextProvider](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.aicontextprovider) 
+and `AIContext`. This package supports dynamic extension of a configured agent in the following ways (in order of priority): 
+
+1. A keyed service `AIContextProviderFactory` with the same name as the agent will be set up just as if you had 
+   set it manually as the [ChatClientAgentOptions.AIContextProviderFactory](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.chatclientagentoptions.aicontextproviderfactory) 
+   in code.
+2. A keyed service `AIContextProvider` with the same name as the agent.
+3. A keyed service `AIContext` with the same name as the agent.
+4. Configured `AIContext` sections pulled in via `use` setting for an agent.
+
+The first three alternatives enable auto-wiring of context providers or contexts registered in the service collection and 
+are pretty self-explanatory. The last alternative allows even more declarative scenarios involving reusable and cross-cutting 
+context definitions. 
+
+For example, let's say you want to provide consistent tone for all your agents. It would be tedious, repetitive and harder 
+to maintain if you had to set that in each agent's instructions. Instead, you can define a reusable context named `tone` such as:
+
+```toml
+[ai.context.tone]
+instructions = """\
+    Default to using spanish language, using argentinean "voseo" in your responses \
+    (unless the user explicitly talks in a different language). \
+    This means using "vos" instead of "tú" and conjugating verbs accordingly. \
+    Don't use the expression "pa'" instead of "para". Don't mention the word "voseo".
+    """
+```
+
+Then, you can reference that context in any agent using the `use` setting:
+```toml
+[ai.agents.support]
+description = "An AI agent that helps with customer support."
+instructions = "..."
+client = "grok"
+use = ["tone"]
+
+[ai.agents.sales]
+description = "An AI agent that helps with sales inquiries."
+instructions = "..."
+client = "openai"
+use = ["tone"]
+```
+
+Configured contexts can provide all three components of an `AIContext`: instructions, messages and tools, such as:
+
+```toml
+[ai.context.timezone]
+instructions = "Always assume the user's timezone is America/Argentina/Buenos_Aires unless specified otherwise."
+messages = [
+    { system = "You are aware of the current date and time in America/Argentina/Buenos_Aires." }
+]
+tools = ["get_date"]
+```
+
+If multiple contexts are specified in `use`, they are applied in order, concatenating their instructions, messages and tools.
+
+The `tools` section allows specifying tool names registered in the DI container, such as:
+
+```csharp
+services.AddKeyedSingleton("get_date", AIFunctionFactory.Create(() => DateTimeOffset.Now, "get_date"));
+```
+
+This tool will be automatically wired into any agent that uses the `timezone` context above.
+
+As a shortcut when you want to just pull in a tool from DI into an agent's context without having to define an entire 
+section just for that, you can specify the tool name directly in the `use` array:
+
+```toml
+[ai.agents.support]
+description = "An AI agent that helps with customer support."
+instructions = "..."
+client = "grok"
+use = ["tone", "get_date"]
+```
+
+This enables a flexible and convenient mix of static and dynamic context for agents, all driven 
+from configuration.
 
 
 <!-- #agents -->

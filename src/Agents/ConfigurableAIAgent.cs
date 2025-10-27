@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+﻿using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using Devlooped.Extensions.AI;
 using Devlooped.Extensions.AI.Grok;
@@ -132,18 +134,46 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
                 foreach (var use in options.Use)
                 {
                     var context = services.GetKeyedService<AIContext>(use);
-                    if (context is null)
-                    {
-                        var function = services.GetKeyedService<AITool>(use) ??
-                            services.GetKeyedService<AIFunction>(use) ??
-                            throw new InvalidOperationException($"Specified AI context '{use}' for agent '{name}' is not registered as either an {nameof(AIContent)} or an {nameof(AITool)}.");
-
-                        contexts.Add(new AIContext { Tools = [function] });
-                    }
-                    else
+                    if (context is not null)
                     {
                         contexts.Add(context);
+                        continue;
                     }
+
+                    var function = services.GetKeyedService<AITool>(use) ?? services.GetKeyedService<AIFunction>(use);
+                    if (function is not null)
+                    {
+                        contexts.Add(new AIContext { Tools = [function] });
+                        continue;
+                    }
+
+                    if (configuration.GetSection("ai:context:" + use) is { } ctxSection &&
+                        ctxSection.Get<AIContextConfiguration>() is { } ctxConfig)
+                    {
+                        var configured = new AIContext();
+                        if (ctxConfig.Instructions is not null)
+                            configured.Instructions = ctxConfig.Instructions.Dedent();
+                        if (ctxConfig.Messages is { Count: > 1 } messages)
+                            configured.Messages = messages;
+
+                        if (ctxConfig.Tools is not null)
+                        {
+                            foreach (var toolName in ctxConfig.Tools)
+                            {
+                                var tool = services.GetKeyedService<AITool>(toolName) ??
+                                    services.GetKeyedService<AIFunction>(toolName) ??
+                                    throw new InvalidOperationException($"Specified tool '{toolName}' for AI context '{ctxSection.Path}:tools' is not registered, and is required by agent section '{configSection.Path}'.");
+
+                                configured.Tools ??= [];
+                                configured.Tools.Add(tool);
+                            }
+                        }
+
+                        contexts.Add(configured);
+                        continue;
+                    }
+
+                    throw new InvalidOperationException($"Specified AI context '{use}' for agent '{name}' is not registered as either {nameof(AIContent)}, {nameof(AITool)} or configuration section 'ai:context:{use}'.");
                 }
 
                 options.AIContextProviderFactory = _ => new CompositeAIContextProvider(contexts);
@@ -200,3 +230,23 @@ public class ConfigurableAIAgentMetadata(string name, string configurationSectio
     /// <summary>Configuration section where the agent is defined.</summary>
     public string ConfigurationSection = configurationSection;
 }
+
+class AIContextConfiguration
+{
+    public string? Instructions { get; set; }
+
+    public IList<ChatMessage>? Messages =>
+        MessageConfigurations?.Select(config =>
+            config.System is not null ? new ChatMessage(ChatRole.System, config.System) :
+            config.User is not null ? new ChatMessage(ChatRole.User, config.User) :
+            config.Assistant is not null ? new ChatMessage(ChatRole.Assistant, config.Assistant) :
+            null).Where(x => x is not null).Cast<ChatMessage>().ToList();
+
+    public IList<string>? Tools { get; set; }
+
+    [EditorBrowsable(EditorBrowsableState.Never)]
+    [ConfigurationKeyName("Messages")]
+    public MessageConfiguration[]? MessageConfigurations { get; set; }
+}
+
+record MessageConfiguration(string? System = default, string? User = default, string? Assistant = default);

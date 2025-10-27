@@ -1,12 +1,10 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text;
 using Devlooped.Extensions.AI;
-using DotNetEnv.Configuration;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Hosting.OpenAI;
 using Microsoft.Extensions.AI;
 using Spectre.Console;
-using Tomlyn.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +17,9 @@ if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 
 builder.AddServiceDefaults();
 builder.ConfigureReload();
+
+// 👇 showcases using dynamic AI context from configuration
+builder.Services.AddKeyedSingleton("get_date", AIFunctionFactory.Create(() => DateTimeOffset.UtcNow, "get_date"));
 
 // 👇 implicitly calls AddChatClients
 builder.AddAIAgents();
