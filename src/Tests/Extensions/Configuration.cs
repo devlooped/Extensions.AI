@@ -1,10 +1,15 @@
 ﻿using System.Reflection;
+using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Tomlyn.Extensions.Configuration;
 
 public static class ConfigurationExtensions
 {
+    public static IConfigurationBuilder AddToml(this IConfigurationBuilder builder, string contents)
+        => builder.AddTomlStream(new MemoryStream(Encoding.UTF8.GetBytes(contents)));
+
     public static IConfiguration Configuration { get; } = new ConfigurationBuilder()
         .AddEnvironmentVariables()
         .AddUserSecrets(Assembly.GetExecutingAssembly())

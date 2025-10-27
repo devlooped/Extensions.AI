@@ -113,7 +113,45 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
                 services.GetService<AIContextProviderFactory>();
 
             if (contextFactory is not null)
+            {
+                if (options.Use?.Count > 0)
+                    throw new InvalidOperationException($"Invalid simultaneous use of keyed service {nameof(AIContextProviderFactory)} and '{section}:use' in configuration.");
+
                 options.AIContextProviderFactory = contextFactory.CreateProvider;
+            }
+            else if (services.GetKeyedService<AIContextProvider>(name) is { } contextProvider)
+            {
+                if (options.Use?.Count > 0)
+                    throw new InvalidOperationException($"Invalid simultaneous use of keyed service {nameof(AIContextProvider)} and '{section}:use' in configuration.");
+
+                options.AIContextProviderFactory = _ => contextProvider;
+            }
+            else if (options.Use?.Count > 0)
+            {
+                var contexts = new List<AIContext>();
+                foreach (var use in options.Use)
+                {
+                    var context = services.GetKeyedService<AIContext>(use);
+                    if (context is null)
+                    {
+                        var function = services.GetKeyedService<AITool>(use) ??
+                            services.GetKeyedService<AIFunction>(use) ??
+                            throw new InvalidOperationException($"Specified AI context '{use}' for agent '{name}' is not registered as either an {nameof(AIContent)} or an {nameof(AITool)}.");
+
+                        contexts.Add(new AIContext { Tools = [function] });
+                    }
+                    else
+                    {
+                        contexts.Add(context);
+                    }
+                }
+
+                options.AIContextProviderFactory = _ => new CompositeAIContextProvider(contexts);
+            }
+        }
+        else if (options.Use?.Count > 0)
+        {
+            throw new InvalidOperationException($"Invalid simultaneous use of {nameof(ChatClientAgentOptions)}.{nameof(ChatClientAgentOptions.AIContextProviderFactory)} and '{section}:use' in configuration.");
         }
 
         if (options.ChatMessageStoreFactory is null)
@@ -148,6 +186,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     internal class AgentClientOptions : ChatClientAgentOptions
     {
         public string? Client { get; set; }
+        public IList<string>? Use { get; set; }
     }
 }
 

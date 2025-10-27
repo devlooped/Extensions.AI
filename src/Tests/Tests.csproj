@@ -5,6 +5,7 @@
     <NoWarn>OPENAI001;$(NoWarn)</NoWarn>
     <LangVersion>Preview</LangVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <RootNamespace>Devlooped</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +25,8 @@
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.10.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+
+    <PackageReference Include="Tomlyn.Extensions.Configuration" Version="1.0.6" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,8 +41,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update=".env" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Content\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <Content Update="Content\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="*.json;*.ini;*.toml" Exclude="@(Content)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
