@@ -1,5 +1,22 @@
 # Changelog
 
+## [v0.9.0-rc](https://github.com/devlooped/AI/tree/v0.9.0-rc) (2025-10-27)
+
+[Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-beta...v0.9.0-rc)
+
+:sparkles: Implemented enhancements:
+
+- Add support for configurable AI context and auto-wiring of tools [\#135](https://github.com/devlooped/AI/pull/135) (@kzu)
+- Add support for configurable and composable AI contexts [\#134](https://github.com/devlooped/AI/pull/134) (@kzu)
+- Expose configuration metadata from configurable agent/chat [\#130](https://github.com/devlooped/AI/pull/130) (@kzu)
+- Allow case-insensitive agents and clients resolution [\#129](https://github.com/devlooped/AI/pull/129) (@kzu)
+- Add automatic dedent of description and instructions [\#128](https://github.com/devlooped/AI/pull/128) (@kzu)
+- Make sure we always have the AgentId in the ChatResponse [\#127](https://github.com/devlooped/AI/pull/127) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Add comprehensive sample with both server and client [\#131](https://github.com/devlooped/AI/pull/131) (@kzu)
+
 ## [v0.9.0-beta](https://github.com/devlooped/AI/tree/v0.9.0-beta) (2025-10-17)
 
 [Full Changelog](https://github.com/devlooped/AI/compare/v0.8.3...v0.9.0-beta)
