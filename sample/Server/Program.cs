@@ -20,6 +20,10 @@ builder.ConfigureReload();
 
 // 👇 showcases using dynamic AI context from configuration
 builder.Services.AddKeyedSingleton("get_date", AIFunctionFactory.Create(() => DateTimeOffset.UtcNow, "get_date"));
+// dummy ones for illustration
+builder.Services.AddKeyedSingleton("create_order", AIFunctionFactory.Create(() => "OK", "create_order"));
+builder.Services.AddKeyedSingleton("cancel_order", AIFunctionFactory.Create(() => "OK", "cancel_order"));
+builder.Services.AddKeyedSingleton("save_notes", AIFunctionFactory.Create((string notes) => true, "save_notes"));
 
 // 👇 implicitly calls AddChatClients
 builder.AddAIAgents();
