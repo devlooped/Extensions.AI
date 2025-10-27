@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
+using Tomlyn.Extensions.Configuration;
 
 namespace Devlooped.Agents.AI;
 
@@ -179,34 +180,6 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void AssignsContextProviderFromKeyedService()
-    {
-        var builder = new HostApplicationBuilder();
-        var context = Mock.Of<AIContextProvider>();
-
-        builder.Services.AddKeyedSingleton<AIContextProviderFactory>("bot",
-            Mock.Of<AIContextProviderFactory>(x
-                => x.CreateProvider(It.IsAny<ChatClientAgentOptions.AIContextProviderFactoryContext>()) == context));
-
-        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
-            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
-            ["ai:agents:bot:client"] = "chat",
-            ["ai:agents:bot:options:temperature"] = "0.5",
-        });
-
-        builder.AddAIAgents();
-
-        var app = builder.Build();
-        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
-        var options = agent.GetService<ChatClientAgentOptions>();
-
-        Assert.NotNull(options?.AIContextProviderFactory);
-        Assert.Same(context, options?.AIContextProviderFactory?.Invoke(new ChatClientAgentOptions.AIContextProviderFactoryContext()));
-    }
-
-    [Fact]
     public void AssignsContextProviderFromService()
     {
         var builder = new HostApplicationBuilder();
@@ -350,12 +323,248 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void Task()
+    public void UseContextProviderFactoryFromKeyedService()
     {
-        var agent = new AgentRunResponse() { AgentId = "agent-123" };
-        var chat = agent.AsChatResponse();
+        var builder = new HostApplicationBuilder();
+        var context = Mock.Of<AIContextProvider>();
 
-        Assert.Equal("agent-123", chat.AdditionalProperties!["AgentId"]);
+        builder.Services.AddKeyedSingleton<AIContextProviderFactory>("bot",
+            Mock.Of<AIContextProviderFactory>(x
+                => x.CreateProvider(It.IsAny<ChatClientAgentOptions.AIContextProviderFactoryContext>()) == context));
+
+        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ai:clients:chat:modelid"] = "gpt-4.1-nano",
+            ["ai:clients:chat:apikey"] = "sk-asdfasdf",
+            ["ai:agents:bot:client"] = "chat",
+            ["ai:agents:bot:options:temperature"] = "0.5",
+        });
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        Assert.Same(context, options?.AIContextProviderFactory?.Invoke(new ChatClientAgentOptions.AIContextProviderFactoryContext()));
+    }
+
+    [Fact]
+    public async Task UseContextProviderFromKeyedServiceAsync()
+    {
+        var builder = new HostApplicationBuilder();
+        var context = new AIContext();
+
+        var provider = new Mock<AIContextProvider>();
+        provider
+            .Setup(x => x.InvokingAsync(It.IsAny<AIContextProvider.InvokingContext>(), default(CancellationToken)))
+            .ReturnsAsync(context);
+
+        builder.Services.AddKeyedSingleton("chat", provider.Object);
+
+        builder.Configuration.AddToml(
+            """"
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+            
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            """");
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+
+        var actualProvider = options?.AIContextProviderFactory?.Invoke(new());
+
+        Assert.NotNull(actualProvider);
+
+        Assert.Same(context, await actualProvider.InvokingAsync(new([]), default));
+    }
+
+    [Fact]
+    public void UseAndContextProviderFactoryIncompatible()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            """"
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["voseo"]
+
+            [ai.context.voseo]
+            instructions = """\
+                Default to using spanish language, using argentinean "voseo" in your responses \
+                (unless the user explicitly talks in a different language). \
+                This means using "vos" instead of "tú" and conjugating verbs accordingly. \
+                Don't use the expression "pa'" instead of "para". Don't mention the word "voseo".
+                """            
+            """");
+
+        builder.AddAIAgents(configureOptions: (name, options)
+            => options.AIContextProviderFactory = context => Mock.Of<AIContextProvider>());
+
+        var app = builder.Build();
+
+        var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
+
+        Assert.Contains("ai:agents:chat:use", exception.Message);
+    }
+
+    [Fact]
+    public void UseAndContextProviderIncompatible()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            """"
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["voseo"]
+
+            [ai.context.voseo]
+            instructions = """\
+                Default to using spanish language, using argentinean "voseo" in your responses \
+                (unless the user explicitly talks in a different language). \
+                This means using "vos" instead of "tú" and conjugating verbs accordingly. \
+                Don't use the expression "pa'" instead of "para". Don't mention the word "voseo".
+                """            
+            """");
+
+        builder.Services.AddKeyedSingleton("chat", Mock.Of<AIContextProvider>());
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
+
+        Assert.Contains("ai:agents:chat:use", exception.Message);
+    }
+
+    [Fact]
+    public async Task UseAIContextFromKeyedServiceAsync()
+    {
+        var builder = new HostApplicationBuilder();
+        var voseo = new AIContext { Instructions = "voseo" };
+
+        builder.Configuration.AddToml(
+            """"
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+            
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["voseo"]
+            """");
+
+        builder.Services.AddKeyedSingleton("voseo", voseo);
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        var actualProvider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(actualProvider);
+
+        var actualContext = await actualProvider.InvokingAsync(new([]), default);
+
+        Assert.Same(voseo, await actualProvider.InvokingAsync(new([]), default));
+    }
+
+    [Fact]
+    public async Task UseAggregatedAIContextsFromKeyedServiceAsync()
+    {
+        var builder = new HostApplicationBuilder();
+        var voseo = new AIContext { Instructions = "voseo" };
+        var formatting = new AIContext { Instructions = "formatting" };
+
+        builder.Configuration.AddToml(
+            """"
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+            
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["voseo", "formatting"]
+            """");
+
+        builder.Services.AddKeyedSingleton("voseo", voseo);
+        builder.Services.AddKeyedSingleton("formatting", formatting);
+
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        var actualProvider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(actualProvider);
+
+        var actualContext = await actualProvider.InvokingAsync(new([]), default);
+
+        Assert.StartsWith(voseo.Instructions, actualContext.Instructions);
+        Assert.EndsWith(formatting.Instructions, actualContext.Instructions);
+    }
+
+    [Fact]
+    public async Task UseAIToolFromKeyedServiceAsync()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            """"
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+            
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["get_date"]
+            """");
+
+        AITool tool = AIFunctionFactory.Create(() => DateTimeOffset.Now, "get_date");
+        builder.Services.AddKeyedSingleton("get_date", tool);
+        builder.AddAIAgents();
+
+        var app = builder.Build();
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        var provider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(provider);
+
+        var context = await provider.InvokingAsync(new([]), default);
+
+        Assert.NotNull(context.Tools);
+        Assert.Single(context.Tools);
+        Assert.Same(tool, context.Tools[0]);
     }
 }
 
