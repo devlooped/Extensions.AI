@@ -3,45 +3,65 @@ using Devlooped.Extensions.AI;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Spectre.Console;
 using Spectre.Console.Json;
 
 public static class ConsoleExtensions
 {
-    public static async ValueTask RenderAgentsAsync(this IServiceProvider services, IServiceCollection collection)
+    extension(IServiceProvider services)
     {
-        var catalog = services.GetRequiredService<AgentCatalog>();
-        var settings = new JsonSerializerSettings
+        public async ValueTask RenderAgentsAsync(IServiceCollection collection)
         {
-            NullValueHandling = NullValueHandling.Include,
-            DefaultValueHandling = DefaultValueHandling.Ignore
-        };
-
-        // List configured clients
-        foreach (var description in collection.AsEnumerable().Where(x => x.ServiceType == typeof(IChatClient) && x.IsKeyedService && x.ServiceKey is string))
-        {
-            var client = services.GetKeyedService<IChatClient>(description.ServiceKey);
-            if (client is null)
-                continue;
-
-            var metadata = client.GetService<ConfigurableChatClientMetadata>();
-            var chatopt = (client as ConfigurableChatClient)?.Options;
-
-            AnsiConsole.Write(new Panel(new JsonText(JsonConvert.SerializeObject(new { Metadata = metadata, Options = chatopt }, settings)))
+            var catalog = services.GetRequiredService<AgentCatalog>();
+            var settings = new JsonSerializerSettings
             {
-                Header = new PanelHeader($"| 💬 {metadata?.Id} from {metadata?.ConfigurationSection} |"),
-            });
+                NullValueHandling = NullValueHandling.Include,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                ContractResolver = new IgnoreDelegatePropertiesResolver(),
+            };
+
+            // List configured clients
+            foreach (var description in collection.AsEnumerable().Where(x => x.ServiceType == typeof(IChatClient) && x.IsKeyedService && x.ServiceKey is string))
+            {
+                var client = services.GetKeyedService<IChatClient>(description.ServiceKey);
+                if (client is null)
+                    continue;
+
+                var metadata = client.GetService<ConfigurableChatClientMetadata>();
+                var chatopt = (client as ConfigurableChatClient)?.Options;
+
+                AnsiConsole.Write(new Panel(new JsonText(JsonConvert.SerializeObject(new { Metadata = metadata, Options = chatopt }, settings)))
+                {
+                    Header = new PanelHeader($"| 💬 {metadata?.Id} from {metadata?.ConfigurationSection} |"),
+                });
+            }
+
+            // List configured agents
+            await foreach (var agent in catalog.GetAgentsAsync())
+            {
+                var metadata = agent.GetService<ConfigurableAIAgentMetadata>();
+
+                AnsiConsole.Write(new Panel(new JsonText(JsonConvert.SerializeObject(new { Agent = agent, Metadata = metadata }, settings)))
+                {
+                    Header = new PanelHeader($"| 🤖 {agent.DisplayName} from {metadata?.ConfigurationSection} |"),
+                });
+            }
         }
+    }
 
-        // List configured agents
-        await foreach (var agent in catalog.GetAgentsAsync())
+    class IgnoreDelegatePropertiesResolver : DefaultContractResolver
+    {
+        protected override JsonProperty CreateProperty(System.Reflection.MemberInfo member, MemberSerialization memberSerialization)
         {
-            var metadata = agent.GetService<ConfigurableAIAgentMetadata>();
+            var property = base.CreateProperty(member, memberSerialization);
 
-            AnsiConsole.Write(new Panel(new JsonText(JsonConvert.SerializeObject(new { Agent = agent, Metadata = metadata }, settings)))
+            if (property.PropertyType != null && typeof(Delegate).IsAssignableFrom(property.PropertyType))
             {
-                Header = new PanelHeader($"| 🤖 {agent.DisplayName} from {metadata?.ConfigurationSection} |"),
-            });
+                property.ShouldSerialize = _ => false;
+            }
+
+            return property;
         }
     }
 }

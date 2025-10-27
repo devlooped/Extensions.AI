@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
+using OpenAI.Assistants;
 using Tomlyn.Extensions.Configuration;
 
 namespace Devlooped.Agents.AI;
@@ -406,12 +407,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
             use = ["voseo"]
 
             [ai.context.voseo]
-            instructions = """\
-                Default to using spanish language, using argentinean "voseo" in your responses \
-                (unless the user explicitly talks in a different language). \
-                This means using "vos" instead of "tú" and conjugating verbs accordingly. \
-                Don't use the expression "pa'" instead of "para". Don't mention the word "voseo".
-                """            
+            instructions = 'Default to using spanish language, using argentinean "voseo" in your responses'
             """");
 
         builder.AddAIAgents(configureOptions: (name, options)
@@ -565,6 +561,114 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.NotNull(context.Tools);
         Assert.Single(context.Tools);
         Assert.Same(tool, context.Tools[0]);
+    }
+
+    [Fact]
+    public async Task UseAIContextFromSection()
+    {
+        var builder = new HostApplicationBuilder();
+        var voseo =
+            """
+            Default to using spanish language, using argentinean "voseo" in your responses.
+            """;
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["default"]
+
+            [ai.context.default]
+            instructions = '{{voseo}}'
+            messages = [
+                { system = "You are strictly professional." },
+                { user = "Hey you!"},
+                { assistant = "Hello there. How can I assist you today?" }
+            ]
+            tools = ["get_date"]
+            """);
+
+        var tool = AIFunctionFactory.Create(() => DateTimeOffset.Now, "get_date");
+        builder.Services.AddKeyedSingleton("get_date", tool);
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        var provider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(provider);
+
+        var context = await provider.InvokingAsync(new([]), default);
+
+        Assert.NotNull(context.Instructions);
+        Assert.Equal(voseo, context.Instructions);
+        Assert.Equal(3, context.Messages?.Count);
+        Assert.Single(context.Messages!, x => x.Role == ChatRole.System && x.Text == "You are strictly professional.");
+        Assert.Single(context.Messages!, x => x.Role == ChatRole.User && x.Text == "Hey you!");
+        Assert.Single(context.Messages!, x => x.Role == ChatRole.Assistant && x.Text == "Hello there. How can I assist you today?");
+        Assert.Same(tool, context.Tools?.First());
+    }
+
+    [Fact]
+    public async Task MissingToolAIContextFromSectionThrows()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["default"]
+
+            [ai.context.default]
+            tools = ["get_date"]
+            """);
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
+
+        Assert.Contains("get_date", exception.Message);
+        Assert.Contains("ai:context:default:tools", exception.Message);
+        Assert.Contains("ai:agents:chat", exception.Message);
+    }
+
+    [Fact]
+    public async Task UnknownUseThrows()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["foo"]
+            """);
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
+
+        Assert.Contains("foo", exception.Message);
     }
 }
 
