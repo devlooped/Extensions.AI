@@ -12,7 +12,12 @@ namespace Devlooped.Extensions.AI;
 /// </summary>
 public class JsonConsoleOptions
 {
-    static readonly JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.Web);
+    static readonly JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition =
+            System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull |
+            System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault
+    };
 
     /// <summary>
     /// Default settings for rendering JSON output to the console, which include:
