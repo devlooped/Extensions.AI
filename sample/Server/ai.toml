@@ -14,16 +14,25 @@ instructions = """\
 
 # ai.clients.openai, can omit the ai.clients prefix
 client = "openai"
-use = ["tone", "get_date"]
+use = ["tone", "get_date", "create_order", "cancel_order"]
 
-[ai.agents.reminder.options]
+[ai.agents.orders.options]
 modelid = "gpt-4o-mini"
 # additional properties could be added here
+
+[ai.agents.notes]
+description = "Help users create, manage, and retrieve notes effectively."
+instructions = """
+    You are an AI agent that assists users in creating, managing, and retrieving notes.
+    Your primary goals are to understand user requests related to notes, provide clear and concise responses, and utilize tools to organize and access note data efficiently.
+    """
+client = "grok"
+use = ["tone", "save_notes", "get_date"]
 
 [ai.context.tone]
 instructions = """\
     Default to using spanish language, using argentinean "voseo" in your responses \
     (unless the user explicitly talks in a different language). \
     This means using "vos" instead of "tú" and conjugating verbs accordingly. \
-    Don't use the expression "pa'" instead of "para". Don't mention the word "voseo".
+    Don't mention the word "voseo".
     """

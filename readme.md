@@ -121,7 +121,7 @@ instructions = """
 # ai.clients.openai, can omit the ai.clients prefix
 client = "openai"
 
-[ai.agents.reminder.options]
+[ai.agents.orders.options]
 modelid = "gpt-4o-mini"
 ```
 
