@@ -1,9 +1,11 @@
-﻿using DotNetEnv.Configuration;
+﻿using Devlooped.Agents.AI;
+using DotNetEnv.Configuration;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Tomlyn.Extensions.Configuration;
+
 
 
 #if WEB
@@ -54,7 +56,10 @@ static class ConfigureOpenTelemetryExtensions
                           || httpContext.Request.Path.StartsWithSegments(AlivenessEndpointPath)));
 #endif
                 tracing.AddHttpClientInstrumentation();
-                tracing.AddConsoleExporter();
+
+                // Only add console exporter if explicitly enabled in configuration
+                if (builder.Configuration.GetValue<bool>("OpenTelemetry:ConsoleExporter"))
+                    tracing.AddConsoleExporter();
             })
             .WithMetrics(metrics =>
             {
@@ -83,8 +88,12 @@ static class ConfigureOpenTelemetryExtensions
         {
             foreach (var toml in Directory.EnumerateFiles(AppContext.BaseDirectory, "*.toml", SearchOption.AllDirectories))
                 builder.Configuration.AddTomlFile(toml, optional: false, reloadOnChange: true);
+
             foreach (var json in Directory.EnumerateFiles(AppContext.BaseDirectory, "*.json", SearchOption.AllDirectories))
                 builder.Configuration.AddJsonFile(json, optional: false, reloadOnChange: true);
+
+            foreach (var md in Directory.EnumerateFiles(AppContext.BaseDirectory, "*.md", SearchOption.AllDirectories))
+                builder.Configuration.AddInstructionsFile(md, optional: false, reloadOnChange: true);
         }
         else
         {
@@ -95,11 +104,14 @@ static class ConfigureOpenTelemetryExtensions
             // Only use configs outside of bin/ and obj/ directories since we want reload to happen from source files not output files
             bool IsSource(string path) => !path.StartsWith(outDir) && !path.StartsWith(objDir);
 
+            foreach (var toml in Directory.EnumerateFiles(baseDir, "*.toml", SearchOption.AllDirectories).Where(IsSource))
+                builder.Configuration.AddTomlFile(toml, optional: false, reloadOnChange: true);
+
             foreach (var json in Directory.EnumerateFiles(baseDir, "*.json", SearchOption.AllDirectories).Where(IsSource))
                 builder.Configuration.AddJsonFile(json, optional: false, reloadOnChange: true);
 
-            foreach (var toml in Directory.EnumerateFiles(baseDir, "*.toml", SearchOption.AllDirectories).Where(IsSource))
-                builder.Configuration.AddTomlFile(toml, optional: false, reloadOnChange: true);
+            foreach (var md in Directory.EnumerateFiles(baseDir, "*.md", SearchOption.AllDirectories).Where(IsSource))
+                builder.Configuration.AddInstructionsFile(md, optional: false, reloadOnChange: true);
         }
 
         return builder;

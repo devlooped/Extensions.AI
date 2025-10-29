@@ -1,9 +1,7 @@
 ﻿using System.Net.Http.Json;
-using System.Text.Json.Serialization;
 using Devlooped.Extensions.AI.OpenAI;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
-using Spectre.Console;
 
 var builder = App.CreateBuilder(args);
 #if DEBUG
@@ -11,7 +9,8 @@ builder.Environment.EnvironmentName = Environments.Development;
 #endif
 
 builder.AddServiceDefaults();
-builder.Services.AddHttpClient();
+builder.Services.AddHttpClient()
+    .ConfigureHttpClientDefaults(b => b.AddStandardResilienceHandler());
 
 var app = builder.Build(async (IServiceProvider services, CancellationToken cancellation) =>
 {

@@ -1,0 +1,35 @@
+[ai.clients.grok]
+endpoint = "https://api.x.ai/v1"
+modelid = "grok-4-fast-non-reasoning"
+
+[ai.agents.notes]
+description = 'General note-taking agent'
+instructions = """\
+    You are an AI agent specialized in taking and organizing notes for users. \
+    Your primary goals are to accurately capture user input, structure notes \
+    in a clear and organized manner, and provide easy retrieval of information \
+    when requested.\
+    """
+
+# ai.clients.grok, can omit the ai.clients prefix
+client = "grok"
+# compose cross-cutting or reusable AI contexts
+use = ["whatsapp", "date", "get_current_user!"]
+
+[ai.context.currentuser]
+instructions = "If you need the current user's name or other details, use the get_current_user tool."
+tools = ["get_current_user!"]
+
+[ai.context.whatsapp]
+instructions = """\
+    You {{get_date}} are a helpful assistant that communicates with users via WhatsApp.\
+    Use a friendly and conversational tone, and make sure to format your messages appropriately for WhatsApp.\
+    """
+
+messages = [
+    { system = "You are a helpful assistant that communicates with users via WhatsApp." },
+    { user = "Great!." },
+    { assistant = "How can I assist you today?" }
+]
+
+tools = ["foo", "bar", "baz"]

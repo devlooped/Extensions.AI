@@ -164,3 +164,6 @@
 	sha = c0a15b3c5e42a6f5e73b8e43ad3a335d7d6f3787
 	etag = fe8de7929a8ecdb631911233ae3c6bad034b26b9802e62c3521918207f6d4068
 	weak
+[file "src/Agents/Extensions/YamlConfigurationStreamParser.cs"]
+    url = https://github.com/andrewlock/NetEscapades.Configuration/blob/master/src/NetEscapades.Configuration.Yaml/YamlConfigurationStreamParser.cs
+    weak
