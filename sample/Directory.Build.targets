@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <None Update=".env" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" />
-    <Content Include="*.json;*.ini;*.toml" Exclude="@(Content)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="*.json;*.ini;*.toml;*.md" Exclude="@(Content)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(IsAspireHost)' != 'true'">

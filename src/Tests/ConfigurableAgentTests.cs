@@ -6,8 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
-using OpenAI.Assistants;
-using Tomlyn.Extensions.Configuration;
 
 namespace Devlooped.Agents.AI;
 

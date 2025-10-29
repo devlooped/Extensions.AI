@@ -133,6 +133,34 @@ This can be used by leveraging [Tomlyn.Extensions.Configuration](https://www.nug
 > avoiding unnecessary tokens being used for indentation while allowing flexible 
 > formatting in the config file.
 
+For longer instructions, markdown format plus YAML front-matter can be used for better readability:
+
+```yaml
+---
+id: ai.agents.notes
+description: Provides free-form memory
+client: grok
+options: 
+  modelid: grok-4-fast
+---
+You organize and keep notes for the user.
+# Some header
+More content
+
+## Another header
+...
+```
+
+Use the provided `AddInstructionsFile` extension method to load instructions from files as follows:
+
+```csharp
+var host = new HostApplicationBuilder(args);
+host.Configuration.AddInstructionsFile("notes.md", optional: false, reloadOnChange: true);
+```
+
+The `id` field in the front-matter is required and specifies the configuration section name, and 
+all other fields are added as if they were specified under it in the configuration.
+
 ### Extensible AI Contexts
 
 The Microsoft [agent framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview) allows extending 

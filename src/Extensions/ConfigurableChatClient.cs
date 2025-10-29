@@ -1,5 +1,4 @@
-﻿using System;
-using System.ClientModel.Primitives;
+﻿using System.ClientModel.Primitives;
 using System.ComponentModel;
 using Azure;
 using Azure.AI.Inference;
