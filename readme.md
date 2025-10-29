@@ -323,7 +323,7 @@ var grok = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!
 
 var options = new GrokChatOptions
 {
-    ModelId = "grok-3-mini-fast",           // 👈 can override the model on the client
+    ModelId = "grok-4-fast-reasoning",           // 👈 can override the model on the client
     Temperature = 0.7f,
     ReasoningEffort = ReasoningEffort.High, // 👈 or Low
     Search = GrokSearch.Auto,               // 👈 or On/Off
