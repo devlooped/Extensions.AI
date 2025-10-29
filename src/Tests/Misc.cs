@@ -26,7 +26,7 @@ public class Misc
             """;
 
         var configuration = new ConfigurationBuilder()
-            .AddInstructionsStream(new MemoryStream(Encoding.UTF8.GetBytes(markdown)))
+            .AddAgentMarkdown(new MemoryStream(Encoding.UTF8.GetBytes(markdown)))
             .Build();
 
         Assert.Equal("TestAgent", configuration["ai:agents:tests:name"]);

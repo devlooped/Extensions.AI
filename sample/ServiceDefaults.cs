@@ -93,7 +93,7 @@ static class ConfigureOpenTelemetryExtensions
                 builder.Configuration.AddJsonFile(json, optional: false, reloadOnChange: true);
 
             foreach (var md in Directory.EnumerateFiles(AppContext.BaseDirectory, "*.md", SearchOption.AllDirectories))
-                builder.Configuration.AddInstructionsFile(md, optional: false, reloadOnChange: true);
+                builder.Configuration.AddAgentMarkdown(md, optional: false, reloadOnChange: true);
         }
         else
         {
@@ -111,7 +111,7 @@ static class ConfigureOpenTelemetryExtensions
                 builder.Configuration.AddJsonFile(json, optional: false, reloadOnChange: true);
 
             foreach (var md in Directory.EnumerateFiles(baseDir, "*.md", SearchOption.AllDirectories).Where(IsSource))
-                builder.Configuration.AddInstructionsFile(md, optional: false, reloadOnChange: true);
+                builder.Configuration.AddAgentMarkdown(md, optional: false, reloadOnChange: true);
         }
 
         return builder;

@@ -539,7 +539,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
             [ai.agents.chat]
             description = "Chat agent."
             client = "openai"
-            use = ["get_date"]
+            tools = ["get_date"]
             """");
 
         AITool tool = AIFunctionFactory.Create(() => DateTimeOffset.Now, "get_date");
@@ -559,6 +559,32 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.NotNull(context.Tools);
         Assert.Single(context.Tools);
         Assert.Same(tool, context.Tools[0]);
+    }
+
+    [Fact]
+    public async Task MissingAIToolFromKeyedServiceThrows()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            tools = ["get_date"]
+            """);
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
+
+        Assert.Contains("get_date", exception.Message);
+        Assert.Contains("ai:agents:chat", exception.Message);
     }
 
     [Fact]
@@ -667,6 +693,58 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
 
         Assert.Contains("foo", exception.Message);
+    }
+
+    [Fact]
+    public async Task OverrideModelFromAgentChatOptions()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat"
+            client = "openai"
+            options = { modelid = "gpt-5" }
+            """);
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.Equal("gpt-5", options?.ChatOptions?.ModelId);
+    }
+
+    [Fact]
+    public async Task OverrideModelFromAgentModel()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat"
+            client = "openai"
+            model = "gpt-5"
+            """);
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.Equal("gpt-5", options?.ChatOptions?.ModelId);
     }
 }
 

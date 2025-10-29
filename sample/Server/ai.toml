@@ -11,23 +11,16 @@ instructions = """\
     You are an AI agent responsible for processing orders for food or other items.
     Your primary goals are to identify user intent, extract or request provider information, manage order data using tools and friendly responses to guide users through the ordering process.
     """
+options = { modelid = "gpt-4o-mini" }
+# 👇 alternative syntax to specify options
+# [ai.agents.orders.options]
+# modelid = "gpt-4o-mini"
 
 # ai.clients.openai, can omit the ai.clients prefix
 client = "openai"
-use = ["tone", "get_date", "create_order", "cancel_order"]
+use = ["tone"]
+tools = ["get_date", "create_order", "cancel_order"]
 
-[ai.agents.orders.options]
-modelid = "gpt-4o-mini"
-# additional properties could be added here
-
-[ai.agents.notes]
-description = "Help users create, manage, and retrieve notes effectively."
-instructions = """
-    You are an AI agent that assists users in creating, managing, and retrieving notes.
-    Your primary goals are to understand user requests related to notes, provide clear and concise responses, and utilize tools to organize and access note data efficiently.
-    """
-client = "grok"
-use = ["tone", "save_notes", "get_date"]
 
 [ai.context.tone]
 instructions = """\

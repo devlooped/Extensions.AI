@@ -105,6 +105,8 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
 
         if (chat is not null)
             options.ChatOptions = chat;
+        else if (options.Model is not null)
+            (options.ChatOptions ??= new()).ModelId = options.Model;
 
         configure?.Invoke(name, options);
 
@@ -127,22 +129,15 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
 
                 options.AIContextProviderFactory = _ => contextProvider;
             }
-            else if (options.Use?.Count > 0)
+            else if (options.Use?.Count > 0 || options.Tools?.Count > 0)
             {
                 var contexts = new List<AIContext>();
-                foreach (var use in options.Use)
+                foreach (var use in options.Use ?? [])
                 {
                     var context = services.GetKeyedService<AIContext>(use);
                     if (context is not null)
                     {
                         contexts.Add(context);
-                        continue;
-                    }
-
-                    var function = services.GetKeyedService<AITool>(use) ?? services.GetKeyedService<AIFunction>(use);
-                    if (function is not null)
-                    {
-                        contexts.Add(new AIContext { Tools = [function] });
                         continue;
                     }
 
@@ -161,7 +156,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
                             {
                                 var tool = services.GetKeyedService<AITool>(toolName) ??
                                     services.GetKeyedService<AIFunction>(toolName) ??
-                                    throw new InvalidOperationException($"Specified tool '{toolName}' for AI context '{ctxSection.Path}:tools' is not registered, and is required by agent section '{configSection.Path}'.");
+                                    throw new InvalidOperationException($"Specified tool '{toolName}' for AI context '{ctxSection.Path}:tools' is not registered as a keyed {nameof(AITool)} or {nameof(AIFunction)}, and is required by agent section '{configSection.Path}'.");
 
                                 configured.Tools ??= [];
                                 configured.Tools.Add(tool);
@@ -172,7 +167,16 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
                         continue;
                     }
 
-                    throw new InvalidOperationException($"Specified AI context '{use}' for agent '{name}' is not registered as either {nameof(AIContent)}, {nameof(AITool)} or configuration section 'ai:context:{use}'.");
+                    throw new InvalidOperationException($"Specified AI context '{use}' for agent '{name}' is not registered as either {nameof(AIContent)} or configuration section 'ai:context:{use}'.");
+                }
+
+                foreach (var toolName in options.Tools ?? [])
+                {
+                    var tool = services.GetKeyedService<AITool>(toolName) ??
+                        services.GetKeyedService<AIFunction>(toolName) ??
+                        throw new InvalidOperationException($"Specified tool '{toolName}' for agent '{section}' is not registered as a keyed {nameof(AITool)} or {nameof(AIFunction)}.");
+
+                    contexts.Add(new AIContext { Tools = [tool] });
                 }
 
                 options.AIContextProviderFactory = _ => new CompositeAIContextProvider(contexts);
@@ -215,7 +219,9 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     internal class AgentClientOptions : ChatClientAgentOptions
     {
         public string? Client { get; set; }
+        public string? Model { get; set; }
         public IList<string>? Use { get; set; }
+        public IList<string>? Tools { get; set; }
     }
 }
 

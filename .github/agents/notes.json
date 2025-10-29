@@ -1,0 +1,28 @@
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "NoteDigitalDocument",
+    "identifier": "2025-10-29T00:00:00Z",
+    "dateCreated": "2025-10-29",
+    "inLanguage": "es",
+    "text": "El usuario necesita desplegar una aplicación Expo.",
+    "about": [
+      "Expo",
+      "deploy"
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Note",
+    "dateCreated": "2025-10-29T12:00:00Z",
+    "inLanguage": "es",
+    "textOriginal": "recordar que maniana llevamos piedras",
+    "text": "Recordar que mañana llevamos piedras",
+    "dueDate": "2025-10-30",
+    "tags": ["recordatorio", "piedras"],
+    "source": {
+      "agentFile": ".github/agents/notes.agent.md",
+      "savedBy": "notes-agent"
+    }
+  }
+]
