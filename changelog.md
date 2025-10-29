@@ -1,5 +1,19 @@
 # Changelog
 
+## [v0.9.0-rc.1](https://github.com/devlooped/AI/tree/v0.9.0-rc.1) (2025-10-29)
+
+[Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-rc...v0.9.0-rc.1)
+
+:sparkles: Implemented enhancements:
+
+- Make markdown configuration compatible with VSC chat modes [\#142](https://github.com/devlooped/AI/pull/142) (@kzu)
+- Add support for instructions in markdown files with YAML front-matter [\#140](https://github.com/devlooped/AI/pull/140) (@kzu)
+- Avoid writing nulls and default values to JSON logging [\#137](https://github.com/devlooped/AI/pull/137) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Improve readme and sample server [\#138](https://github.com/devlooped/AI/pull/138) (@kzu)
+
 ## [v0.9.0-rc](https://github.com/devlooped/AI/tree/v0.9.0-rc) (2025-10-27)
 
 [Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-beta...v0.9.0-rc)
