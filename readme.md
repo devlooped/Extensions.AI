@@ -133,29 +133,45 @@ This can be used by leveraging [Tomlyn.Extensions.Configuration](https://www.nug
 > avoiding unnecessary tokens being used for indentation while allowing flexible 
 > formatting in the config file.
 
-For longer instructions, markdown format plus YAML front-matter can be used for better readability:
+You can also leverage the format pioneered by [VS Code Chat Modes](https://code.visualstudio.com/docs/copilot/customization/custom-chat-modes), 
+ (por "custom agents") by using markdown format plus YAML front-matter for better readability:
 
 ```yaml
 ---
 id: ai.agents.notes
 description: Provides free-form memory
 client: grok
-options: 
-  modelid: grok-4-fast
+model: grok-4-fast
 ---
 You organize and keep notes for the user.
 # Some header
 More content
-
-## Another header
-...
 ```
 
-Use the provided `AddInstructionsFile` extension method to load instructions from files as follows:
+Visual Studio Code will ignore the additional attributes used by this project. In particular, the `model` 
+property is a shorthand for setting the `options.modelid`, but in our implementation, the latter takes 
+precedence over the former, which allows you to rely on `model` to drive the VSCode testing, and the 
+longer form for run-time with the Agents Framework: 
+
+```yaml
+---
+id: ai.agents.notes
+description: Provides free-form memory
+model: Grok Code Fast 1 (copilot)
+client: grok
+options: 
+  modelid: grok-code-fast-1
+---
+// Instructions
+```
+
+![agent model picker](assets/img/agent-model.png)
+
+Use the provided `AddAgentMarkdown` extension method to load instructions from files as follows:
 
 ```csharp
 var host = new HostApplicationBuilder(args);
-host.Configuration.AddInstructionsFile("notes.md", optional: false, reloadOnChange: true);
+host.Configuration.AddAgentMarkdown("notes.agent.md", optional: false, reloadOnChange: true);
 ```
 
 The `id` field in the front-matter is required and specifies the configuration section name, and 
@@ -227,15 +243,16 @@ services.AddKeyedSingleton("get_date", AIFunctionFactory.Create(() => DateTimeOf
 
 This tool will be automatically wired into any agent that uses the `timezone` context above.
 
-As a shortcut when you want to just pull in a tool from DI into an agent's context without having to define an entire 
-section just for that, you can specify the tool name directly in the `use` array:
+Agents themselves can also add tools from DI into an agent's context without having to define an entire 
+section just for that, by specifying the tool name directly in the `tools` array:
 
 ```toml
 [ai.agents.support]
 description = "An AI agent that helps with customer support."
 instructions = "..."
 client = "grok"
-use = ["tone", "get_date"]
+use = ["tone"]
+tools = ["get_date"]
 ```
 
 This enables a flexible and convenient mix of static and dynamic context for agents, all driven 

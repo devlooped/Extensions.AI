@@ -6,12 +6,12 @@ using NetEscapades.Configuration.Yaml;
 namespace Devlooped.Agents.AI;
 
 [EditorBrowsable(EditorBrowsableState.Never)]
-public static class ConfigurableInstructionsExtensions
+public static class AgentMarkdownExtensions
 {
     /// <summary>
     /// Adds an instructions markdown file with optional YAML front-matter to the configuration sources.
     /// </summary>
-    public static IConfigurationBuilder AddInstructionsFile(this IConfigurationBuilder builder, string path, bool optional = false, bool reloadOnChange = false)
+    public static IConfigurationBuilder AddAgentMarkdown(this IConfigurationBuilder builder, string path, bool optional = false, bool reloadOnChange = false)
         => builder.Add<InstructionsConfigurationSource>(source =>
         {
             source.Path = path;
@@ -23,7 +23,7 @@ public static class ConfigurableInstructionsExtensions
     /// <summary>
     /// Adds an instructions markdown stream with optional YAML front-matter to the configuration sources.
     /// </summary>
-    public static IConfigurationBuilder AddInstructionsStream(this IConfigurationBuilder builder, Stream stream)
+    public static IConfigurationBuilder AddAgentMarkdown(this IConfigurationBuilder builder, Stream stream)
         => Throw.IfNull(builder).Add((InstructionsStreamConfigurationSource source) => source.Stream = stream);
 
     static class InstructionsParser
