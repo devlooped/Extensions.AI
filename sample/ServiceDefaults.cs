@@ -71,7 +71,7 @@ static class ConfigureOpenTelemetryExtensions
             });
 
 
-        if (string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
+        if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
 
         return builder;
