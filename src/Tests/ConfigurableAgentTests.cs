@@ -646,6 +646,124 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
+    public async Task UseAIContextFromProvider()
+    {
+        var builder = new HostApplicationBuilder();
+        var voseo =
+            """
+            Default to using spanish language, using argentinean "voseo" in your responses.
+            """;
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["default"]
+            """);
+
+        var tool = AIFunctionFactory.Create(() => DateTimeOffset.Now, "get_date");
+        builder.Services.AddKeyedSingleton("default", Mock.Of<AIContextProvider>(x
+            => x.InvokingAsync(It.IsAny<AIContextProvider.InvokingContext>(), default) == ValueTask.FromResult(new AIContext
+            {
+                Instructions = voseo,
+                Tools = new[] { tool }
+            })));
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        var provider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(provider);
+
+        var context = await provider.InvokingAsync(new([]), default);
+
+        Assert.NotNull(context.Instructions);
+        Assert.Equal(voseo, context.Instructions);
+        Assert.Same(tool, context.Tools?.First());
+    }
+
+    [Fact]
+    public async Task CombineAIContextFromStaticDinamicAndSection()
+    {
+        var builder = new HostApplicationBuilder();
+
+        builder.Configuration.AddToml(
+            $$"""
+            [ai.clients.openai]
+            modelid = "gpt-4.1"
+            apikey = "sk-asdf"
+
+            [ai.agents.chat]
+            description = "Chat agent."
+            client = "openai"
+            use = ["default", "static", "dynamic"]
+
+            [ai.context.default]
+            instructions = 'foo'
+            messages = [
+                { system = "You are strictly professional." },
+                { user = "Hey you!"},
+                { assistant = "Hello there. How can I assist you today?" }
+            ]
+            tools = ["get_date"]
+            """);
+
+        var tool = AIFunctionFactory.Create(() => DateTimeOffset.Now, "get_date");
+        builder.Services.AddKeyedSingleton("get_date", tool);
+
+        builder.Services.AddKeyedSingleton("static", new AIContext
+        {
+            Instructions = "bar",
+            Tools = new AITool[] { AIFunctionFactory.Create(() => "bar", "get_bar") }
+        });
+
+        AITool[] getbaz = [AIFunctionFactory.Create(() => "baz", "get_baz")];
+
+        builder.Services.AddKeyedSingleton("dynamic", Mock.Of<AIContextProvider>(x
+            => x.InvokingAsync(It.IsAny<AIContextProvider.InvokingContext>(), default) == ValueTask.FromResult(new AIContext
+            {
+                Instructions = "baz",
+                Tools = getbaz
+            })));
+
+        builder.AddAIAgents();
+        var app = builder.Build();
+
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
+        var options = agent.GetService<ChatClientAgentOptions>();
+
+        Assert.NotNull(options?.AIContextProviderFactory);
+        var provider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(provider);
+
+        var context = await provider.InvokingAsync(new([]), default);
+
+        Assert.NotNull(context.Instructions);
+        Assert.Contains("foo", context.Instructions);
+        Assert.Contains("bar", context.Instructions);
+        Assert.Contains("baz", context.Instructions);
+
+        Assert.Equal(3, context.Messages?.Count);
+        Assert.Single(context.Messages!, x => x.Role == ChatRole.System && x.Text == "You are strictly professional.");
+        Assert.Single(context.Messages!, x => x.Role == ChatRole.User && x.Text == "Hey you!");
+        Assert.Single(context.Messages!, x => x.Role == ChatRole.Assistant && x.Text == "Hello there. How can I assist you today?");
+
+        Assert.NotNull(context.Tools);
+        Assert.Contains(tool, context.Tools!);
+        Assert.Contains(context.Tools, x => x.Name == "get_bar");
+        Assert.Contains(context.Tools, x => x.Name == "get_baz");
+    }
+
+    [Fact]
     public async Task MissingToolAIContextFromSectionThrows()
     {
         var builder = new HostApplicationBuilder();
