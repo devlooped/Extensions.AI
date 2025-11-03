@@ -148,16 +148,21 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
             }
             else if (options.Use?.Count > 0 || options.Tools?.Count > 0)
             {
-                var contexts = new List<AIContext>();
+                var contexts = new List<AIContextProvider>();
                 foreach (var use in options.Use ?? [])
                 {
-                    var context = services.GetKeyedService<AIContext>(use);
-                    if (context is not null)
+                    if (services.GetKeyedService<AIContext>(use) is { } staticContext)
                     {
-                        contexts.Add(context);
+                        contexts.Add(new StaticAIContextProvider(staticContext));
+                        continue;
+                    }
+                    else if (services.GetKeyedService<AIContextProvider>(use) is { } dynamicContext)
+                    {
+                        contexts.Add(dynamicContext);
                         continue;
                     }
 
+                    // Else, look for a config section.
                     if (configuration.GetSection("ai:context:" + use) is { } ctxSection &&
                         ctxSection.Get<AIContextConfiguration>() is { } ctxConfig)
                     {
@@ -180,7 +185,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
                             }
                         }
 
-                        contexts.Add(configured);
+                        contexts.Add(new StaticAIContextProvider(configured));
                         continue;
                     }
 
@@ -193,7 +198,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
                         services.GetKeyedService<AIFunction>(toolName) ??
                         throw new InvalidOperationException($"Specified tool '{toolName}' for agent '{section}' is not registered as a keyed {nameof(AITool)} or {nameof(AIFunction)}.");
 
-                    contexts.Add(new AIContext { Tools = [tool] });
+                    contexts.Add(new StaticAIContextProvider(new AIContext { Tools = [tool] }));
                 }
 
                 options.AIContextProviderFactory = _ => new CompositeAIContextProvider(contexts);

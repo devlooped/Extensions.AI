@@ -188,7 +188,7 @@ and `AIContext`. This package supports dynamic extension of a configured agent i
    in code.
 2. A keyed service `AIContextProvider` with the same name as the agent.
 3. A keyed service `AIContext` with the same name as the agent.
-4. Configured `AIContext` sections pulled in via `use` setting for an agent.
+4. Aggregate of AI contexts pulled in via `use` setting for an agent.
 
 The first three alternatives enable auto-wiring of context providers or contexts registered in the service collection and 
 are pretty self-explanatory. The last alternative allows even more declarative scenarios involving reusable and cross-cutting 
@@ -234,6 +234,12 @@ tools = ["get_date"]
 ```
 
 If multiple contexts are specified in `use`, they are applied in order, concatenating their instructions, messages and tools.
+
+In addition to configured sections, the `use` property can also reference exported contexts as either `AIContext` 
+(for static context) or `AIContextProvider` (for dynamic context) registered in DI with a matching name.
+
+
+### Extensible Tools
 
 The `tools` section allows specifying tool names registered in the DI container, such as:
 
