@@ -37,23 +37,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="Devlooped.Extensions.AI.targets" PackFolder="build" />
     <None Update="Devlooped.Extensions.AI.props" PackFolder="build" />
     <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
     <InternalsVisibleTo Include="Devlooped.Agents.AI" />
   </ItemGroup>
-
-  <Target Name="UpdateSdkPreviewVersion" BeforeTargets="GetPackageContents">
-    <XmlPeek XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltWithSdkPreview">
-      <Output TaskParameter="Result" PropertyName="BuiltWithSdkPreview" />
-    </XmlPeek>
-    <XmlPeek XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltSdkPreviewVersion">
-      <Output TaskParameter="Result" PropertyName="BuiltSdkPreviewVersion" />
-    </XmlPeek>
-    
-    <!-- Update packaging version targets if changed -->
-    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltWithSdkPreview" Value="$(_NETCoreSdkIsPreview)" Condition="'$(_NETCoreSdkIsPreview)' != '$(BuiltWithSdkPreview)'" />
-    <XmlPoke XmlInputPath="$(MSBuildProjectDirectory)\Devlooped.Extensions.AI.targets" Query="/Project/PropertyGroup/BuiltSdkPreviewVersion" Value="$(NETCoreSdkVersion)" Condition="'$(NETCoreSdkVersion)' != '$(BuiltSdkPreviewVersion)'" />
-  </Target>
 
 </Project>
