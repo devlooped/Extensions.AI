@@ -15,7 +15,7 @@ namespace Devlooped.Agents.AI;
 /// A configuration-driven <see cref="AIAgent"/> which monitors configuration changes and 
 /// re-applies them to the inner agent automatically.
 /// </summary>
-public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
+public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalProperties, IDisposable
 {
     readonly IServiceProvider services;
     readonly IConfiguration configuration;
@@ -58,6 +58,9 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
     };
 
     /// <inheritdoc/>
+    public AdditionalPropertiesDictionary? AdditionalProperties { get; set; }
+
+    /// <inheritdoc/>
     public override string Id => agent.Id;
     /// <inheritdoc/>
     public override string? Description => agent.Description;
@@ -88,6 +91,20 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IDisposable
         options?.Name ??= name;
         options?.Description = options?.Description?.Dedent();
         options?.Instructions = options?.Instructions?.Dedent();
+
+        var properties = configSection.Get<AdditionalPropertiesDictionary>();
+        if (properties is not null)
+        {
+            properties?.Remove(nameof(AgentClientOptions.Name));
+            properties?.Remove(nameof(AgentClientOptions.Description));
+            properties?.Remove(nameof(AgentClientOptions.Instructions));
+            properties?.Remove(nameof(AgentClientOptions.Client));
+            properties?.Remove(nameof(AgentClientOptions.Model));
+            properties?.Remove(nameof(AgentClientOptions.Use));
+            properties?.Remove(nameof(AgentClientOptions.Tools));
+
+            AdditionalProperties = properties;
+        }
 
         // If there was a custom id, we must validate it didn't change since that's not supported.
         if (configuration[$"{section}:name"] is { } newname && newname != name)
