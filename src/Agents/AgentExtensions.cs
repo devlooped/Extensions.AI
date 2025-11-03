@@ -23,4 +23,14 @@ public static class AgentExtensions
 
         return chatResponse;
     }
+
+    extension(AIAgent agent)
+    {
+        /// <summary>Gets the emoji associated with the agent, if any.</summary>
+        public string? Emoji => agent is not IHasAdditionalProperties additional
+            ? null
+            : additional.AdditionalProperties is null
+            ? null
+            : additional.AdditionalProperties.TryGetValue("Emoji", out var value) ? value as string : null;
+    }
 }

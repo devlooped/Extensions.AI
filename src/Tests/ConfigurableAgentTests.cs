@@ -25,6 +25,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
             ["ai:agents:bot:description"] = "Helpful chat agent",
             ["ai:agents:bot:instructions"] = "You are a helpful chat agent.",
             ["ai:agents:bot:options:temperature"] = "0.5",
+            ["ai:agents:bot:emoji"] = "🤖",
         });
 
         builder.AddAIAgents();
@@ -36,6 +37,10 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.Equal("chat", agent.Name);
         Assert.Equal("chat", agent.DisplayName);
         Assert.Equal("Helpful chat agent", agent.Description);
+
+        var additional = Assert.IsType<IHasAdditionalProperties>(agent, exactMatch: false);
+        Assert.Equal("🤖", additional.AdditionalProperties?["emoji"]?.ToString());
+        Assert.Equal("🤖", agent.Emoji);
     }
 
     [Fact]
