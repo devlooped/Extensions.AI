@@ -1,7 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
+using Microsoft.Extensions.AI;
 
 namespace Devlooped.Extensions.AI;
 
@@ -16,19 +15,14 @@ public static class ToolJsonOptions
     /// <summary>
     /// Default <see cref="JsonSerializerOptions"/> for function calling and tools.
     /// </summary>
-    public static JsonSerializerOptions Default { get; } = new(JsonSerializerDefaults.Web)
+    public static JsonSerializerOptions Default { get; } = new(AIJsonUtilities.DefaultOptions)
     {
         Converters =
         {
             new AdditionalPropertiesDictionaryConverter(),
-            new JsonStringEnumConverter(),
         },
-        DefaultIgnoreCondition =
-            JsonIgnoreCondition.WhenWritingDefault |
-            JsonIgnoreCondition.WhenWritingNull,
-        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        WriteIndented = Debugger.IsAttached,
-        TypeInfoResolver = new TypeInjectingResolver(new DefaultJsonTypeInfoResolver())
+        WriteIndented = Debugger.IsAttached || AIJsonUtilities.DefaultOptions.WriteIndented,
+        TypeInfoResolver = new TypeInjectingResolver(AIJsonUtilities.DefaultOptions.TypeInfoResolverChain)
     };
 }
