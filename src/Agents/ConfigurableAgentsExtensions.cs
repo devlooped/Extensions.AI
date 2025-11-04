@@ -1,4 +1,7 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
+using System.Text.Json;
 using Devlooped.Agents.AI;
 using Devlooped.Extensions.AI;
 using Microsoft.Agents.AI;
@@ -7,6 +10,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using ModelContextProtocol.Server;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +20,52 @@ namespace Microsoft.Extensions.DependencyInjection;
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class ConfigurableAgentsExtensions
 {
+    /// <summary>Adds <see cref="McpServerTool"/> instances to the service collection backing <paramref name="builder"/>.</summary>
+    /// <typeparam name="TToolType">The tool type.</typeparam>
+    /// <param name="builder">The builder instance.</param>
+    /// <param name="serializerOptions">The serializer options governing tool parameter marshalling.</param>
+    /// <returns>The builder provided in <paramref name="builder"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="builder"/> is <see langword="null"/>.</exception>
+    /// <remarks>
+    /// This method discovers all instance and static methods (public and non-public) on the specified <typeparamref name="TToolType"/>
+    /// type, where the methods are attributed as <see cref="McpServerToolAttribute"/>, and adds an <see cref="AIFunction"/>
+    /// instance for each. For instance methods, an instance will be constructed for each invocation of the tool.
+    /// </remarks>
+    public static IAIAgentsBuilder WithTools<[DynamicallyAccessedMembers(
+        DynamicallyAccessedMemberTypes.PublicMethods |
+        DynamicallyAccessedMemberTypes.NonPublicMethods |
+        DynamicallyAccessedMemberTypes.PublicConstructors)] TToolType>(
+        this IAIAgentsBuilder builder,
+        JsonSerializerOptions? serializerOptions = null,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+    {
+        Throw.IfNull(builder);
+
+        // Preserve existing registration if any, such as when using Devlooped.Extensions.DependencyInjection
+        // via [Service] attribute or by convention.
+        builder.Services.TryAdd(ServiceDescriptor.Describe(typeof(TToolType), typeof(TToolType), lifetime));
+
+        serializerOptions ??= ToolJsonOptions.Default;
+
+        foreach (var toolMethod in typeof(TToolType).GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance))
+        {
+            if (toolMethod.GetCustomAttribute<McpServerToolAttribute>() is { } toolAttribute)
+            {
+                var function = toolMethod.IsStatic
+                    ? AIFunctionFactory.Create(toolMethod, null, toolAttribute.Name ?? ToolJsonOptions.Default.PropertyNamingPolicy!.ConvertName(toolMethod.Name))
+                    : AIFunctionFactory.Create(toolMethod, args => args.Services?.GetRequiredService(typeof(TToolType)) ??
+                        throw new InvalidOperationException("Could not determine target instance for tool."),
+                        new AIFunctionFactoryOptions { Name = toolAttribute.Name ?? ToolJsonOptions.Default.PropertyNamingPolicy!.ConvertName(toolMethod.Name) });
+
+                builder.Services.TryAdd(ServiceDescriptor.DescribeKeyed(
+                    typeof(AIFunction), function.Name,
+                    (_, _) => function, lifetime));
+            }
+        }
+
+        return builder;
+    }
+
     /// <summary>
     /// Adds AI agents to the host application builder based on configuration.
     /// </summary>
@@ -24,8 +74,7 @@ public static class ConfigurableAgentsExtensions
     /// <param name="configureOptions">Optional action to configure options for each agent.</param>
     /// <param name="prefix">The configuration prefix for agents, defaults to "ai:agents".</param>
     /// <returns>The host application builder with AI agents added.</returns>
-    public static TBuilder AddAIAgents<TBuilder>(this TBuilder builder, Action<string, AIAgentBuilder>? configurePipeline = default, Action<string, ChatClientAgentOptions>? configureOptions = default, string prefix = "ai:agents")
-        where TBuilder : IHostApplicationBuilder
+    public static IAIAgentsBuilder AddAIAgents(this IHostApplicationBuilder builder, Action<string, AIAgentBuilder>? configurePipeline = default, Action<string, ChatClientAgentOptions>? configureOptions = default, string prefix = "ai:agents")
     {
         builder.AddChatClients();
 
@@ -61,7 +110,7 @@ public static class ConfigurableAgentsExtensions
                 => sp.GetRequiredKeyedService<AIAgent>(name)));
         }
 
-        return builder;
+        return new DefaultAIAgentsBuilder(builder);
     }
 
     /// <summary>Gets an AI agent by name (case-insensitive) from the service provider.</summary>
