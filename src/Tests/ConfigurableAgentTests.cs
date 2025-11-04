@@ -281,7 +281,8 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
             ["ai:agents:bot:options:verbosity"] = "low",
         });
 
-        var app = builder.AddAIAgents().Build();
+        builder.AddAIAgents();
+        var app = builder.Build();
         var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
         var options = agent.GetService<ChatClientAgentOptions>();
 
@@ -304,7 +305,8 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
             ["ai:agents:bot:options:search"] = "auto",
         });
 
-        var app = builder.AddAIAgents().Build();
+        builder.AddAIAgents();
+        var app = builder.Build();
         var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
         var options = agent.GetService<ChatClientAgentOptions>();
 
@@ -424,7 +426,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void UseAndContextProviderIncompatible()
+    public async Task UseAndContextProviderCompositeAsync()
     {
         var builder = new HostApplicationBuilder();
 
@@ -448,13 +450,28 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
                 """            
             """");
 
-        builder.Services.AddKeyedSingleton("chat", Mock.Of<AIContextProvider>());
+        var context = new AIContext { Instructions = "foo" };
+
+        var provider = new Mock<AIContextProvider>();
+        provider
+            .Setup(x => x.InvokingAsync(It.IsAny<AIContextProvider.InvokingContext>(), default(CancellationToken)))
+            .ReturnsAsync(context);
+
+        builder.Services.AddKeyedSingleton("chat", provider.Object);
         builder.AddAIAgents();
 
         var app = builder.Build();
-        var exception = Assert.ThrowsAny<Exception>(() => app.Services.GetRequiredKeyedService<AIAgent>("chat"));
+        var agent = app.Services.GetRequiredKeyedService<AIAgent>("chat");
 
-        Assert.Contains("ai:agents:chat:use", exception.Message);
+        var options = agent.GetService<ChatClientAgentOptions>();
+        Assert.NotNull(options?.AIContextProviderFactory);
+
+        var actualProvider = options?.AIContextProviderFactory?.Invoke(new());
+        Assert.NotNull(actualProvider);
+
+        var actualContext = await actualProvider.InvokingAsync(new([]), default);
+        Assert.Contains("spanish language", actualContext.Instructions);
+        Assert.Contains("foo", actualContext.Instructions);
     }
 
     [Fact]

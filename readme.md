@@ -264,6 +264,15 @@ tools = ["get_date"]
 This enables a flexible and convenient mix of static and dynamic context for agents, all driven 
 from configuration.
 
+In addition to registering your own tools in DI, you can also use leverage the MCP C# SDK and reuse 
+the same tool declarations: 
+
+```csharp
+builder.Services.AddMcpServer().WithTools<NotesTools>();
+
+// 👇 Reuse same tool definitions in agents
+builder.AddAIAgents().WithTools<NotesTools>();
+```
 
 <!-- #agents -->
 

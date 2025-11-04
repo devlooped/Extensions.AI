@@ -1,5 +1,9 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq.Expressions;
+using System.Reflection;
 using System.Text.Json;
 using Devlooped.Extensions.AI;
 using Devlooped.Extensions.AI.Grok;
@@ -8,6 +12,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ModelContextProtocol.Server;
 
 namespace Devlooped.Agents.AI;
 
@@ -134,21 +139,17 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
 
             if (contextFactory is not null)
             {
-                if (options.Use?.Count > 0)
-                    throw new InvalidOperationException($"Invalid simultaneous use of keyed service {nameof(AIContextProviderFactory)} and '{section}:use' in configuration.");
+                if (options.Use?.Count > 0 || options.Tools?.Count > 0)
+                    throw new InvalidOperationException($"Invalid simultaneous use of keyed service {nameof(AIContextProviderFactory)} and '{section}:use/tools' in configuration.");
 
                 options.AIContextProviderFactory = contextFactory.CreateProvider;
             }
-            else if (services.GetKeyedService<AIContextProvider>(name) is { } contextProvider)
-            {
-                if (options.Use?.Count > 0)
-                    throw new InvalidOperationException($"Invalid simultaneous use of keyed service {nameof(AIContextProvider)} and '{section}:use' in configuration.");
-
-                options.AIContextProviderFactory = _ => contextProvider;
-            }
-            else if (options.Use?.Count > 0 || options.Tools?.Count > 0)
+            else
             {
                 var contexts = new List<AIContextProvider>();
+                if (services.GetKeyedService<AIContextProvider>(name) is { } contextProvider)
+                    contexts.Add(contextProvider);
+
                 foreach (var use in options.Use ?? [])
                 {
                     if (services.GetKeyedService<AIContext>(use) is { } staticContext)
@@ -196,7 +197,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
                 {
                     var tool = services.GetKeyedService<AITool>(toolName) ??
                         services.GetKeyedService<AIFunction>(toolName) ??
-                        throw new InvalidOperationException($"Specified tool '{toolName}' for agent '{section}' is not registered as a keyed {nameof(AITool)} or {nameof(AIFunction)}.");
+                        throw new InvalidOperationException($"Specified tool '{toolName}' for agent '{section}' is not registered as a keyed {nameof(AITool)}, {nameof(AIFunction)} or MCP server tools.");
 
                     contexts.Add(new StaticAIContextProvider(new AIContext { Tools = [tool] }));
                 }

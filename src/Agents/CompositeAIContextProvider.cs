@@ -62,6 +62,9 @@ class CompositeAIContextProvider : AIContextProvider
         if (staticContext is not null)
             return staticContext;
 
+        if (providers.Count == 1)
+            return await providers[0].InvokingAsync(invoking, cancellationToken);
+
         var context = new AIContext();
         var instructions = new List<string>();
         var messages = new List<ChatMessage>();

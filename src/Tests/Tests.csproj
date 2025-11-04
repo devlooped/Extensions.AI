@@ -6,6 +6,7 @@
     <LangVersion>Preview</LangVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <RootNamespace>Devlooped</RootNamespace>
+    <NetVersion>10.0.0-rc.*</NetVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,16 +16,16 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
 
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="$(NetVersion)" />
 
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="$(NetVersion)" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.10.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="$(NetVersion)" />
 
     <PackageReference Include="Tomlyn.Extensions.Configuration" Version="1.0.6" />
   </ItemGroup>

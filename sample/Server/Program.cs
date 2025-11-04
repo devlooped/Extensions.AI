@@ -1,9 +1,12 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Devlooped.Extensions.AI;
+using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting;
 using Microsoft.Agents.AI.Hosting.OpenAI;
 using Microsoft.Extensions.AI;
+using ModelContextProtocol.Server;
 using Spectre.Console;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,10 +26,15 @@ builder.Services.AddKeyedSingleton("get_date", AIFunctionFactory.Create(() => Da
 // dummy ones for illustration
 builder.Services.AddKeyedSingleton("create_order", AIFunctionFactory.Create(() => "OK", "create_order"));
 builder.Services.AddKeyedSingleton("cancel_order", AIFunctionFactory.Create(() => "OK", "cancel_order"));
-builder.Services.AddKeyedSingleton("save_notes", AIFunctionFactory.Create((string notes) => true, "save_notes"));
+
+builder.Services.AddKeyedSingleton<AIContextProvider, NotesContextProvider>("notes");
+
+// 👇 seamless integration of MCP tools
+//builder.Services.AddMcpServer().WithTools<NotesTools>();
 
 // 👇 implicitly calls AddChatClients
-builder.AddAIAgents();
+builder.AddAIAgents()
+    .WithTools<NotesTools>();
 
 var app = builder.Build();
 
