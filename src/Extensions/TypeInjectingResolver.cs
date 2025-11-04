@@ -18,8 +18,7 @@ public static class TypeInjectingResolverExtensions
         if (options.IsReadOnly)
             options = new(options);
 
-        options.TypeInfoResolver = new TypeInjectingResolver(
-            JsonTypeInfoResolver.Combine([.. options.TypeInfoResolverChain]));
+        options.TypeInfoResolver = new TypeInjectingResolver(options.TypeInfoResolverChain);
 
         return options;
     }
@@ -29,12 +28,15 @@ public static class TypeInjectingResolverExtensions
 /// A custom <see cref="IJsonTypeInfoResolver"/> that injects a $type property into object types
 /// so they can be automatically distinguished during deserialization or inspection.
 /// </summary>
-public class TypeInjectingResolver(IJsonTypeInfoResolver inner) : IJsonTypeInfoResolver
+public class TypeInjectingResolver(IList<IJsonTypeInfoResolver> chain) : IJsonTypeInfoResolver
 {
+    readonly IJsonTypeInfoResolver resolver = JsonTypeInfoResolver.Combine([.. chain]);
+
     /// <inheritdoc />
     public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
     {
-        var info = inner.GetTypeInfo(type, options);
+        var info = resolver.GetTypeInfo(type, options);
+
         // The $type would already be present for polymorphic serialization.
         if (info?.Kind == JsonTypeInfoKind.Object && !info.Properties.Any(x => x.Name == "$type"))
         {
@@ -43,6 +45,7 @@ public class TypeInjectingResolver(IJsonTypeInfoResolver inner) : IJsonTypeInfoR
             prop.Order = -1000; // Ensure it is serialized first
             info.Properties.Add(prop);
         }
+
         return info;
     }
 }
