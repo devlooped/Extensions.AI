@@ -186,12 +186,14 @@ and `AIContext`. This package supports dynamic extension of a configured agent i
 1. A keyed service `AIContextProviderFactory` with the same name as the agent will be set up just as if you had 
    set it manually as the [ChatClientAgentOptions.AIContextProviderFactory](https://learn.microsoft.com/en-us/dotnet/api/microsoft.agents.ai.chatclientagentoptions.aicontextproviderfactory) 
    in code.
-2. A keyed service `AIContextProvider` with the same name as the agent.
-3. A keyed service `AIContext` with the same name as the agent.
-4. Aggregate of AI contexts pulled in via `use` setting for an agent.
+2. Aggregate of AI contexts from:
+   a. Keyed service `AIContextProvider` with the same name as the agent.
+   b. Keyed service `AIContext` with the same name as the agent.
+   c. Other services pulled in via `use` setting for an agent registered as either `AIContextProvider` or `AIContext`
+      with a matching key.
 
-The first three alternatives enable auto-wiring of context providers or contexts registered in the service collection and 
-are pretty self-explanatory. The last alternative allows even more declarative scenarios involving reusable and cross-cutting 
+The first option assumes you want full control of the context, so it does not allow futher composition. 
+The second alternative allows more declarative scenarios involving reusable and cross-cutting 
 context definitions. 
 
 For example, let's say you want to provide consistent tone for all your agents. It would be tedious, repetitive and harder 
