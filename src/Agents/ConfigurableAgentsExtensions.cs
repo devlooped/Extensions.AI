@@ -52,10 +52,16 @@ public static class ConfigurableAgentsExtensions
             if (toolMethod.GetCustomAttribute<McpServerToolAttribute>() is { } toolAttribute)
             {
                 var function = toolMethod.IsStatic
-                    ? AIFunctionFactory.Create(toolMethod, null, toolAttribute.Name ?? ToolJsonOptions.Default.PropertyNamingPolicy!.ConvertName(toolMethod.Name))
+                    ? AIFunctionFactory.Create(toolMethod, null,
+                        toolAttribute.Name ?? ToolJsonOptions.Default.PropertyNamingPolicy!.ConvertName(toolMethod.Name),
+                        serializerOptions: serializerOptions)
                     : AIFunctionFactory.Create(toolMethod, args => args.Services?.GetRequiredService(typeof(TToolType)) ??
                         throw new InvalidOperationException("Could not determine target instance for tool."),
-                        new AIFunctionFactoryOptions { Name = toolAttribute.Name ?? ToolJsonOptions.Default.PropertyNamingPolicy!.ConvertName(toolMethod.Name) });
+                        new AIFunctionFactoryOptions
+                        {
+                            Name = toolAttribute.Name ?? ToolJsonOptions.Default.PropertyNamingPolicy!.ConvertName(toolMethod.Name),
+                            SerializerOptions = serializerOptions
+                        });
 
                 builder.Services.TryAdd(ServiceDescriptor.DescribeKeyed(
                     typeof(AIFunction), function.Name,
