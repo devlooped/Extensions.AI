@@ -1,5 +1,21 @@
 # Changelog
 
+## [v0.9.0-rc.2](https://github.com/devlooped/AI/tree/v0.9.0-rc.2) (2025-11-05)
+
+[Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-rc.1...v0.9.0-rc.2)
+
+:sparkles: Implemented enhancements:
+
+- Add compatibility with MCP tools registrations [\#148](https://github.com/devlooped/AI/pull/148) (@kzu)
+- Avoid duplication of tool JSON settings with MEAI [\#147](https://github.com/devlooped/AI/pull/147) (@kzu)
+- Allow aggregation of configured, static and dynamic contexts [\#146](https://github.com/devlooped/AI/pull/146) (@kzu)
+- Remove requirement of matching .NET 10 SDK preview [\#145](https://github.com/devlooped/AI/pull/145) (@kzu)
+- Allow extending agent with additional properties [\#144](https://github.com/devlooped/AI/pull/144) (@kzu)
+
+:bug: Fixed bugs:
+
+- Use the specified JSON options when adding tools [\#149](https://github.com/devlooped/AI/pull/149) (@kzu)
+
 ## [v0.9.0-rc.1](https://github.com/devlooped/AI/tree/v0.9.0-rc.1) (2025-10-29)
 
 [Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-rc...v0.9.0-rc.1)
