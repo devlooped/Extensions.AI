@@ -1,6 +1,8 @@
 ---
 id: ai.agents.notes
 description: Provides free-form memory
+beta: true
+visibility: unlisted
 client: grok
 model: grok-4-fast
 use: ["tone", "notes"]
