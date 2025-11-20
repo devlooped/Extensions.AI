@@ -324,10 +324,14 @@ public class GrokTests(ITestOutputHelper output)
 
         Assert.Contains("TSLA", text);
         Assert.NotNull(response.ModelId);
+        Assert.Contains(new Uri("https://finance.yahoo.com/quote/TSLA/news/"), response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Select(x => x.Url));
     }
 
     [SecretsFact("XAI_API_KEY")]
-    public async Task GrokGrpcInvokesGrokSearchTool()
+    public async Task GrokGrpcInvokesGrokSearchToolIncludesDomain()
     {
         var messages = new Chat()
         {
@@ -341,7 +345,7 @@ public class GrokTests(ITestOutputHelper output)
         {
             Tools = [new GrokSearchTool 
             { 
-                AllowedDomains = ["microsoft.com", "news.microsoft.com"] 
+                AllowedDomains = ["microsoft.com", "news.microsoft.com"],
             }]
         };
 
@@ -349,5 +353,58 @@ public class GrokTests(ITestOutputHelper output)
         
         Assert.NotNull(response.Text);
         Assert.Contains("Microsoft", response.Text);
+
+        var urls = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
+
+        foreach (var url in urls)
+        {
+            output.WriteLine(url.ToString());
+        }
+
+        Assert.All(urls, x => x.Host.EndsWith(".microsoft.com"));
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokGrpcInvokesGrokSearchToolExcludesDomain()
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an AI assistant that knows how to search the web." },
+            { "user", "What is the latest news about Microsoft?" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new GrokSearchTool
+            {
+                ExcludedDomains = ["blogs.microsoft.com"]
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+
+        Assert.NotNull(response.Text);
+        Assert.Contains("Microsoft", response.Text);
+
+        var urls = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
+
+        foreach (var url in urls)
+        {
+            output.WriteLine(url.ToString());
+        }
+
+        Assert.DoesNotContain(urls, x => x.Host == "blogs.microsoft.com");
     }
 }

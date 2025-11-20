@@ -32,7 +32,7 @@ class GrokChatClient : IChatClient
         var protoResponse = await client.GetCompletionAsync(requestDto, cancellationToken: cancellationToken);
 
         var chatMessages = protoResponse.Outputs
-            .Select(x => MapToChatMessage(x.Message))
+            .Select(x => MapToChatMessage(x.Message, protoResponse.Citations))
             .Where(x => x.Contents.Count > 0)
             .ToList();
 
@@ -63,7 +63,7 @@ class GrokChatClient : IChatClient
                 var outputChunk = chunk.Outputs[0];
                 
                 // Use positional arguments for ChatResponseUpdate
-                yield return new ChatResponseUpdate(
+                var update = new ChatResponseUpdate(
                     outputChunk.Delta.Role != MessageRole.InvalidRole ? MapRole(outputChunk.Delta.Role) : null,
                     outputChunk.Delta.Content
                 )
@@ -73,6 +73,23 @@ class GrokChatClient : IChatClient
                     CreatedAt = chunk.Created.ToDateTimeOffset(),
                     FinishReason = outputChunk.FinishReason != FinishReason.ReasonInvalid ? MapFinishReason(outputChunk.FinishReason) : null,
                 };
+
+                if (chunk.Citations is { Count: > 0 } citations)
+                {
+                    var textContent = update.Contents.OfType<TextContent>().FirstOrDefault();
+                    if (textContent == null)
+                    {
+                        textContent = new TextContent(string.Empty);
+                        update.Contents.Add(textContent);
+                    }
+                    
+                    foreach (var citation in citations.Distinct())
+                    {
+                        (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
+                    }
+                }
+
+                yield return update;
             }
         }
     }
@@ -181,13 +198,21 @@ class GrokChatClient : IChatClient
         _ => ChatRole.Assistant
     };
 
-    static ChatMessage MapToChatMessage(CompletionMessage message)
+    static ChatMessage MapToChatMessage(CompletionMessage message, IList<string>? citations = null)
     {
         var chatMessage = new ChatMessage() { Role = MapRole(message.Role) };
 
-        if (!string.IsNullOrEmpty(message.Content))
+        if (!string.IsNullOrEmpty(message.Content) || (citations is { Count: > 0 }))
         {
-            chatMessage.Contents.Add(new TextContent(message.Content) { Annotations = [] });
+            var textContent = new TextContent(message.Content ?? string.Empty);
+            if (citations is { Count: > 0 })
+            {
+                foreach (var citation in citations.Distinct())
+                {
+                    (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
+                }
+            }
+            chatMessage.Contents.Add(textContent);
         }
 
         foreach (var toolCall in message.ToolCalls)
