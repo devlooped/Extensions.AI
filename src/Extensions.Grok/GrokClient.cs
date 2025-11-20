@@ -1,33 +1,22 @@
-﻿using System.ClientModel;
-using System.ClientModel.Primitives;
-using System.Collections.Concurrent;
-using System.Net.Http;
+﻿using System.Collections.Concurrent;
 using System.Net.Http.Headers;
-using Grpc.Core;
 using Grpc.Net.Client;
 
 namespace Devlooped.Extensions.AI.Grok;
 
-public class GrokClient
+public class GrokClient(string apiKey, GrokClientOptions options)
 {
     static ConcurrentDictionary<(Uri, string), GrpcChannel> channels = [];
 
     public GrokClient(string apiKey) : this(apiKey, new GrokClientOptions()) { }
 
-    public GrokClient(string apiKey, GrokClientOptions options)
-    {
-        ApiKey = apiKey;
-        Options = options;
-        Endpoint = options.Endpoint;
-    }
-
-    public string ApiKey { get; }
+    public string ApiKey { get; } = apiKey;
 
     /// <summary>Gets or sets the endpoint for the service.</summary>
-    public Uri Endpoint { get; set; }
+    public Uri Endpoint { get; set; } = options.Endpoint;
 
     /// <summary>Gets the options used to configure the client.</summary>
-    public GrokClientOptions Options { get; }
+    public GrokClientOptions Options { get; } = options;
 
     internal GrpcChannel Channel => channels.GetOrAdd((Endpoint, ApiKey), key =>
     {

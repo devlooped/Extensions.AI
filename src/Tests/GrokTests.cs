@@ -302,4 +302,52 @@ public class GrokTests(ITestOutputHelper output)
         Assert.NotNull(node);
         Assert.Null(node["citations"]);
     }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokGrpcInvokesHostedSearchTool()
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an AI assistant that knows how to search the web." },
+            { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedWebSearchTool()]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("TSLA", text);
+        Assert.NotNull(response.ModelId);
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokGrpcInvokesGrokSearchTool()
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an AI assistant that knows how to search the web." },
+            { "user", "What is the latest news about Microsoft?" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new GrokSearchTool 
+            { 
+                AllowedDomains = ["microsoft.com", "news.microsoft.com"] 
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        
+        Assert.NotNull(response.Text);
+        Assert.Contains("Microsoft", response.Text);
+    }
 }

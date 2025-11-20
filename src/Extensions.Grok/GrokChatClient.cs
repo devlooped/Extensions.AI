@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Linq;
 using System.ClientModel.Primitives;
 
 using Microsoft.Extensions.AI;
@@ -30,15 +31,19 @@ class GrokChatClient : IChatClient
         
         var protoResponse = await client.GetCompletionAsync(requestDto, cancellationToken: cancellationToken);
 
-        // Assuming single choice (n=1)
-        var output = protoResponse.Outputs[0];
-        
-        return new ChatResponse(new[] { MapToChatMessage(output.Message) })
+        var chatMessages = protoResponse.Outputs
+            .Select(x => MapToChatMessage(x.Message))
+            .Where(x => x.Contents.Count > 0)
+            .ToList();
+
+        var lastOutput = protoResponse.Outputs.LastOrDefault();
+
+        return new ChatResponse(chatMessages)
         {
             ResponseId = protoResponse.Id,
             ModelId = protoResponse.Model,
             CreatedAt = protoResponse.Created.ToDateTimeOffset(),
-            FinishReason = MapFinishReason(output.FinishReason),
+            FinishReason = lastOutput != null ? MapFinishReason(lastOutput.FinishReason) : null,
             Usage = MapToUsage(protoResponse.Usage),
         };
     }
@@ -110,6 +115,40 @@ class GrokChatClient : IChatClient
                     };
                     request.Tools.Add(new Tool { Function = function });
                 }
+                else if (tool is HostedWebSearchTool webSearchTool)
+                {
+                    if (webSearchTool is GrokXSearchTool xSearch)
+                    {
+                        var toolProto = new XSearch
+                        {
+                            EnableImageUnderstanding = xSearch.EnableImageUnderstanding,
+                            EnableVideoUnderstanding = xSearch.EnableVideoUnderstanding,
+                        };
+
+                        if (xSearch.AllowedHandles is { } allowed) toolProto.AllowedXHandles.AddRange(allowed);
+                        if (xSearch.ExcludedHandles is { } excluded) toolProto.ExcludedXHandles.AddRange(excluded);
+                        if (xSearch.FromDate is { } from) toolProto.FromDate = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+                        if (xSearch.ToDate is { } to) toolProto.ToDate = Google.Protobuf.WellKnownTypes.Timestamp.FromDateTimeOffset(to.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+
+                        request.Tools.Add(new Tool { XSearch = toolProto });
+                    }
+                    else if (webSearchTool is GrokSearchTool grokSearch)
+                    {
+                        var toolProto = new WebSearch
+                        {
+                            EnableImageUnderstanding = grokSearch.EnableImageUnderstanding,
+                        };
+
+                        if (grokSearch.AllowedDomains is { } allowed) toolProto.AllowedDomains.AddRange(allowed);
+                        if (grokSearch.ExcludedDomains is { } excluded) toolProto.ExcludedDomains.AddRange(excluded);
+
+                        request.Tools.Add(new Tool { WebSearch = toolProto });
+                    }
+                    else
+                    {
+                        request.Tools.Add(new Tool { WebSearch = new WebSearch() });
+                    }
+                }
             }
         }
 
@@ -119,10 +158,6 @@ class GrokChatClient : IChatClient
             {
                 FormatType = FormatType.JsonObject
             };
-        }
-        else
-        {
-            request.ResponseFormat = new ResponseFormat { FormatType = FormatType.Text };
         }
 
         return request;
@@ -148,11 +183,18 @@ class GrokChatClient : IChatClient
 
     static ChatMessage MapToChatMessage(CompletionMessage message)
     {
-        var chatMessage = new ChatMessage(ChatRole.Assistant, message.Content);
+        var chatMessage = new ChatMessage() { Role = MapRole(message.Role) };
+
+        if (!string.IsNullOrEmpty(message.Content))
+        {
+            chatMessage.Contents.Add(new TextContent(message.Content) { Annotations = [] });
+        }
 
         foreach (var toolCall in message.ToolCalls)
         {
-            if (toolCall.ToolCase == XaiApi.ToolCall.ToolOneofCase.Function)
+            // Only include client-side tools in the response messages
+            if (toolCall.ToolCase == XaiApi.ToolCall.ToolOneofCase.Function && 
+                toolCall.Type == ToolCallType.ClientSideTool)
             {
                 var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
                     ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
