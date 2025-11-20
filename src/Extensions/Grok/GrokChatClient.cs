@@ -12,7 +12,7 @@ namespace Devlooped.Extensions.AI.Grok;
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for Grok.
 /// </summary>
-public partial class GrokChatClient : IChatClient
+public partial class GrokChatClient2 : IChatClient
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
     readonly string modelId;
@@ -23,7 +23,7 @@ public partial class GrokChatClient : IChatClient
     /// <summary>
     /// Initializes the client with the specified API key, model ID, and optional OpenAI client options.
     /// </summary>
-    public GrokChatClient(string apiKey, string modelId, OpenAIClientOptions? options = default)
+    public GrokChatClient2(string apiKey, string modelId, OpenAIClientOptions? options = default)
     {
         this.modelId = modelId;
         this.options = options ?? new();

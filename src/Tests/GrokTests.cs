@@ -1,6 +1,8 @@
 ﻿using System.Text.Json.Nodes;
+using Azure;
 using Devlooped.Extensions.AI.Grok;
 using Microsoft.Extensions.AI;
+using OpenAI.Realtime;
 using static ConfigurationExtensions;
 using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
@@ -17,11 +19,14 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "What day is today?" },
         };
 
-        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3");
+        var chat = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4")
+            .AsBuilder()
+            .UseLogging(output.AsLoggerFactory())
+            .Build();
 
         var options = new GrokChatOptions
         {
-            ModelId = "grok-3-mini",
+            ModelId = "grok-4-fast",
             Search = GrokSearch.Auto,
             Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")],
             AdditionalProperties = new()
@@ -38,7 +43,7 @@ public class GrokTests(ITestOutputHelper output)
         Assert.True(getdate);
         // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
         // different model and the grok client honors that choice.
-        Assert.Equal("grok-3-mini", response.ModelId);
+        Assert.Equal("grok-4-fast-reasoning", response.ModelId);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -53,7 +58,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
+        var grok = new GrokChatClient2(Configuration["XAI_API_KEY"]!, "grok-4", OpenAIClientOptions
                     .Observable(requests.Add, responses.Add)
                     .WriteTo(output))
             .AsBuilder()
@@ -66,7 +71,7 @@ public class GrokTests(ITestOutputHelper output)
             Search = GrokSearch.On,
             Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")]
         };
-
+        
         var response = await grok.GetResponseAsync(messages, options);
 
         // assert that the request contains the following node
@@ -107,7 +112,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
+        var grok = new GrokChatClient2(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
             .Observable(requests.Add, responses.Add)
             .WriteTo(output));
 
@@ -153,7 +158,7 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "If you have a debt of 100k and accumulate a compounding 5% debt on top of it every year, how long before you are a negative millonaire? (round up to full integer value)" },
         };
 
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
+        var grok = new GrokClient2(Configuration["XAI_API_KEY"]!)
             .GetChatClient("grok-3")
             .AsIChatClient();
 
@@ -187,7 +192,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
+        var grok = new GrokChatClient2(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
             .Observable(requests.Add, responses.Add)
             .WriteTo(output));
 
@@ -252,7 +257,7 @@ public class GrokTests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
         var responses = new List<JsonNode>();
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
+        var grok = new GrokChatClient2(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
             .Observable(requests.Add, responses.Add)
             .WriteTo(output));
 

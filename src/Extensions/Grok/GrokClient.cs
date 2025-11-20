@@ -8,19 +8,19 @@ namespace Devlooped.Extensions.AI.Grok;
 
 /// <summary>
 /// Provides an OpenAI compability client for Grok. It's recommended you 
-/// use <see cref="GrokChatClient"/> directly for chat-only scenarios.
+/// use <see cref="GrokChatClient2"/> directly for chat-only scenarios.
 /// </summary>
-public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
+public class GrokClient2(string apiKey, OpenAIClientOptions? options = null)
     : OpenAIClient(new ApiKeyCredential(apiKey), EnsureEndpoint(options))
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="GrokClient"/> with the specified API key.
+    /// Initializes a new instance of the <see cref="GrokClient2"/> with the specified API key.
     /// </summary>
-    public GrokClient(string apiKey) : this(apiKey, new()) { }
+    public GrokClient2(string apiKey) : this(apiKey, new()) { }
 
-    IChatClient GetChatClientImpl(string model) => clients.GetOrAdd(model, key => new GrokChatClient(apiKey, key, options));
+    IChatClient GetChatClientImpl(string model) => clients.GetOrAdd(model, key => new GrokChatClient2(apiKey, key, options));
 
     /// <summary>
     /// Returns an adapter that surfaces an <see cref="IChatClient"/> interface that 
@@ -39,7 +39,7 @@ public class GrokClient(string apiKey, OpenAIClientOptions? options = null)
     // OpenAI in MEAI docs. Most typical case would be to just create an <see cref="GrokChatClient"/> directly.
     // This throws on any non-IChatClient invoked methods in the AsIChatClient adapter, and 
     // forwards the IChatClient methods to the GrokChatClient implementation which is cached per client.
-    class GrokChatClientAdapter(GrokClient client, string model) : global::OpenAI.Chat.ChatClient, IChatClient
+    class GrokChatClientAdapter(GrokClient2 client, string model) : global::OpenAI.Chat.ChatClient, IChatClient
     {
         void IDisposable.Dispose() { }
 
