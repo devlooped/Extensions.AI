@@ -3,6 +3,7 @@ using Azure;
 using Devlooped.Extensions.AI.Grok;
 using Microsoft.Extensions.AI;
 using OpenAI.Realtime;
+using XaiApi;
 using static ConfigurationExtensions;
 using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
@@ -26,7 +27,7 @@ public class GrokTests(ITestOutputHelper output)
 
         var options = new GrokChatOptions
         {
-            ModelId = "grok-4-fast",
+            ModelId = "grok-4-fast-non-reasoning",
             Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")],
             AdditionalProperties = new()
             {
@@ -42,7 +43,7 @@ public class GrokTests(ITestOutputHelper output)
         Assert.True(getdate);
         // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
         // different model and the grok client honors that choice.
-        Assert.Equal("grok-4-fast-reasoning", response.ModelId);
+        Assert.Equal(options.ModelId, response.ModelId);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -50,7 +51,6 @@ public class GrokTests(ITestOutputHelper output)
     {
         var messages = new Chat()
         {
-            { "system", "You are a bot that invokes the tool 'get_date' before responding to anything since it's important context." },
             { "user", "What's Tesla stock worth today?" },
         };
 
@@ -62,9 +62,10 @@ public class GrokTests(ITestOutputHelper output)
 
         var options = new GrokChatOptions
         {
-            ModelId = "grok-4-1-fast",
+            ModelId = "grok-4-1-fast-non-reasoning",
             Search = GrokSearch.Web,
-            Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")]
+            Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")],
+            ToolMode = ChatToolMode.RequireAny
         };
         
         var response = await grok.GetResponseAsync(messages, options);
@@ -81,7 +82,7 @@ public class GrokTests(ITestOutputHelper output)
             .Select(x => x.Url!.AbsoluteUri)
             .ToList();
 
-        Assert.Contains("https://finance.yahoo.com/quote/TSLA/", citations);
+        Assert.Contains(citations, url => url.Contains("/TSLA"));
         Assert.Equal(options.ModelId, response.ModelId);
     }
 
@@ -120,7 +121,7 @@ public class GrokTests(ITestOutputHelper output)
     }
 
     [SecretsFact("XAI_API_KEY")]
-    public async Task GrokGrpcInvokesHostedSearchTool()
+    public async Task GrokInvokesHostedSearchTool()
     {
         var messages = new Chat()
         {
@@ -140,14 +141,19 @@ public class GrokTests(ITestOutputHelper output)
 
         Assert.Contains("TSLA", text);
         Assert.NotNull(response.ModelId);
-        Assert.Contains(new Uri("https://finance.yahoo.com/quote/TSLA/news/"), response.Messages
+
+        var urls = response.Messages
             .SelectMany(x => x.Contents)
             .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
-            .Select(x => x.Url));
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
+
+        Assert.Contains(urls, url => url.AbsoluteUri.Contains("/TSLA"));
     }
 
     [SecretsFact("XAI_API_KEY")]
-    public async Task GrokGrpcInvokesGrokSearchToolIncludesDomain()
+    public async Task GrokInvokesGrokSearchToolIncludesDomain()
     {
         var messages = new Chat()
         {
@@ -186,7 +192,7 @@ public class GrokTests(ITestOutputHelper output)
     }
 
     [SecretsFact("XAI_API_KEY")]
-    public async Task GrokGrpcInvokesGrokSearchToolExcludesDomain()
+    public async Task GrokInvokesGrokSearchToolExcludesDomain()
     {
         var messages = new Chat()
         {

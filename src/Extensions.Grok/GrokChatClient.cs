@@ -118,6 +118,18 @@ class GrokChatClient : IChatClient
             request.Messages.Add(pMessage);
         }
 
+        if (options is GrokChatOptions grokOptions)
+        {
+            if (grokOptions.Search is GrokSearch.Web)
+            {
+                (options.Tools ??= []).Add(new GrokSearchTool());
+            }
+            else if (grokOptions.Search is GrokSearch.X)
+            {
+                (options.Tools ??= []).Add(new GrokXSearchTool());
+            }
+        }
+
         if (options?.Tools is not null)
         {
             foreach (var tool in options.Tools)
