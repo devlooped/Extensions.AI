@@ -102,7 +102,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         Throw.IfNullOrEmpty(apikey, $"{section}:apikey");
 
         IChatClient client = options.Endpoint?.Host == "api.x.ai"
-            ? new GrokChatClient2(apikey, options.ModelId, options)
+            ? new GrokClient(apikey, configSection.Get<GrokClientOptions>() ?? new()).AsIChatClient(options.ModelId)
             : options.Endpoint?.Host == "ai.azure.com"
             ? new ChatCompletionsClient(options.Endpoint, new AzureKeyCredential(apikey), SetOptions<ConfigurableInferenceOptions>(configSection)).AsIChatClient(options.ModelId)
             : options.Endpoint?.Host.EndsWith("openai.azure.com") == true

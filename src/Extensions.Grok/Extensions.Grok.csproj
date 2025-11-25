@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <!--<TargetFramework>net10.0</TargetFramework>-->
-    <!--<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>-->
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
     <AssemblyName>Devlooped.Extensions.AI.Grok</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <PackageId>$(AssemblyName)</PackageId>
@@ -24,11 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Extensions\Extensions.csproj" />
+    <Protobuf Include="proto\*.proto" GrpcServices="Client" ProtoRoot="proto" />
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="proto\*.proto" GrpcServices="Client" ProtoRoot="proto" />
+    <Compile Include="..\Extensions\Extensions\ChatOptionsExtensions.cs" Link="Extensions\ChatOptionsExtensions.cs" />
   </ItemGroup>
 
 </Project>

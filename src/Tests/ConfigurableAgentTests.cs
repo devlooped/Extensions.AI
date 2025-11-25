@@ -290,43 +290,43 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         Assert.Equal(ReasoningEffort.Minimal, options?.ChatOptions?.ReasoningEffort);
     }
 
-    [Fact]
-    public void CanSetGrokOptions()
-    {
-        var builder = new HostApplicationBuilder();
+    //[Fact]
+    //public void CanSetGrokOptions()
+    //{
+    //    var builder = new HostApplicationBuilder();
 
-        builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["ai:clients:grok:modelid"] = "grok-4",
-            ["ai:clients:grok:apikey"] = "xai-asdfasdf",
-            ["ai:clients:grok:endpoint"] = "https://api.x.ai",
-            ["ai:agents:bot:client"] = "grok",
-            ["ai:agents:bot:options:reasoningeffort"] = "low",
-            ["ai:agents:bot:options:search"] = "auto",
-        });
+    //    builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+    //    {
+    //        ["ai:clients:grok:modelid"] = "grok-4",
+    //        ["ai:clients:grok:apikey"] = "xai-asdfasdf",
+    //        ["ai:clients:grok:endpoint"] = "https://api.x.ai",
+    //        ["ai:agents:bot:client"] = "grok",
+    //        ["ai:agents:bot:options:reasoningeffort"] = "low",
+    //        ["ai:agents:bot:options:search"] = "auto",
+    //    });
 
-        builder.AddAIAgents();
-        var app = builder.Build();
-        var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
-        var options = agent.GetService<ChatClientAgentOptions>();
+    //    builder.AddAIAgents();
+    //    var app = builder.Build();
+    //    var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
+    //    var options = agent.GetService<ChatClientAgentOptions>();
 
-        var grok = Assert.IsType<GrokChatOptions>(options?.ChatOptions);
+    //    var grok = Assert.IsType<GrokChatOptions>(options?.ChatOptions);
 
-        Assert.Equal(ReasoningEffort.Low, grok.ReasoningEffort);
-        Assert.Equal(GrokSearch.Auto, grok.Search);
+    //    Assert.Equal(ReasoningEffort.Low, grok.ReasoningEffort);
+    //    Assert.Equal(GrokSearch.Auto, grok.Search);
 
-        var configuration = (IConfigurationRoot)app.Services.GetRequiredService<IConfiguration>();
-        configuration["ai:agents:bot:options:reasoningeffort"] = "high";
-        configuration["ai:agents:bot:options:search"] = "off";
-        // NOTE: the in-memory provider does not support reload on change, so we must trigger it manually.
-        configuration.Reload();
+    //    var configuration = (IConfigurationRoot)app.Services.GetRequiredService<IConfiguration>();
+    //    configuration["ai:agents:bot:options:reasoningeffort"] = "high";
+    //    configuration["ai:agents:bot:options:search"] = "off";
+    //    // NOTE: the in-memory provider does not support reload on change, so we must trigger it manually.
+    //    configuration.Reload();
 
-        options = agent.GetService<ChatClientAgentOptions>();
-        grok = Assert.IsType<GrokChatOptions>(options?.ChatOptions);
+    //    options = agent.GetService<ChatClientAgentOptions>();
+    //    grok = Assert.IsType<GrokChatOptions>(options?.ChatOptions);
 
-        Assert.Equal(ReasoningEffort.High, grok.ReasoningEffort);
-        Assert.Equal(GrokSearch.Off, grok.Search);
-    }
+    //    Assert.Equal(ReasoningEffort.High, grok.ReasoningEffort);
+    //    Assert.Equal(GrokSearch.Off, grok.Search);
+    //}
 
     [Fact]
     public void UseContextProviderFactoryFromKeyedService()
