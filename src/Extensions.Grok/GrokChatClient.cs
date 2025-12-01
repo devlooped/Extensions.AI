@@ -1,26 +1,23 @@
 using System.Text.Json;
-using System.Linq;
-using System.ClientModel.Primitives;
 
 using Microsoft.Extensions.AI;
 
-using XaiApi;
 using Grpc.Core;
-using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
-using Xai = XaiApi.Chat;
+using Devlooped.Grok;
+using static Devlooped.Grok.Chat;
 
 namespace Devlooped.Extensions.AI.Grok;
 
 class GrokChatClient : IChatClient
 {
-    readonly Xai.ChatClient client;
+    readonly ChatClient client;
     readonly string defaultModelId;
     readonly GrokClientOptions clientOptions;
 
     internal GrokChatClient(GrpcChannel channel, GrokClientOptions clientOptions, string defaultModelId)
     {
-        client = new Xai.ChatClient(channel);
+        client = new ChatClient(channel);
         this.clientOptions = clientOptions;
         this.defaultModelId = defaultModelId;
     }
@@ -37,7 +34,7 @@ class GrokChatClient : IChatClient
             .ToList();
 
         var lastOutput = protoResponse.Outputs.LastOrDefault();
-
+        
         return new ChatResponse(chatMessages)
         {
             ResponseId = protoResponse.Id,
@@ -94,6 +91,48 @@ class GrokChatClient : IChatClient
         }
     }
 
+    static ChatMessage MapToChatMessage(CompletionMessage message, IList<string>? citations = null)
+    {
+        var chatMessage = new ChatMessage() { Role = MapRole(message.Role) };
+
+        if (message.Content is { Length: > 0 } text)
+        {
+            var textContent = new TextContent(text);
+            if (citations is { Count: > 0 })
+            {
+                foreach (var citation in citations.Distinct())
+                {
+                    (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
+                }
+            }
+            chatMessage.Contents.Add(textContent);
+        }
+
+        foreach (var toolCall in message.ToolCalls)
+        {
+            // Only include client-side tools in the response messages
+            if (toolCall.Type == ToolCallType.ClientSideTool)
+            {
+                var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
+                    ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
+                    : null;
+
+                var content = new FunctionCallContent(
+                        toolCall.Id,
+                        toolCall.Function.Name,
+                        arguments);
+
+                chatMessage.Contents.Add(content);
+            }
+            else
+            {
+                chatMessage.Contents.Add(new HostedToolCallContent(toolCall));
+            }
+        }
+
+        return chatMessage;
+    }
+
     GetCompletionsRequest MapToRequest(IEnumerable<ChatMessage> messages, ChatOptions? options)
     {
         var request = new GetCompletionsRequest
@@ -110,23 +149,56 @@ class GrokChatClient : IChatClient
 
         foreach (var message in messages)
         {
-            var pMessage = new Message { Role = MapRole(message.Role) };
-            if (message.Text is string text)
+            var gmsg = new Message { Role = MapRole(message.Role) };
+            
+            foreach (var content in message.Contents)
             {
-                pMessage.Content.Add(new Content { Text = text });
+                if (content is TextContent textContent && !string.IsNullOrEmpty(textContent.Text))
+                {
+                    gmsg.Content.Add(new Content { Text = textContent.Text });
+                }
+                else if (content is FunctionCallContent functionCall)
+                {
+                    gmsg.ToolCalls.Add(new ToolCall
+                    {
+                        Id = functionCall.CallId,
+                        Type = ToolCallType.ClientSideTool,
+                        Function = new FunctionCall
+                        {
+                            Name = functionCall.Name,
+                            Arguments = JsonSerializer.Serialize(functionCall.Arguments)
+                        }
+                    });
+                }
+                else if (content is HostedToolCallContent serverFunction)
+                {
+                    gmsg.ToolCalls.Add(serverFunction.ToolCall);
+                }
+                else if (content is FunctionResultContent resultContent)
+                {
+                    request.Messages.Add(new Message
+                    {
+                        Role = MessageRole.RoleTool,
+                        Content = { new Content { Text = JsonSerializer.Serialize(resultContent.Result) ?? "null" } }
+                    });
+                }
             }
-            request.Messages.Add(pMessage);
+
+            if (gmsg.Content.Count == 0 && gmsg.ToolCalls.Count == 0)
+                continue;
+
+            request.Messages.Add(gmsg);
         }
 
         if (options is GrokChatOptions grokOptions)
         {
-            if (grokOptions.Search is GrokSearch.Web)
+            if (grokOptions.Search.HasFlag(GrokSearch.X))
             {
-                (options.Tools ??= []).Add(new GrokSearchTool());
+                (options.Tools ??= []).Insert(0, new GrokXSearchTool());
             }
-            else if (grokOptions.Search is GrokSearch.X)
+            else if (grokOptions.Search.HasFlag(GrokSearch.Web))
             {
-                (options.Tools ??= []).Add(new GrokXSearchTool());
+                (options.Tools ??= []).Insert(0, new GrokSearchTool());
             }
         }
 
@@ -210,43 +282,6 @@ class GrokChatClient : IChatClient
         _ => ChatRole.Assistant
     };
 
-    static ChatMessage MapToChatMessage(CompletionMessage message, IList<string>? citations = null)
-    {
-        var chatMessage = new ChatMessage() { Role = MapRole(message.Role) };
-
-        if (!string.IsNullOrEmpty(message.Content) || (citations is { Count: > 0 }))
-        {
-            var textContent = new TextContent(message.Content ?? string.Empty);
-            if (citations is { Count: > 0 })
-            {
-                foreach (var citation in citations.Distinct())
-                {
-                    (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
-                }
-            }
-            chatMessage.Contents.Add(textContent);
-        }
-
-        foreach (var toolCall in message.ToolCalls)
-        {
-            // Only include client-side tools in the response messages
-            if (toolCall.ToolCase == XaiApi.ToolCall.ToolOneofCase.Function && 
-                toolCall.Type == ToolCallType.ClientSideTool)
-            {
-                var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
-                    ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
-                    : null;
-
-                chatMessage.Contents.Add(new FunctionCallContent(
-                    toolCall.Id,
-                    toolCall.Function.Name,
-                    arguments));
-            }
-        }
-
-        return chatMessage;
-    }
-
     static ChatFinishReason? MapFinishReason(FinishReason finishReason) => finishReason switch
     {
         FinishReason.ReasonStop => ChatFinishReason.Stop,
@@ -257,11 +292,11 @@ class GrokChatClient : IChatClient
         _ => null
     };
 
-    static Microsoft.Extensions.AI.UsageDetails? MapToUsage(SamplingUsage usage) => usage == null ? null : new()
+    static UsageDetails? MapToUsage(SamplingUsage usage) => usage == null ? null : new()
     {
-        InputTokenCount = (int)usage.PromptTokens,
-        OutputTokenCount = (int)usage.CompletionTokens,
-        TotalTokenCount = (int)usage.TotalTokens
+        InputTokenCount = usage.PromptTokens,
+        OutputTokenCount = usage.CompletionTokens,
+        TotalTokenCount = usage.TotalTokens
     };
 
     public object? GetService(Type serviceType, object? serviceKey = null) => 

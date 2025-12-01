@@ -3,7 +3,6 @@ using Azure;
 using Devlooped.Extensions.AI.Grok;
 using Microsoft.Extensions.AI;
 using OpenAI.Realtime;
-using XaiApi;
 using static ConfigurationExtensions;
 using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
@@ -51,6 +50,7 @@ public class GrokTests(ITestOutputHelper output)
     {
         var messages = new Chat()
         {
+            { "system", "You use Nasdaq for stocks news and prices." },
             { "user", "What's Tesla stock worth today?" },
         };
 
@@ -60,12 +60,16 @@ public class GrokTests(ITestOutputHelper output)
             .UseFunctionInvocation()
             .Build();
 
+        var getDateCalls = 0;
         var options = new GrokChatOptions
         {
             ModelId = "grok-4-1-fast-non-reasoning",
             Search = GrokSearch.Web,
-            Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")],
-            ToolMode = ChatToolMode.RequireAny
+            Tools = [AIFunctionFactory.Create(() => 
+            {
+                getDateCalls++;
+                return DateTimeOffset.Now.ToString("O");
+            }, "get_date", "Gets the current date")],
         };
         
         var response = await grok.GetResponseAsync(messages, options);
@@ -74,16 +78,24 @@ public class GrokTests(ITestOutputHelper output)
         Assert.Contains(response.Messages, x => x.Role == ChatRole.Tool);
 
         // Citations include nasdaq.com at least as a web search source
-        var citations = response.Messages
+        var urls = response.Messages
             .SelectMany(x => x.Contents)
-            .SelectMany(x => x.Annotations ?? [])
-            .OfType<CitationAnnotation>()
-            .Where(x => x.Url != null)
-            .Select(x => x.Url!.AbsoluteUri)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
             .ToList();
 
-        Assert.Contains(citations, url => url.Contains("/TSLA"));
+        Assert.Equal(1, getDateCalls);
+        Assert.Contains(urls, x => x.Host.EndsWith("nasdaq.com"));
+        Assert.Contains(urls, x => x.PathAndQuery.Contains("/TSLA"));
         Assert.Equal(options.ModelId, response.ModelId);
+
+        var calls = response.Messages
+            .SelectMany(x => x.Contents.OfType<HostedToolCallContent>())
+            .ToList();
+
+        Assert.NotEmpty(calls);
+        Assert.Contains(calls, x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -126,7 +138,7 @@ public class GrokTests(ITestOutputHelper output)
         var messages = new Chat()
         {
             { "system", "You are an AI assistant that knows how to search the web." },
-            { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
+            { "user", "What's Tesla stock worth today? Search X, Yahoo and the news for latest info." },
         };
 
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
@@ -149,7 +161,8 @@ public class GrokTests(ITestOutputHelper output)
             .Select(x => x.Url!)
             .ToList();
 
-        Assert.Contains(urls, url => url.AbsoluteUri.Contains("/TSLA"));
+        Assert.Contains(urls, x => x.Host == "finance.yahoo.com");
+        Assert.Contains(urls, x => x.PathAndQuery.Contains("/TSLA"));
     }
 
     [SecretsFact("XAI_API_KEY")]
