@@ -266,4 +266,30 @@ public class GrokTests(ITestOutputHelper output)
             response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
             x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.CodeExecutionTool);
     }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesHostedCollectionSearch()
+    {
+        var messages = new Chat()
+        {
+            { "user", "¿Cuál es el monto exacto del rango de la multa por inasistencia injustificada a la audiencia señalada por el juez en el proceso sucesorio, según lo establecido en el Artículo 691 del Código Procesal Civil y Comercial de la Nación (Ley 17.454)?" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedFileSearchTool {
+                Inputs = [new HostedVectorStoreContent("collection_91559d9b-a55d-42fe-b2ad-ecf8904d9049")]
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("11,74", text);
+        Assert.Contains(
+            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
+            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.CollectionsSearchTool);
+    }
 }

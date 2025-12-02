@@ -252,6 +252,18 @@ class GrokChatClient : IChatClient
                 {
                     request.Tools.Add(new Tool { CodeExecution = new CodeExecution { } });
                 }
+                else if (tool is HostedFileSearchTool fileSearch)
+                {
+                    var toolProto = new CollectionsSearch();
+
+                    if (fileSearch.Inputs?.OfType<HostedVectorStoreContent>() is { } vectorStores)
+                        toolProto.CollectionIds.AddRange(vectorStores.Select(x => x.VectorStoreId).Distinct());
+                    
+                    if (fileSearch.MaximumResultCount is { } maxResults)
+                        toolProto.Limit = maxResults;
+                    
+                    request.Tools.Add(new Tool { CollectionsSearch = toolProto });
+                }
             }
         }
 
