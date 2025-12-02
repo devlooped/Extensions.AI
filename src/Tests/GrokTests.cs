@@ -65,13 +65,13 @@ public class GrokTests(ITestOutputHelper output)
         {
             ModelId = "grok-4-1-fast-non-reasoning",
             Search = GrokSearch.Web,
-            Tools = [AIFunctionFactory.Create(() => 
+            Tools = [AIFunctionFactory.Create(() =>
             {
                 getDateCalls++;
                 return DateTimeOffset.Now.ToString("O");
             }, "get_date", "Gets the current date")],
         };
-        
+
         var response = await grok.GetResponseAsync(messages, options);
 
         // The get_date result shows up as a tool role
@@ -178,14 +178,14 @@ public class GrokTests(ITestOutputHelper output)
 
         var options = new ChatOptions
         {
-            Tools = [new GrokSearchTool 
-            { 
+            Tools = [new GrokSearchTool
+            {
                 AllowedDomains = ["microsoft.com", "news.microsoft.com"],
             }]
         };
 
         var response = await grok.GetResponseAsync(messages, options);
-        
+
         Assert.NotNull(response.Text);
         Assert.Contains("Microsoft", response.Text);
 
@@ -241,5 +241,29 @@ public class GrokTests(ITestOutputHelper output)
         }
 
         Assert.DoesNotContain(urls, x => x.Host == "blogs.microsoft.com");
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesHostedCodeExecution()
+    {
+        var messages = new Chat()
+        {
+            { "user", "Calculate the compound interest for $10,000 at 5% annually for 10 years" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedCodeInterpreterTool()]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("$6,288.95", text);
+        Assert.Contains(
+            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
+            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.CodeExecutionTool);
     }
 }

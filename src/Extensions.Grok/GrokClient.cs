@@ -26,8 +26,8 @@ public class GrokClient(string apiKey, GrokClientOptions options)
     internal GrpcChannel Channel => channels.GetOrAdd((Endpoint, ApiKey), key =>
     {
         var handler = new AuthenticationHeaderHandler(ApiKey)
-        { 
-            InnerHandler = Options.ChannelOptions?.HttpHandler ?? new HttpClientHandler() 
+        {
+            InnerHandler = Options.ChannelOptions?.HttpHandler ?? new HttpClientHandler()
         };
 
         var options = Options.ChannelOptions ?? new GrpcChannelOptions();

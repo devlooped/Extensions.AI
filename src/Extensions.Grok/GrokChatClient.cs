@@ -1,10 +1,8 @@
 using System.Text.Json;
-
-using Microsoft.Extensions.AI;
-
+using Devlooped.Grok;
 using Grpc.Core;
 using Grpc.Net.Client;
-using Devlooped.Grok;
+using Microsoft.Extensions.AI;
 using static Devlooped.Grok.Chat;
 
 namespace Devlooped.Extensions.AI.Grok;
@@ -25,7 +23,7 @@ class GrokChatClient : IChatClient
     public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         var requestDto = MapToRequest(messages, options);
-        
+
         var protoResponse = await client.GetCompletionAsync(requestDto, cancellationToken: cancellationToken);
 
         var chatMessages = protoResponse.Outputs
@@ -34,7 +32,7 @@ class GrokChatClient : IChatClient
             .ToList();
 
         var lastOutput = protoResponse.Outputs.LastOrDefault();
-        
+
         return new ChatResponse(chatMessages)
         {
             ResponseId = protoResponse.Id,
@@ -52,13 +50,13 @@ class GrokChatClient : IChatClient
         async IAsyncEnumerable<ChatResponseUpdate> CompleteChatStreamingCore(IEnumerable<ChatMessage> messages, ChatOptions? options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var requestDto = MapToRequest(messages, options);
-            
+
             using var call = client.GetCompletionChunk(requestDto, cancellationToken: cancellationToken);
-            
+
             await foreach (var chunk in call.ResponseStream.ReadAllAsync(cancellationToken))
             {
                 var outputChunk = chunk.Outputs[0];
-                
+
                 // Use positional arguments for ChatResponseUpdate
                 var update = new ChatResponseUpdate(
                     outputChunk.Delta.Role != MessageRole.InvalidRole ? MapRole(outputChunk.Delta.Role) : null,
@@ -79,7 +77,7 @@ class GrokChatClient : IChatClient
                         textContent = new TextContent(string.Empty);
                         update.Contents.Add(textContent);
                     }
-                    
+
                     foreach (var citation in citations.Distinct())
                     {
                         (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
@@ -150,7 +148,7 @@ class GrokChatClient : IChatClient
         foreach (var message in messages)
         {
             var gmsg = new Message { Role = MapRole(message.Role) };
-            
+
             foreach (var content in message.Contents)
             {
                 if (content is TextContent textContent && !string.IsNullOrEmpty(textContent.Text))
@@ -250,6 +248,10 @@ class GrokChatClient : IChatClient
                         request.Tools.Add(new Tool { WebSearch = new WebSearch() });
                     }
                 }
+                else if (tool is HostedCodeInterpreterTool)
+                {
+                    request.Tools.Add(new Tool { CodeExecution = new CodeExecution { } });
+                }
             }
         }
 
@@ -272,7 +274,7 @@ class GrokChatClient : IChatClient
         _ when role == ChatRole.Tool => MessageRole.RoleTool,
         _ => MessageRole.RoleUser
     };
-    
+
     static ChatRole MapRole(MessageRole role) => role switch
     {
         MessageRole.RoleSystem => ChatRole.System,
@@ -299,8 +301,8 @@ class GrokChatClient : IChatClient
         TotalTokenCount = usage.TotalTokens
     };
 
-    public object? GetService(Type serviceType, object? serviceKey = null) => 
+    public object? GetService(Type serviceType, object? serviceKey = null) =>
         serviceType == typeof(GrokChatClient) ? this : null;
 
-    public void Dispose() {}
+    public void Dispose() { }
 }
