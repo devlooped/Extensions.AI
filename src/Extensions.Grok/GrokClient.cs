@@ -4,12 +4,17 @@ using Grpc.Net.Client;
 
 namespace Devlooped.Extensions.AI.Grok;
 
+/// <summary>Client for interacting with the Grok service.</summary>
+/// <param name="apiKey">The API key used for authentication.</param>
+/// <param name="options">The options used to configure the client.</param>
 public class GrokClient(string apiKey, GrokClientOptions options)
 {
     static ConcurrentDictionary<(Uri, string), GrpcChannel> channels = [];
 
+    /// <summary>Initializes a new instance of the <see cref="GrokClient"/> class with default options.</summary>
     public GrokClient(string apiKey) : this(apiKey, new GrokClientOptions()) { }
 
+    /// <summary>Gets the API key used for authentication.</summary>
     public string ApiKey { get; } = apiKey;
 
     /// <summary>Gets or sets the endpoint for the service.</summary>

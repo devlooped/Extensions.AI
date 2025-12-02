@@ -2,6 +2,7 @@
 
 namespace Devlooped.Extensions.AI.Grok;
 
+/// <summary>Options for configuring the <see cref="GrokClient"/>.</summary>
 public class GrokClientOptions
 {
     /// <summary> Gets or sets the service endpoint. </summary>
