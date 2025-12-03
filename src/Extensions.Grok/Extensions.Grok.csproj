@@ -10,6 +10,7 @@
     <PackageLicenseFile>OSMFEULA.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <NoWarn>MEAI001;$(NoWarn)</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

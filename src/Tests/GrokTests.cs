@@ -56,8 +56,8 @@ public class GrokTests(ITestOutputHelper output)
 
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4")
             .AsBuilder()
-            .UseLogging(output.AsLoggerFactory())
             .UseFunctionInvocation()
+            .UseLogging(output.AsLoggerFactory())
             .Build();
 
         var getDateCalls = 0;
@@ -291,5 +291,32 @@ public class GrokTests(ITestOutputHelper output)
         Assert.Contains(
             response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
             x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.CollectionsSearchTool);
+    }
+
+    [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
+    public async Task GrokInvokesHostedMcp()
+    {
+        var messages = new Chat()
+        {
+            { "user", "When was GrokClient v1.0.0 released on the devlooped/GrokClient repo? Respond with just the date, in YYYY-MM-DD format." },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+                AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+                AllowedTools = ["list_releases"],
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Equal("2025-11-29", text);
+        Assert.Contains(
+            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
+            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.McpTool);
     }
 }

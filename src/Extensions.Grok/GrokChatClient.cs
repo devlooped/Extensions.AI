@@ -23,17 +23,62 @@ class GrokChatClient : IChatClient
     public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
         var requestDto = MapToRequest(messages, options);
-
         var protoResponse = await client.GetCompletionAsync(requestDto, cancellationToken: cancellationToken);
+        var lastOutput = protoResponse.Outputs.OrderByDescending(x => x.Index).FirstOrDefault();
 
-        var chatMessages = protoResponse.Outputs
-            .Select(x => MapToChatMessage(x.Message, protoResponse.Citations))
-            .Where(x => x.Contents.Count > 0)
-            .ToList();
+        if (lastOutput == null)
+        {
+            return new ChatResponse()
+            {
+                ResponseId = protoResponse.Id,
+                ModelId = protoResponse.Model,
+                CreatedAt = protoResponse.Created.ToDateTimeOffset(),
+                Usage = MapToUsage(protoResponse.Usage),
+            };
+        }
 
-        var lastOutput = protoResponse.Outputs.LastOrDefault();
+        var message = new ChatMessage(MapRole(lastOutput.Message.Role), default(string));
+        var citations = protoResponse.Citations?.Distinct().Select(MapCitation).ToList<AIAnnotation>();
 
-        return new ChatResponse(chatMessages)
+        foreach (var output in protoResponse.Outputs.OrderBy(x => x.Index))
+        {
+            if (output.Message.Content is { Length: > 0 } text)
+            {
+                var content = new TextContent(text)
+                {
+                    Annotations = citations
+                };
+
+                foreach (var citation in output.Message.Citations)
+                {
+                    (content.Annotations ??= []).Add(MapInlineCitation(citation));
+                }
+                message.Contents.Add(content);
+            }
+
+            foreach (var toolCall in output.Message.ToolCalls)
+            {
+                if (toolCall.Type == ToolCallType.ClientSideTool)
+                {
+                    var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
+                        ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
+                        : null;
+
+                    var content = new FunctionCallContent(
+                            toolCall.Id,
+                            toolCall.Function.Name,
+                            arguments);
+
+                    message.Contents.Add(content);
+                }
+                else
+                {
+                    message.Contents.Add(new HostedToolCallContent(toolCall));
+                }
+            }
+        }
+
+        return new ChatResponse(message)
         {
             ResponseId = protoResponse.Id,
             ModelId = protoResponse.Model,
@@ -80,7 +125,7 @@ class GrokChatClient : IChatClient
 
                     foreach (var citation in citations.Distinct())
                     {
-                        (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
+                        (textContent.Annotations ??= []).Add(MapCitation(citation));
                     }
                 }
 
@@ -89,46 +134,37 @@ class GrokChatClient : IChatClient
         }
     }
 
-    static ChatMessage MapToChatMessage(CompletionMessage message, IList<string>? citations = null)
+    static CitationAnnotation MapInlineCitation(InlineCitation citation) => citation.CitationCase switch
     {
-        var chatMessage = new ChatMessage() { Role = MapRole(message.Role) };
-
-        if (message.Content is { Length: > 0 } text)
+        InlineCitation.CitationOneofCase.WebCitation => new CitationAnnotation { Url = new(citation.WebCitation.Url) },
+        InlineCitation.CitationOneofCase.XCitation => new CitationAnnotation { Url = new(citation.XCitation.Url) },
+        InlineCitation.CitationOneofCase.CollectionsCitation => new CitationAnnotation
         {
-            var textContent = new TextContent(text);
-            if (citations is { Count: > 0 })
-            {
-                foreach (var citation in citations.Distinct())
+            FileId = citation.CollectionsCitation.FileId,
+            Snippet = citation.CollectionsCitation.ChunkContent,
+            ToolName = "file_search",
+        },
+        _ => new CitationAnnotation()
+    };
+
+    static CitationAnnotation MapCitation(string citation)
+    {
+        var url = new Uri(citation);
+        if (url.Scheme != "collections")
+            return new CitationAnnotation { Url = url };
+
+        // Special-case collection citations so we get better metadata
+        var collection = url.Host;
+        var file = url.AbsolutePath[7..];
+        return new CitationAnnotation
+        {
+            ToolName = "collections_search",
+            FileId = file,
+            AdditionalProperties = new AdditionalPropertiesDictionary
                 {
-                    (textContent.Annotations ??= []).Add(new CitationAnnotation { Url = new(citation) });
+                    { "collection_id", collection }
                 }
-            }
-            chatMessage.Contents.Add(textContent);
-        }
-
-        foreach (var toolCall in message.ToolCalls)
-        {
-            // Only include client-side tools in the response messages
-            if (toolCall.Type == ToolCallType.ClientSideTool)
-            {
-                var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
-                    ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
-                    : null;
-
-                var content = new FunctionCallContent(
-                        toolCall.Id,
-                        toolCall.Function.Name,
-                        arguments);
-
-                chatMessage.Contents.Add(content);
-            }
-            else
-            {
-                chatMessage.Contents.Add(new HostedToolCallContent(toolCall));
-            }
-        }
-
-        return chatMessage;
+        };
     }
 
     GetCompletionsRequest MapToRequest(IEnumerable<ChatMessage> messages, ChatOptions? options)
@@ -258,11 +294,24 @@ class GrokChatClient : IChatClient
 
                     if (fileSearch.Inputs?.OfType<HostedVectorStoreContent>() is { } vectorStores)
                         toolProto.CollectionIds.AddRange(vectorStores.Select(x => x.VectorStoreId).Distinct());
-                    
+
                     if (fileSearch.MaximumResultCount is { } maxResults)
                         toolProto.Limit = maxResults;
-                    
+
                     request.Tools.Add(new Tool { CollectionsSearch = toolProto });
+                }
+                else if (tool is HostedMcpServerTool mcpTool)
+                {
+                    request.Tools.Add(new Tool
+                    {
+                        Mcp = new MCP
+                        {
+                            Authorization = mcpTool.AuthorizationToken,
+                            ServerLabel = mcpTool.ServerName,
+                            ServerUrl = mcpTool.ServerAddress,
+                            AllowedToolNames = { mcpTool.AllowedTools ?? Array.Empty<string>() }
+                        }
+                    });
                 }
             }
         }
