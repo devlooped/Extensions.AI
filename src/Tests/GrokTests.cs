@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
 using Azure;
 using Devlooped.Extensions.AI.Grok;
 using Microsoft.Extensions.AI;
@@ -319,4 +320,70 @@ public class GrokTests(ITestOutputHelper output)
             response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
             x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.McpTool);
     }
+
+    [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
+    public async Task GrokStreamsUpdatesFromAllTools()
+    {
+        var messages = new Chat()
+        {
+            { "user",
+                """
+                What's the oldest stable version released on the devlooped/GrokClient repo on GitHub?, 
+                what is the current price of Tesla stock, 
+                and what is the current date? Respond with the following JSON: 
+                {
+                  "today": "[get_date result]",
+                  "release": "[first stable release of devlooped/GrokClient]",
+                  "price": [$TSLA price]
+                }
+                """
+            },    
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
+            .AsIChatClient("grok-4-fast")
+            .AsBuilder()
+            .UseFunctionInvocation()
+            .UseLogging(output.AsLoggerFactory())
+            .Build();
+
+        var getDateCalls = 0;
+        var options = new ChatOptions
+        {
+            Tools =
+            [
+                new HostedWebSearchTool(),
+                new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+                    AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+                    AllowedTools = ["list_releases", "get_release_by_tag"],
+                },
+                AIFunctionFactory.Create(() => {
+                    getDateCalls++;
+                    return DateTimeOffset.Now.ToString("O");
+                }, "get_date", "Gets the current date")
+            ]
+        };
+
+        var updates = await grok.GetStreamingResponseAsync(messages, options).ToListAsync();
+        var response = updates.ToChatResponse();
+        var typed = JsonSerializer.Deserialize<Response>(response.Text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.NotNull(typed);
+
+        Assert.Contains(
+            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
+            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.McpTool);
+
+        Assert.Contains(
+            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
+            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
+
+        Assert.Equal(1, getDateCalls);
+
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), typed.Today);
+        Assert.EndsWith("1.0.0", typed.Release);
+        Assert.True(typed.Price > 100);
+    }
+
+    record Response(DateOnly Today, string Release, decimal Price);
 }

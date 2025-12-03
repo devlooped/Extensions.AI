@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Devlooped.Grok;
+using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.AI;
@@ -95,22 +96,19 @@ class GrokChatClient : IChatClient
         async IAsyncEnumerable<ChatResponseUpdate> CompleteChatStreamingCore(IEnumerable<ChatMessage> messages, ChatOptions? options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
         {
             var requestDto = MapToRequest(messages, options);
-
-            using var call = client.GetCompletionChunk(requestDto, cancellationToken: cancellationToken);
-
+            var call = client.GetCompletionChunk(requestDto, cancellationToken: cancellationToken);
+            
             await foreach (var chunk in call.ResponseStream.ReadAllAsync(cancellationToken))
             {
                 var outputChunk = chunk.Outputs[0];
+                var text = outputChunk.Delta.Content is { Length: > 0 } delta ? delta : null;
 
                 // Use positional arguments for ChatResponseUpdate
-                var update = new ChatResponseUpdate(
-                    outputChunk.Delta.Role != MessageRole.InvalidRole ? MapRole(outputChunk.Delta.Role) : null,
-                    outputChunk.Delta.Content
-                )
+                var update = new ChatResponseUpdate(MapRole(outputChunk.Delta.Role), text)
                 {
                     ResponseId = chunk.Id,
                     ModelId = chunk.Model,
-                    CreatedAt = chunk.Created.ToDateTimeOffset(),
+                    CreatedAt = chunk.Created?.ToDateTimeOffset(),
                     FinishReason = outputChunk.FinishReason != FinishReason.ReasonInvalid ? MapFinishReason(outputChunk.FinishReason) : null,
                 };
 
@@ -129,7 +127,29 @@ class GrokChatClient : IChatClient
                     }
                 }
 
-                yield return update;
+                foreach (var toolCall in outputChunk.Delta.ToolCalls)
+                {
+                    if (toolCall.Type == ToolCallType.ClientSideTool)
+                    {
+                        var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
+                            ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
+                            : null;
+
+                        var content = new FunctionCallContent(
+                                toolCall.Id,
+                                toolCall.Function.Name,
+                                arguments);
+
+                        update.Contents.Add(content);
+                    }
+                    else
+                    {
+                        update.Contents.Add(new HostedToolCallContent(toolCall));
+                    }
+                }
+
+                if (update.Contents.Any())
+                    yield return update;
             }
         }
     }
@@ -220,6 +240,9 @@ class GrokChatClient : IChatClient
 
             if (gmsg.Content.Count == 0 && gmsg.ToolCalls.Count == 0)
                 continue;
+
+            if (gmsg.Content.Count == 0)
+                gmsg.Content.Add(new Content());
 
             request.Messages.Add(gmsg);
         }
