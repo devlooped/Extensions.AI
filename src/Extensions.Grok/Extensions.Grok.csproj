@@ -18,8 +18,8 @@
     <PackageReference Include="GrokClient" Version="1.0.2" />
     <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0" PrivateAssets="all" />
-    <PackageReference Include="NuGetizer" Version="1.4.5" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.0.0" />
+    <PackageReference Include="NuGetizer" Version="1.4.6" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="10.0.1" />
     <PackageReference Include="System.ClientModel" Version="1.8.1" />
   </ItemGroup>
 

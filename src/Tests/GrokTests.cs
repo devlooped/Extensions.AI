@@ -414,8 +414,8 @@ public class GrokTests(ITestOutputHelper output)
                 and what is the current date? Respond with the following JSON: 
                 {
                   "today": "[get_date result]",
-                  "release": "[first stable release of devlooped/GrokClient]",
-                  "price": [$TSLA price]
+                  "release": "[first stable release of devlooped/GrokClient, using GitHub MCP tool]",
+                  "price": [$TSLA price using web search tool]
                 }
                 """
             },
@@ -429,8 +429,9 @@ public class GrokTests(ITestOutputHelper output)
             .Build();
 
         var getDateCalls = 0;
-        var options = new ChatOptions
+        var options = new GrokChatOptions
         {
+            Include = { IncludeOption.McpCallOutput },
             Tools =
             [
                 new HostedWebSearchTool(),
@@ -447,7 +448,7 @@ public class GrokTests(ITestOutputHelper output)
 
         var updates = await grok.GetStreamingResponseAsync(messages, options).ToListAsync();
         var response = updates.ToChatResponse();
-        var typed = JsonSerializer.Deserialize<Response>(response.Text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var typed = JsonSerializer.Deserialize<Response>(response.Messages.Last().Text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
         Assert.NotNull(typed);
 
