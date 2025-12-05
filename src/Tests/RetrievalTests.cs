@@ -6,7 +6,7 @@ namespace Devlooped.Extensions.AI;
 
 public class RetrievalTests(ITestOutputHelper output)
 {
-    [SecretsTheory("OPENAI_API_KEY", Skip = "Vector processing not completing")]
+    [SecretsTheory("OPENAI_API_KEY")]
     [InlineData("gpt-4.1-nano", "Qué es la rebeldía en el Código Procesal Civil y Comercial Nacional?")]
     [InlineData("gpt-4.1-nano", "What's the battery life in an iPhone 15?", true)]
     public async Task CanRetrieveContent(string model, string question, bool empty = false)
@@ -19,10 +19,10 @@ public class RetrievalTests(ITestOutputHelper output)
             try
             {
                 var result = client.GetVectorStoreClient().AddFileToVectorStore(store.Value.Id, file.Value.Id);
-                while (result.Value.Status != global::OpenAI.VectorStores.VectorStoreFileStatus.Cancelled)
+                while (result.Value.Status != global::OpenAI.VectorStores.VectorStoreFileStatus.Completed)
                 {
-                    await Task.Delay(100);
-                    result = client.GetVectorStoreClient().GetVectorStoreFile(store.Value.Id, file.Value.Id);
+                    await Task.Delay(250);
+                    result = client.GetVectorStoreClient().GetVectorStoreFile(result.Value.VectorStoreId, result.Value.FileId);
                 }
 
                 var responses = new OpenAIResponseClient(model, Configuration["OPENAI_API_KEY"]);
