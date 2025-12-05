@@ -23,10 +23,14 @@ public static class ChatExtensions
 
     extension(ChatOptions options)
     {
-        /// <summary>
-        /// Sets the effort level for a reasoning AI model when generating responses, if supported 
-        /// by the model.
-        /// </summary>
+        /// <summary>Gets or sets the end user ID for the chat session.</summary>
+        public string? EndUserId
+        {
+            get => (options.AdditionalProperties ??= []).TryGetValue("EndUserId", out var value) ? value as string : null;
+            set => (options.AdditionalProperties ??= [])["EndUserId"] = value;
+        }
+
+        /// <summary>Sets the effort level for a reasoning AI model when generating responses, if supported by the model.</summary>
         public ReasoningEffort? ReasoningEffort
         {
             get => options.AdditionalProperties?.TryGetValue("reasoning_effort", out var value) == true && value is ReasoningEffort effort ? effort : null;
@@ -44,9 +48,7 @@ public static class ChatExtensions
             }
         }
 
-        /// <summary>
-        /// Sets the <see cref="Verbosity"/> level for a GPT-5 model when generating responses, if supported
-        /// </summary>
+        /// <summary>Sets the <see cref="Verbosity"/> level for a GPT-5 model when generating responses, if supported</summary>
         public Verbosity? Verbosity
         {
             get => options.AdditionalProperties?.TryGetValue("verbosity", out var value) == true && value is Verbosity verbosity ? verbosity : null;

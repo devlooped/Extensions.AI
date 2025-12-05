@@ -1,6 +1,10 @@
-﻿using System.Text.Json.Nodes;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using Azure;
 using Devlooped.Extensions.AI.Grok;
+using Devlooped.Grok;
 using Microsoft.Extensions.AI;
+using OpenAI.Realtime;
 using static ConfigurationExtensions;
 using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
@@ -17,12 +21,14 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "What day is today?" },
         };
 
-        var chat = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3");
+        var chat = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4")
+            .AsBuilder()
+            .UseLogging(output.AsLoggerFactory())
+            .Build();
 
         var options = new GrokChatOptions
         {
-            ModelId = "grok-3-mini",
-            Search = GrokSearch.Auto,
+            ModelId = "grok-4-fast-non-reasoning",
             Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")],
             AdditionalProperties = new()
             {
@@ -38,7 +44,7 @@ public class GrokTests(ITestOutputHelper output)
         Assert.True(getdate);
         // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
         // different model and the grok client honors that choice.
-        Assert.Equal("grok-3-mini", response.ModelId);
+        Assert.Equal(options.ModelId, response.ModelId);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -46,132 +52,54 @@ public class GrokTests(ITestOutputHelper output)
     {
         var messages = new Chat()
         {
-            { "system", "You are a bot that invokes the tool 'get_date' before responding to anything since it's important context." },
+            { "system", "You use Nasdaq for stocks news and prices." },
             { "user", "What's Tesla stock worth today?" },
         };
 
-        var requests = new List<JsonNode>();
-        var responses = new List<JsonNode>();
-
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
-                    .Observable(requests.Add, responses.Add)
-                    .WriteTo(output))
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4")
             .AsBuilder()
             .UseFunctionInvocation()
+            .UseLogging(output.AsLoggerFactory())
             .Build();
 
+        var getDateCalls = 0;
         var options = new GrokChatOptions
         {
-            ModelId = "grok-3-mini",
-            Search = GrokSearch.On,
-            Tools = [AIFunctionFactory.Create(() => DateTimeOffset.Now.ToString("O"), "get_date")]
+            ModelId = "grok-4-1-fast-non-reasoning",
+            Search = GrokSearch.Web,
+            Tools = [AIFunctionFactory.Create(() =>
+            {
+                getDateCalls++;
+                return DateTimeOffset.Now.ToString("O");
+            }, "get_date", "Gets the current date")],
         };
 
         var response = await grok.GetResponseAsync(messages, options);
-
-        // assert that the request contains the following node
-        // "search_parameters": {
-        //      "mode": "on"
-        //}
-        Assert.All(requests, x =>
-        {
-            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
-            Assert.Equal("on", search["mode"]?.GetValue<string>());
-        });
 
         // The get_date result shows up as a tool role
         Assert.Contains(response.Messages, x => x.Role == ChatRole.Tool);
 
         // Citations include nasdaq.com at least as a web search source
-        var node = responses.LastOrDefault();
-        Assert.NotNull(node);
-        var citations = Assert.IsType<JsonArray>(node["citations"], false);
-        var yahoo = citations.Where(x => x != null).Any(x => x!.ToString().Contains("https://finance.yahoo.com/quote/TSLA/", StringComparison.Ordinal));
+        var urls = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
 
-        Assert.True(yahoo, "Expected at least one citation to nasdaq.com");
+        Assert.Equal(1, getDateCalls);
+        Assert.Contains(urls, x => x.Host.EndsWith("nasdaq.com"));
+        Assert.Contains(urls, x => x.PathAndQuery.Contains("/TSLA"));
+        Assert.Equal(options.ModelId, response.ModelId);
 
-        // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
-        // different model and the grok client honors that choice.
-        Assert.Equal("grok-3-mini", response.ModelId);
-    }
+        var calls = response.Messages
+            .SelectMany(x => x.Contents.OfType<HostedToolCallContent>())
+            .Select(x => x.RawRepresentation as Devlooped.Grok.ToolCall)
+            .Where(x => x is not null)
+            .ToList();
 
-    [SecretsFact("XAI_API_KEY")]
-    public async Task GrokInvokesHostedSearchTool()
-    {
-        var messages = new Chat()
-        {
-            { "system", "You are an AI assistant that knows how to search the web." },
-            { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
-        };
-
-        var requests = new List<JsonNode>();
-        var responses = new List<JsonNode>();
-
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-3", OpenAIClientOptions
-            .Observable(requests.Add, responses.Add)
-            .WriteTo(output));
-
-        var options = new ChatOptions
-        {
-            Tools = [new HostedWebSearchTool()]
-        };
-
-        var response = await grok.GetResponseAsync(messages, options);
-        var text = response.Text;
-
-        Assert.Contains("TSLA", text);
-
-        // assert that the request contains the following node
-        // "search_parameters": {
-        //      "mode": "auto"
-        //}
-        Assert.All(requests, x =>
-        {
-            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
-            Assert.Equal("auto", search["mode"]?.GetValue<string>());
-        });
-
-        // Citations include nasdaq.com at least as a web search source
-        Assert.Single(responses);
-        var node = responses[0];
-        Assert.NotNull(node);
-        var citations = Assert.IsType<JsonArray>(node["citations"], false);
-        var yahoo = citations.Where(x => x != null).Any(x => x!.ToString().Contains("https://finance.yahoo.com/quote/TSLA/", StringComparison.Ordinal));
-
-        Assert.True(yahoo, "Expected at least one citation to nasdaq.com");
-
-        // Uses the default model set by the client when we asked for it
-        Assert.Equal("grok-3", response.ModelId);
-    }
-
-    [SecretsFact("XAI_API_KEY")]
-    public async Task GrokThinksHard()
-    {
-        var messages = new Chat()
-        {
-            { "system", "You are an intelligent AI assistant that's an expert on financial matters." },
-            { "user", "If you have a debt of 100k and accumulate a compounding 5% debt on top of it every year, how long before you are a negative millonaire? (round up to full integer value)" },
-        };
-
-        var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
-            .GetChatClient("grok-3")
-            .AsIChatClient();
-
-        var options = new GrokChatOptions
-        {
-            ModelId = "grok-3-mini",
-            Search = GrokSearch.Off,
-            ReasoningEffort = ReasoningEffort.High,
-        };
-
-        var response = await grok.GetResponseAsync(messages, options);
-
-        var text = response.Text;
-
-        Assert.Contains("48 years", text);
-        // NOTE: the chat client was requested as grok-3 but the chat options wanted a 
-        // different model and the grok client honors that choice.
-        Assert.StartsWith("grok-3-mini", response.ModelId);
+        Assert.NotEmpty(calls);
+        Assert.Contains(calls, x => x?.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -184,117 +112,362 @@ public class GrokTests(ITestOutputHelper output)
             { "user", "Que calidad de nieve hay hoy?" },
         };
 
-        var requests = new List<JsonNode>();
-        var responses = new List<JsonNode>();
-
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
-            .Observable(requests.Add, responses.Add)
-            .WriteTo(output));
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-1-fast-non-reasoning");
 
         var options = new ChatOptions
         {
-            Tools = [new GrokSearchTool(GrokSearch.On)
+            Tools = [new GrokSearchTool()
             {
-                //FromDate = new DateOnly(2025, 1, 1),
-                //ToDate = DateOnly.FromDateTime(DateTime.Now),
-                //MaxSearchResults = 10,
-                Sources =
-                [
-                    new GrokWebSource
-                    {
-                        AllowedWebsites =
-                        [
-                            "https://catedralaltapatagonia.com",
-                            "https://catedralaltapatagonia.com/parte-de-nieve/",
-                            "https://catedralaltapatagonia.com/tarifas/"
-                        ]
-                    },
-                ]
+                AllowedDomains = [ "catedralaltapatagonia.com" ]
             }]
         };
 
         var response = await grok.GetResponseAsync(messages, options);
         var text = response.Text;
 
-        // assert that the request contains the following node
-        // "search_parameters": {
-        //      "mode": "auto"
-        //}
-        Assert.All(requests, x =>
-        {
-            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
-            Assert.Equal("on", search["mode"]?.GetValue<string>());
-        });
+        var citations = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations ?? [])
+            .OfType<CitationAnnotation>()
+            .Where(x => x.Url != null)
+            .Select(x => x.Url!.AbsoluteUri)
+            .ToList();
 
-        // Citations include catedralaltapatagonia.com at least as a web search source
-        Assert.Single(responses);
-        var node = responses[0];
-        Assert.NotNull(node);
-        var citations = Assert.IsType<JsonArray>(node["citations"], false);
-        var catedral = citations.Where(x => x != null).Any(x => x!.ToString().Contains("catedralaltapatagonia.com", StringComparison.Ordinal));
-
-        Assert.True(catedral, "Expected at least one citation to catedralaltapatagonia.com");
-
-        // Uses the default model set by the client when we asked for it
-        Assert.Equal("grok-4-fast-non-reasoning", response.ModelId);
+        Assert.Contains("https://partediario.catedralaltapatagonia.com/partediario/", citations);
     }
 
     [SecretsFact("XAI_API_KEY")]
-    public async Task CanAvoidCitations()
+    public async Task GrokInvokesHostedSearchTool()
     {
         var messages = new Chat()
         {
-            { "system", "Sos un asistente del Cerro Catedral, usas la funcionalidad de Live Search en el sitio oficial." },
-            { "system", $"Hoy es {DateTime.Now.ToString("o")}" },
-            { "user", "Que calidad de nieve hay hoy?" },
+            { "system", "You are an AI assistant that knows how to search the web." },
+            { "user", "What's Tesla stock worth today? Search X, Yahoo and the news for latest info." },
         };
 
-        var requests = new List<JsonNode>();
-        var responses = new List<JsonNode>();
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
 
-        var grok = new GrokChatClient(Configuration["XAI_API_KEY"]!, "grok-4-fast-non-reasoning", OpenAIClientOptions
-            .Observable(requests.Add, responses.Add)
-            .WriteTo(output));
+        var options = new GrokChatOptions
+        {
+            Include = { Devlooped.Grok.IncludeOption.WebSearchCallOutput },
+            Tools = [new HostedWebSearchTool()]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("TSLA", text);
+        Assert.NotNull(response.ModelId);
+
+        var urls = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
+
+        Assert.Contains(urls, x => x.Host == "finance.yahoo.com");
+        Assert.Contains(urls, x => x.PathAndQuery.Contains("/TSLA"));
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesGrokSearchToolIncludesDomain()
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an AI assistant that knows how to search the web." },
+            { "user", "What is the latest news about Microsoft?" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
 
         var options = new ChatOptions
         {
-            Tools = [new GrokSearchTool(GrokSearch.On)
+            Tools = [new GrokSearchTool
             {
-                ReturnCitations = false,
-                Sources =
-                [
-                    new GrokWebSource
-                    {
-                        AllowedWebsites =
-                        [
-                            "https://catedralaltapatagonia.com",
-                            "https://catedralaltapatagonia.com/parte-de-nieve/",
-                            "https://catedralaltapatagonia.com/tarifas/"
-                        ]
-                    },
-                ]
+                AllowedDomains = ["microsoft.com", "news.microsoft.com"],
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+
+        Assert.NotNull(response.Text);
+        Assert.Contains("Microsoft", response.Text);
+
+        var urls = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
+
+        foreach (var url in urls)
+        {
+            output.WriteLine(url.ToString());
+        }
+
+        Assert.All(urls, x => x.Host.EndsWith(".microsoft.com"));
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesGrokSearchToolExcludesDomain()
+    {
+        var messages = new Chat()
+        {
+            { "system", "You are an AI assistant that knows how to search the web." },
+            { "user", "What is the latest news about Microsoft?" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new GrokSearchTool
+            {
+                ExcludedDomains = ["blogs.microsoft.com"]
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+
+        Assert.NotNull(response.Text);
+        Assert.Contains("Microsoft", response.Text);
+
+        var urls = response.Messages
+            .SelectMany(x => x.Contents)
+            .SelectMany(x => x.Annotations?.OfType<CitationAnnotation>() ?? [])
+            .Where(x => x.Url is not null)
+            .Select(x => x.Url!)
+            .ToList();
+
+        foreach (var url in urls)
+        {
+            output.WriteLine(url.ToString());
+        }
+
+        Assert.DoesNotContain(urls, x => x.Host == "blogs.microsoft.com");
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesHostedCodeExecution()
+    {
+        var messages = new Chat()
+        {
+            { "user", "Calculate the compound interest for $10,000 at 5% annually for 10 years" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedCodeInterpreterTool()]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("$6,288.95", text);
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolCallContent>());
+
+        Assert.Empty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolResultContent>());
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesHostedCodeExecutionWithOutput()
+    {
+        var messages = new Chat()
+        {
+            { "user", "Calculate the compound interest for $10,000 at 5% annually for 10 years" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new GrokChatOptions
+        {
+            Include = { Devlooped.Grok.IncludeOption.CodeExecutionCallOutput },
+            Tools = [new HostedCodeInterpreterTool()]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("$6,288.95", text);
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolCallContent>());
+
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolResultContent>());
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesHostedCollectionSearch()
+    {
+        var messages = new Chat()
+        {
+            { "user", "¿Cuál es el monto exacto del rango de la multa por inasistencia injustificada a la audiencia señalada por el juez en el proceso sucesorio, según lo establecido en el Artículo 691 del Código Procesal Civil y Comercial de la Nación (Ley 17.454)?" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedFileSearchTool {
+                Inputs = [new HostedVectorStoreContent("collection_91559d9b-a55d-42fe-b2ad-ecf8904d9049")]
             }]
         };
 
         var response = await grok.GetResponseAsync(messages, options);
         var text = response.Text;
 
-        // assert that the request contains the following node
-        // "search_parameters": {
-        //      "mode": "auto"
-        //      "return_citations": "false"
-        //}
-        Assert.All(requests, x =>
+        Assert.Contains("11,74", text);
+        Assert.Contains(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<HostedToolCallContent>()
+                .Select(x => x.RawRepresentation as Devlooped.Grok.ToolCall),
+            x => x?.Type == Devlooped.Grok.ToolCallType.CollectionsSearchTool);
+    }
+
+    [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
+    public async Task GrokInvokesHostedMcp()
+    {
+        var messages = new Chat()
         {
-            var search = Assert.IsType<JsonObject>(x["search_parameters"]);
-            Assert.Equal("on", search["mode"]?.GetValue<string>());
-            Assert.False(search["return_citations"]?.GetValue<bool>());
+            { "user", "When was GrokClient v1.0.0 released on the devlooped/GrokClient repo? Respond with just the date, in YYYY-MM-DD format." },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new ChatOptions
+        {
+            Tools = [new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+                AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+                AllowedTools = ["list_releases"],
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Equal("2025-11-29", text);
+        var call = Assert.Single(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<McpServerToolCallContent>());
+
+        Assert.Equal("GitHub.list_releases", call.ToolName);
+    }
+
+    [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
+    public async Task GrokInvokesHostedMcpWithOutput()
+    {
+        var messages = new Chat()
+        {
+            { "user", "When was GrokClient v1.0.0 released on the devlooped/GrokClient repo? Respond with just the date, in YYYY-MM-DD format." },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new GrokChatOptions
+        {
+            Include = { Devlooped.Grok.IncludeOption.McpCallOutput },
+            Tools = [new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+                AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+                AllowedTools = ["list_releases"],
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+
+        // Can include result of MCP tool
+        var output = Assert.Single(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<McpServerToolResultContent>());
+
+        Assert.NotNull(output.Output);
+        Assert.Single(output.Output);
+        var json = Assert.Single(output.Output!.OfType<TextContent>()).Text;
+        var tags = JsonSerializer.Deserialize<List<Release>>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         });
 
-        // Citations are not included
-        Assert.Single(responses);
-        var node = responses[0];
-        Assert.NotNull(node);
-        Assert.Null(node["citations"]);
+        Assert.NotNull(tags);
+        Assert.Contains(tags, x => x.TagName == "v1.0.0");
     }
+
+    record Release(string TagName, DateTimeOffset CreatedAt);
+
+    [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
+    public async Task GrokStreamsUpdatesFromAllTools()
+    {
+        var messages = new Chat()
+        {
+            { "user",
+                """
+                What's the oldest stable version released on the devlooped/GrokClient repo on GitHub?, 
+                what is the current price of Tesla stock, 
+                and what is the current date? Respond with the following JSON: 
+                {
+                  "today": "[get_date result]",
+                  "release": "[first stable release of devlooped/GrokClient, using GitHub MCP tool]",
+                  "price": [$TSLA price using web search tool]
+                }
+                """
+            },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
+            .AsIChatClient("grok-4-fast")
+            .AsBuilder()
+            .UseFunctionInvocation()
+            .UseLogging(output.AsLoggerFactory())
+            .Build();
+
+        var getDateCalls = 0;
+        var options = new GrokChatOptions
+        {
+            Include = { IncludeOption.McpCallOutput },
+            Tools =
+            [
+                new HostedWebSearchTool(),
+                new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+                    AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+                    AllowedTools = ["list_releases", "get_release_by_tag"],
+                },
+                AIFunctionFactory.Create(() => {
+                    getDateCalls++;
+                    return DateTimeOffset.Now.ToString("O");
+                }, "get_date", "Gets the current date")
+            ]
+        };
+
+        var updates = await grok.GetStreamingResponseAsync(messages, options).ToListAsync();
+        var response = updates.ToChatResponse();
+        var typed = JsonSerializer.Deserialize<Response>(response.Messages.Last().Text, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.NotNull(typed);
+
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<McpServerToolCallContent>());
+
+        Assert.Contains(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<HostedToolCallContent>()
+                .Select(x => x.RawRepresentation as Devlooped.Grok.ToolCall),
+            x => x?.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
+
+        Assert.Equal(1, getDateCalls);
+
+        Assert.Equal(DateOnly.FromDateTime(DateTime.Today), typed.Today);
+        Assert.EndsWith("1.0.0", typed.Release);
+        Assert.True(typed.Price > 100);
+    }
+
+    record Response(DateOnly Today, string Release, decimal Price);
 }

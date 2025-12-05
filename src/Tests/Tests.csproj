@@ -2,11 +2,10 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <NoWarn>OPENAI001;$(NoWarn)</NoWarn>
+    <NoWarn>OPENAI001;MEAI001;DEAI001;$(NoWarn)</NoWarn>
     <LangVersion>Preview</LangVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <RootNamespace>Devlooped</RootNamespace>
-    <NetVersion>10.0.0-rc.*</NetVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,23 +15,25 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" PrivateAssets="all" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
 
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="$(NetVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(NetVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="$(NetVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
 
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="$(NetVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="$(NetVersion)" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="$(NetVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
 
     <PackageReference Include="Tomlyn.Extensions.Configuration" Version="1.0.6" />
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Agents\Agents.csproj" />
     <ProjectReference Include="..\Extensions.CodeAnalysis\Extensions.CodeAnalysis.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Extensions.Grok\Extensions.Grok.csproj" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
   </ItemGroup>
 
