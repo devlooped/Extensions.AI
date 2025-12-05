@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Devlooped.Extensions.AI;
 
-public class ConfigurableTests(ITestOutputHelper output)
+public class ConfigurableClientTests(ITestOutputHelper output)
 {
     [Fact]
     public void CanConfigureClients()

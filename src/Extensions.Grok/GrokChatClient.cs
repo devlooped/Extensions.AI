@@ -9,6 +9,7 @@ namespace Devlooped.Extensions.AI.Grok;
 
 class GrokChatClient : IChatClient
 {
+    readonly ChatClientMetadata metadata;
     readonly ChatClient client;
     readonly string defaultModelId;
     readonly GrokClientOptions clientOptions;
@@ -18,6 +19,7 @@ class GrokChatClient : IChatClient
         client = new ChatClient(channel);
         this.clientOptions = clientOptions;
         this.defaultModelId = defaultModelId;
+        metadata = new ChatClientMetadata("xai", clientOptions.Endpoint, defaultModelId);
     }
 
     public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
@@ -436,8 +438,14 @@ class GrokChatClient : IChatClient
         TotalTokenCount = usage.TotalTokens
     };
 
-    public object? GetService(Type serviceType, object? serviceKey = null) =>
-        serviceType == typeof(GrokChatClient) ? this : null;
+    /// <inheritdoc />
+    public object? GetService(Type serviceType, object? serviceKey = null) => serviceType switch
+    {
+        Type t when t == typeof(ChatClientMetadata) => metadata,
+        Type t when t == typeof(GrokChatClient) => this,
+        _ => null
+    };
 
+    /// <inheritdoc />
     public void Dispose() { }
 }
