@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using Devlooped.Grok;
 using Microsoft.Extensions.AI;
 
 namespace Devlooped.Extensions.AI.Grok;
@@ -33,4 +34,8 @@ public class GrokChatOptions : ChatOptions
     /// <summary>Configures Grok's agentic search capabilities.</summary>
     /// <remarks>See https://docs.x.ai/docs/guides/tools/search-tools.</remarks>
     public GrokSearch Search { get; set; } = GrokSearch.None;
+
+    /// <summary>Additional outputs to include in responses.</summary>
+    /// <remarks>Defaults to including <see cref="IncludeOption.InlineCitations"/>.</remarks>
+    public IList<IncludeOption> Include { get; set; } = [IncludeOption.InlineCitations];
 }

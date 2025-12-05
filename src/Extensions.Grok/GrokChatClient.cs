@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Devlooped.Grok;
-using Google.Protobuf;
 using Grpc.Core;
 using Grpc.Net.Client;
 using Microsoft.Extensions.AI;
@@ -23,71 +22,111 @@ class GrokChatClient : IChatClient
 
     public async Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var requestDto = MapToRequest(messages, options);
-        var protoResponse = await client.GetCompletionAsync(requestDto, cancellationToken: cancellationToken);
-        var lastOutput = protoResponse.Outputs.OrderByDescending(x => x.Index).FirstOrDefault();
+        var request = MapToRequest(messages, options);
+        var response = await client.GetCompletionAsync(request, cancellationToken: cancellationToken);
+        var lastOutput = response.Outputs.OrderByDescending(x => x.Index).FirstOrDefault();
 
         if (lastOutput == null)
         {
             return new ChatResponse()
             {
-                ResponseId = protoResponse.Id,
-                ModelId = protoResponse.Model,
-                CreatedAt = protoResponse.Created.ToDateTimeOffset(),
-                Usage = MapToUsage(protoResponse.Usage),
+                ResponseId = response.Id,
+                ModelId = response.Model,
+                CreatedAt = response.Created.ToDateTimeOffset(),
+                Usage = MapToUsage(response.Usage),
             };
         }
 
         var message = new ChatMessage(MapRole(lastOutput.Message.Role), default(string));
-        var citations = protoResponse.Citations?.Distinct().Select(MapCitation).ToList<AIAnnotation>();
+        var citations = response.Citations?.Distinct().Select(MapCitation).ToList<AIAnnotation>();
 
-        foreach (var output in protoResponse.Outputs.OrderBy(x => x.Index))
+        foreach (var output in response.Outputs.OrderBy(x => x.Index))
         {
             if (output.Message.Content is { Length: > 0 } text)
             {
-                var content = new TextContent(text)
+                // Special-case output from tools
+                if (output.Message.Role == MessageRole.RoleTool &&
+                    output.Message.ToolCalls.Count == 1 &&
+                        output.Message.ToolCalls[0] is { } toolCall)
                 {
-                    Annotations = citations
-                };
+                    if (toolCall.Type == ToolCallType.McpTool)
+                    {
+                        message.Contents.Add(new McpServerToolCallContent(toolCall.Id, toolCall.Function.Name, null)
+                        {
+                            RawRepresentation = toolCall
+                        });
+                        message.Contents.Add(new McpServerToolResultContent(toolCall.Id)
+                        {
+                            RawRepresentation = toolCall,
+                            Output = [new TextContent(text)]
+                        });
+                        continue;
+                    }
+                    else if (toolCall.Type == ToolCallType.CodeExecutionTool)
+                    {
+                        message.Contents.Add(new CodeInterpreterToolCallContent()
+                        {
+                            CallId = toolCall.Id,
+                            RawRepresentation = toolCall
+                        });
+                        message.Contents.Add(new CodeInterpreterToolResultContent()
+                        {
+                            CallId = toolCall.Id,
+                            RawRepresentation = toolCall,
+                            Outputs = [new TextContent(text)]
+                        });
+                        continue;
+                    }
+                }
+
+                var content = new TextContent(text) { Annotations = citations };
 
                 foreach (var citation in output.Message.Citations)
-                {
                     (content.Annotations ??= []).Add(MapInlineCitation(citation));
-                }
+
                 message.Contents.Add(content);
             }
 
             foreach (var toolCall in output.Message.ToolCalls)
-            {
-                if (toolCall.Type == ToolCallType.ClientSideTool)
-                {
-                    var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
-                        ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
-                        : null;
-
-                    var content = new FunctionCallContent(
-                            toolCall.Id,
-                            toolCall.Function.Name,
-                            arguments);
-
-                    message.Contents.Add(content);
-                }
-                else
-                {
-                    message.Contents.Add(new HostedToolCallContent(toolCall));
-                }
-            }
+                message.Contents.Add(MapToolCall(toolCall));
         }
 
         return new ChatResponse(message)
         {
-            ResponseId = protoResponse.Id,
-            ModelId = protoResponse.Model,
-            CreatedAt = protoResponse.Created.ToDateTimeOffset(),
+            ResponseId = response.Id,
+            ModelId = response.Model,
+            CreatedAt = response.Created.ToDateTimeOffset(),
             FinishReason = lastOutput != null ? MapFinishReason(lastOutput.FinishReason) : null,
-            Usage = MapToUsage(protoResponse.Usage),
+            Usage = MapToUsage(response.Usage),
         };
     }
+
+    AIContent MapToolCall(ToolCall toolCall) => toolCall.Type switch
+    {
+        ToolCallType.ClientSideTool => new FunctionCallContent(
+            toolCall.Id,
+            toolCall.Function.Name,
+            !string.IsNullOrEmpty(toolCall.Function.Arguments)
+                ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
+                : null)
+        {
+            RawRepresentation = toolCall
+        },
+        ToolCallType.McpTool => new McpServerToolCallContent(toolCall.Id, toolCall.Function.Name, null)
+        {
+            RawRepresentation = toolCall
+        },
+        ToolCallType.CodeExecutionTool => new CodeInterpreterToolCallContent()
+        {
+            CallId = toolCall.Id,
+            RawRepresentation = toolCall
+        },
+        _ => new HostedToolCallContent()
+        {
+            CallId = toolCall.Id,
+            RawRepresentation = toolCall
+        }
+    };
 
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -95,21 +134,21 @@ class GrokChatClient : IChatClient
 
         async IAsyncEnumerable<ChatResponseUpdate> CompleteChatStreamingCore(IEnumerable<ChatMessage> messages, ChatOptions? options, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            var requestDto = MapToRequest(messages, options);
-            var call = client.GetCompletionChunk(requestDto, cancellationToken: cancellationToken);
-            
+            var request = MapToRequest(messages, options);
+            var call = client.GetCompletionChunk(request, cancellationToken: cancellationToken);
+
             await foreach (var chunk in call.ResponseStream.ReadAllAsync(cancellationToken))
             {
-                var outputChunk = chunk.Outputs[0];
-                var text = outputChunk.Delta.Content is { Length: > 0 } delta ? delta : null;
+                var output = chunk.Outputs[0];
+                var text = output.Delta.Content is { Length: > 0 } delta ? delta : null;
 
                 // Use positional arguments for ChatResponseUpdate
-                var update = new ChatResponseUpdate(MapRole(outputChunk.Delta.Role), text)
+                var update = new ChatResponseUpdate(MapRole(output.Delta.Role), text)
                 {
                     ResponseId = chunk.Id,
                     ModelId = chunk.Model,
                     CreatedAt = chunk.Created?.ToDateTimeOffset(),
-                    FinishReason = outputChunk.FinishReason != FinishReason.ReasonInvalid ? MapFinishReason(outputChunk.FinishReason) : null,
+                    FinishReason = output.FinishReason != FinishReason.ReasonInvalid ? MapFinishReason(output.FinishReason) : null,
                 };
 
                 if (chunk.Citations is { Count: > 0 } citations)
@@ -122,31 +161,11 @@ class GrokChatClient : IChatClient
                     }
 
                     foreach (var citation in citations.Distinct())
-                    {
                         (textContent.Annotations ??= []).Add(MapCitation(citation));
-                    }
                 }
 
-                foreach (var toolCall in outputChunk.Delta.ToolCalls)
-                {
-                    if (toolCall.Type == ToolCallType.ClientSideTool)
-                    {
-                        var arguments = !string.IsNullOrEmpty(toolCall.Function.Arguments)
-                            ? JsonSerializer.Deserialize<IDictionary<string, object?>>(toolCall.Function.Arguments)
-                            : null;
-
-                        var content = new FunctionCallContent(
-                                toolCall.Id,
-                                toolCall.Function.Name,
-                                arguments);
-
-                        update.Contents.Add(content);
-                    }
-                    else
-                    {
-                        update.Contents.Add(new HostedToolCallContent(toolCall));
-                    }
-                }
+                foreach (var toolCall in output.Delta.ToolCalls)
+                    update.Contents.Add(MapToolCall(toolCall));
 
                 if (update.Contents.Any())
                     yield return update;
@@ -191,6 +210,8 @@ class GrokChatClient : IChatClient
     {
         var request = new GetCompletionsRequest
         {
+            // By default always include citations in the final output if available
+            Include = { IncludeOption.InlineCitations },
             Model = options?.ModelId ?? defaultModelId,
         };
 
@@ -211,6 +232,10 @@ class GrokChatClient : IChatClient
                 {
                     gmsg.Content.Add(new Content { Text = textContent.Text });
                 }
+                else if (content.RawRepresentation is ToolCall toolCall)
+                {
+                    gmsg.ToolCalls.Add(toolCall);
+                }
                 else if (content is FunctionCallContent functionCall)
                 {
                     gmsg.ToolCalls.Add(new ToolCall
@@ -224,10 +249,6 @@ class GrokChatClient : IChatClient
                         }
                     });
                 }
-                else if (content is HostedToolCallContent serverFunction)
-                {
-                    gmsg.ToolCalls.Add(serverFunction.ToolCall);
-                }
                 else if (content is FunctionResultContent resultContent)
                 {
                     request.Messages.Add(new Message
@@ -236,19 +257,49 @@ class GrokChatClient : IChatClient
                         Content = { new Content { Text = JsonSerializer.Serialize(resultContent.Result) ?? "null" } }
                     });
                 }
+                else if (content is McpServerToolResultContent mcpResult &&
+                    mcpResult.RawRepresentation is ToolCall mcpToolCall &&
+                    mcpResult.Output is { Count: 1 } &&
+                    mcpResult.Output[0] is TextContent mcpText)
+                {
+                    request.Messages.Add(new Message
+                    {
+                        Role = MessageRole.RoleTool,
+                        ToolCalls = { mcpToolCall },
+                        Content = { new Content { Text = mcpText.Text } }
+                    });
+                }
+                else if (content is CodeInterpreterToolResultContent codeResult &&
+                    codeResult.RawRepresentation is ToolCall codeToolCall &&
+                    codeResult.Outputs is { Count: 1 } &&
+                    codeResult.Outputs[0] is TextContent codeText)
+                {
+                    request.Messages.Add(new Message
+                    {
+                        Role = MessageRole.RoleTool,
+                        ToolCalls = { codeToolCall },
+                        Content = { new Content { Text = codeText.Text } }
+                    });
+                }
             }
 
             if (gmsg.Content.Count == 0 && gmsg.ToolCalls.Count == 0)
                 continue;
 
+            // If we have only tool calls and no content, the gRPC enpoint fails, so add an empty one.
             if (gmsg.Content.Count == 0)
                 gmsg.Content.Add(new Content());
 
             request.Messages.Add(gmsg);
         }
 
+        IList<IncludeOption> includes = [IncludeOption.InlineCitations];
         if (options is GrokChatOptions grokOptions)
         {
+            // NOTE: overrides our default include for inline citations, potentially.
+            request.Include.Clear();
+            request.Include.AddRange(grokOptions.Include);
+
             if (grokOptions.Search.HasFlag(GrokSearch.X))
             {
                 (options.Tools ??= []).Insert(0, new GrokXSearchTool());

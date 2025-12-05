@@ -10,12 +10,12 @@
     <PackageLicenseFile>OSMFEULA.txt</PackageLicenseFile>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <NoWarn>MEAI001;$(NoWarn)</NoWarn>
+    <NoWarn>MEAI001;DEAI001;$(NoWarn)</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.33.1" />
-    <PackageReference Include="GrokClient" Version="1.0.0" />
+    <PackageReference Include="GrokClient" Version="1.0.2" />
     <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0" PrivateAssets="all" />
     <PackageReference Include="NuGetizer" Version="1.4.5" PrivateAssets="all" />

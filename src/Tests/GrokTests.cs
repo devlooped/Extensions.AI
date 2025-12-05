@@ -2,6 +2,7 @@
 using System.Text.Json.Nodes;
 using Azure;
 using Devlooped.Extensions.AI.Grok;
+using Devlooped.Grok;
 using Microsoft.Extensions.AI;
 using OpenAI.Realtime;
 using static ConfigurationExtensions;
@@ -93,10 +94,12 @@ public class GrokTests(ITestOutputHelper output)
 
         var calls = response.Messages
             .SelectMany(x => x.Contents.OfType<HostedToolCallContent>())
+            .Select(x => x.RawRepresentation as Devlooped.Grok.ToolCall)
+            .Where(x => x is not null)
             .ToList();
 
         Assert.NotEmpty(calls);
-        Assert.Contains(calls, x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
+        Assert.Contains(calls, x => x?.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -144,8 +147,9 @@ public class GrokTests(ITestOutputHelper output)
 
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
 
-        var options = new ChatOptions
+        var options = new GrokChatOptions
         {
+            Include = { Devlooped.Grok.IncludeOption.WebSearchCallOutput },
             Tools = [new HostedWebSearchTool()]
         };
 
@@ -263,9 +267,42 @@ public class GrokTests(ITestOutputHelper output)
         var text = response.Text;
 
         Assert.Contains("$6,288.95", text);
-        Assert.Contains(
-            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
-            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.CodeExecutionTool);
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolCallContent>());
+
+        Assert.Empty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolResultContent>());
+    }
+
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokInvokesHostedCodeExecutionWithOutput()
+    {
+        var messages = new Chat()
+        {
+            { "user", "Calculate the compound interest for $10,000 at 5% annually for 10 years" },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new GrokChatOptions
+        {
+            Include = { Devlooped.Grok.IncludeOption.CodeExecutionCallOutput },
+            Tools = [new HostedCodeInterpreterTool()]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+        var text = response.Text;
+
+        Assert.Contains("$6,288.95", text);
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolCallContent>());
+
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<CodeInterpreterToolResultContent>());
     }
 
     [SecretsFact("XAI_API_KEY")]
@@ -289,9 +326,11 @@ public class GrokTests(ITestOutputHelper output)
         var text = response.Text;
 
         Assert.Contains("11,74", text);
-        Assert.Contains(
-            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
-            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.CollectionsSearchTool);
+        Assert.Contains(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<HostedToolCallContent>()
+                .Select(x => x.RawRepresentation as Devlooped.Grok.ToolCall),
+            x => x?.Type == Devlooped.Grok.ToolCallType.CollectionsSearchTool);
     }
 
     [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
@@ -316,10 +355,52 @@ public class GrokTests(ITestOutputHelper output)
         var text = response.Text;
 
         Assert.Equal("2025-11-29", text);
-        Assert.Contains(
-            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
-            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.McpTool);
+        var call = Assert.Single(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<McpServerToolCallContent>());
+
+        Assert.Equal("GitHub.list_releases", call.ToolName);
     }
+
+    [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
+    public async Task GrokInvokesHostedMcpWithOutput()
+    {
+        var messages = new Chat()
+        {
+            { "user", "When was GrokClient v1.0.0 released on the devlooped/GrokClient repo? Respond with just the date, in YYYY-MM-DD format." },
+        };
+
+        var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+
+        var options = new GrokChatOptions
+        {
+            Include = { Devlooped.Grok.IncludeOption.McpCallOutput },
+            Tools = [new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+                AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+                AllowedTools = ["list_releases"],
+            }]
+        };
+
+        var response = await grok.GetResponseAsync(messages, options);
+
+        // Can include result of MCP tool
+        var output = Assert.Single(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<McpServerToolResultContent>());
+
+        Assert.NotNull(output.Output);
+        Assert.Single(output.Output);
+        var json = Assert.Single(output.Output!.OfType<TextContent>()).Text;
+        var tags = JsonSerializer.Deserialize<List<Release>>(json, new JsonSerializerOptions(JsonSerializerDefaults.Web)
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+        });
+
+        Assert.NotNull(tags);
+        Assert.Contains(tags, x => x.TagName == "v1.0.0");
+    }
+
+    record Release(string TagName, DateTimeOffset CreatedAt);
 
     [SecretsFact("XAI_API_KEY", "GITHUB_TOKEN")]
     public async Task GrokStreamsUpdatesFromAllTools()
@@ -337,7 +418,7 @@ public class GrokTests(ITestOutputHelper output)
                   "price": [$TSLA price]
                 }
                 """
-            },    
+            },
         };
 
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!)
@@ -370,13 +451,15 @@ public class GrokTests(ITestOutputHelper output)
 
         Assert.NotNull(typed);
 
-        Assert.Contains(
-            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
-            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.McpTool);
+        Assert.NotEmpty(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<McpServerToolCallContent>());
 
-        Assert.Contains(
-            response.Messages.SelectMany(x => x.Contents).OfType<HostedToolCallContent>(),
-            x => x.ToolCall.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
+        Assert.Contains(response.Messages
+                .SelectMany(x => x.Contents)
+                .OfType<HostedToolCallContent>()
+                .Select(x => x.RawRepresentation as Devlooped.Grok.ToolCall),
+            x => x?.Type == Devlooped.Grok.ToolCallType.WebSearchTool);
 
         Assert.Equal(1, getDateCalls);
 
