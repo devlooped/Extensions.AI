@@ -1,5 +1,18 @@
 # Changelog
 
+## [v0.9.0](https://github.com/devlooped/AI/tree/v0.9.0) (2025-12-06)
+
+[Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-rc.2...v0.9.0)
+
+:sparkles: Implemented enhancements:
+
+- Native Grok implementation package [\#174](https://github.com/devlooped/AI/pull/174) (@kzu)
+
+:twisted_rightwards_arrows: Merged:
+
+- Document Grok agentic tools usage [\#177](https://github.com/devlooped/AI/pull/177) (@kzu)
+- Fix and re-enable retrieval tests [\#176](https://github.com/devlooped/AI/pull/176) (@kzu)
+
 ## [v0.9.0-rc.2](https://github.com/devlooped/AI/tree/v0.9.0-rc.2) (2025-11-05)
 
 [Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-rc.1...v0.9.0-rc.2)
