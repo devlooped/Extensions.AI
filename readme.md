@@ -325,33 +325,9 @@ configuration without restarting the application.
 
 ## Grok
 
-Full support for Grok [Live Search](https://docs.x.ai/docs/guides/live-search) 
-and [Reasoning](https://docs.x.ai/docs/guides/reasoning) model options.
+Full support for Grok new [agentic tools](https://docs.x.ai/docs/guides/tools/overview):
 
-```csharp
-// Sample X.AI client usage with .NET
-var messages = new Chat()
-{
-    { "system", "You are a highly intelligent AI assistant." },
-    { "user", "What is 101*3?" },
-};
-
-var grok = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!, "grok-3-mini");
-
-var options = new GrokChatOptions
-{
-    ModelId = "grok-4-fast-reasoning",           // 👈 can override the model on the client
-    Temperature = 0.7f,
-    ReasoningEffort = ReasoningEffort.High, // 👈 or Low
-    Search = GrokSearch.Auto,               // 👈 or On/Off
-};
-
-var response = await grok.GetResponseAsync(messages, options);
-```
-
-Search can alternatively be configured using a regular `ChatOptions` 
-and adding the `HostedWebSearchTool` to the tools collection, which 
-sets the live search mode to `auto` like above:
+### Web Search
 
 ```csharp
 var messages = new Chat()
@@ -360,69 +336,159 @@ var messages = new Chat()
     { "user", "What's Tesla stock worth today? Search X and the news for latest info." },
 };
 
-var grok = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!, "grok-3");
+var grok = new GrokClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!).AsIChatClient("grok-4.1-fast");
 
 var options = new ChatOptions
 {
-    Tools = [new HostedWebSearchTool()]     // 👈 equals setting GrokSearch.Auto
+    Tools = [new HostedWebSearchTool()] // 👈 compatible with OpenAI
 };
 
 var response = await grok.GetResponseAsync(messages, options);
 ```
 
-We also provide an OpenAI-compatible `WebSearchTool` that can be used to restrict 
-the search to a specific country in a way that works with both Grok and OpenAI:
+In addition to basic web search as shown above, Grok supports more 
+[advanced search](https://docs.x.ai/docs/guides/tools/search-tools) scenarios, 
+which can be opted-in by using Grok-specific types:
 
 ```csharp
-var options = new ChatOptions
-{
-    Tools = [new WebSearchTool("AR")] // 👈 search in Argentina
-};
-```
-
-This is equivalent to the following when used with a Grok client:
-```csharp
-var options = new ChatOptions
-{
-    //                                           👇 search in Argentina
-    Tools = [new GrokSearchTool(GrokSearch.On) { Country = "AR" }] 
-};
-```
-
-### Advanced Live Search
-
-To configure advanced live search options, beyond the `On|Auto|Off` settings 
-in `GrokChatOptions`, you can use the `GrokSearchTool` instead, which exposes 
-the full breath of [live search options](https://docs.x.ai/docs/guides/live-search) 
-available in the Grok API. 
-
-```csharp
-var options = new ChatOptions
-{
-    Tools = [new GrokSearchTool(GrokSearch.On)
+var grok = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!).AsIChatClient("grok-4.1-fast");
+var response = await grok.GetResponseAsync(
+    "What are the latest product news by Tesla?", 
+    new ChatOptions
     {
-        FromDate = new DateOnly(2025, 1, 1),
-        ToDate = DateOnly.FromDateTime(DateTime.Now),
-        MaxSearchResults = 10,
-        Sources =
-        [
-            new GrokWebSource
-            {
-                AllowedWebsites =
-                [
-                    "https://catedralaltapatagonia.com",
-                    "https://catedralaltapatagonia.com/parte-de-nieve/",
-                    "https://catedralaltapatagonia.com/tarifas/"
-                ]
-            },
-        ]
+        Tools = [new GrokSearchTool()
+        {
+            AllowedDomains = [ "ir.tesla.com" ]
+        }]
+    });
+```
+
+You can alternatively set `ExcludedDomains` instead, and enable image 
+understanding with `EnableImageUndestanding`. Learn more about these filters 
+at [web search parameters](https://docs.x.ai/docs/guides/tools/search-tools#web-search-parameters).
+
+### X Search
+
+In addition to web search, Grok also supports searching on X (formerly Twitter):
+
+```csharp
+var response = await grok.GetResponseAsync(
+    "What's the latest on Optimus?", 
+    new ChatOptions
+    {
+        Tools = [new GrokXSearchTool
+        {
+            // AllowedHandles = [...],
+            // ExcludedHandles = [...],
+            // EnableImageUnderstanding = true,
+            // EnableVideoUnderstanding = true,
+            // FromDate = ...,
+            // ToDate = ...,
+        }]
+    });
+```
+
+Learn more about available filters at [X search parameters](https://docs.x.ai/docs/guides/tools/search-tools#x-search-parameters).
+
+You can combine both web and X search in the same request by adding both tools.
+
+### Code Execution
+
+The code execution tool enables Grok to write and execute Python code in real-time, 
+dramatically expanding its capabilities beyond text generation. This powerful feature 
+allows Grok to perform precise calculations, complex data analysis, statistical 
+computations, and solve mathematical problems that would be impossible through text alone.
+
+This is Grok's equivalent of the OpenAI code interpreter, and is configured the same way:
+
+```csharp
+var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+var response = await grok.GetResponseAsync(
+    "Calculate the compound interest for $10,000 at 5% annually for 10 years",
+    new ChatOptions
+    {
+        Tools = [new HostedCodeInterpreterTool()]
+    });
+
+var text = response.Text;
+Assert.Contains("$6,288.95", text);
+```
+
+If you want to access the output from the code execution, you can add that as an 
+include in the options:
+
+```csharp
+var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
+var options = new GrokChatOptions
+{
+    Include = { IncludeOption.CodeExecutionCallOutput },
+    Tools = [new HostedCodeInterpreterTool()]
+};
+
+var response = await grok.GetResponseAsync(
+    "Calculate the compound interest for $10,000 at 5% annually for 10 years",
+    options);
+
+var content = response.Messages
+    .SelectMany(x => x.Contents)
+    .OfType<CodeInterpreterToolResultContent>()
+    .First();
+
+foreach (AIContent output in content.Outputs)
+    // process outputs from code interpreter
+```
+
+Learn more about the [code execution tool](https://docs.x.ai/docs/guides/tools/code-execution-tool).
+
+### Collection Search
+
+If you maintain a [collection](https://docs.x.ai/docs/key-information/collections), 
+Grok can perform semantic search on it:
+
+```csharp
+var options = new ChatOptions
+{
+    Tools = [new HostedFileSearchTool {
+        Inputs = [new HostedVectorStoreContent("[collection_id]")]
     }]
 };
 ```
 
-> [!TIP]
-> You can configure multiple sources including `GrokWebSource`, `GrokNewsSource`,
-> `GrokRssSource` and `GrokXSource`, each containing granular options.
+Learn more about [collection search](https://docs.x.ai/docs/guides/tools/collections-search-tool).
+
+### Remote MCP
+
+Remote MCP Tools allow Grok to connect to external MCP (Model Context Protocol) servers.
+This example sets up the GitHub MCP server so queries about releases (limited specifically 
+in this case): 
+
+```csharp
+var options = new ChatOptions
+{
+    Tools = [new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+        AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+        AllowedTools = ["list_releases"],
+    }]
+};
+```
+
+Just like with code execution, you can opt-in to surfacing the MCP outputs in 
+the response:
+
+```csharp
+var options = new GrokChatOptions
+{
+    // Exposes McpServerToolResultContent in responses
+    Include = { IncludeOption.McpCallOutput },
+    Tools = [new HostedMcpServerTool("GitHub", "https://api.githubcopilot.com/mcp/") {
+        AuthorizationToken = Configuration["GITHUB_TOKEN"]!,
+        AllowedTools = ["list_releases"],
+    }]
+};
+
+```
+
+Learn more about [Remote MCP tools](https://docs.x.ai/docs/guides/tools/remote-mcp-tools).
 
 ## OpenAI
 
