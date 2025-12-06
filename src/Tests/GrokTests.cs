@@ -251,19 +251,15 @@ public class GrokTests(ITestOutputHelper output)
     [SecretsFact("XAI_API_KEY")]
     public async Task GrokInvokesHostedCodeExecution()
     {
-        var messages = new Chat()
-        {
-            { "user", "Calculate the compound interest for $10,000 at 5% annually for 10 years" },
-        };
-
         var grok = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-fast");
 
-        var options = new ChatOptions
-        {
-            Tools = [new HostedCodeInterpreterTool()]
-        };
+        var response = await grok.GetResponseAsync(
+            "Calculate the compound interest for $10,000 at 5% annually for 10 years",
+            new ChatOptions
+            {
+                Tools = [new HostedCodeInterpreterTool()]
+            });
 
-        var response = await grok.GetResponseAsync(messages, options);
         var text = response.Text;
 
         Assert.Contains("$6,288.95", text);
@@ -271,6 +267,7 @@ public class GrokTests(ITestOutputHelper output)
                 .SelectMany(x => x.Contents)
                 .OfType<CodeInterpreterToolCallContent>());
 
+        // result content is not available by default
         Assert.Empty(response.Messages
                 .SelectMany(x => x.Contents)
                 .OfType<CodeInterpreterToolResultContent>());
@@ -293,13 +290,13 @@ public class GrokTests(ITestOutputHelper output)
         };
 
         var response = await grok.GetResponseAsync(messages, options);
-        var text = response.Text;
 
-        Assert.Contains("$6,288.95", text);
+        Assert.Contains("$6,288.95", response.Text);
         Assert.NotEmpty(response.Messages
                 .SelectMany(x => x.Contents)
                 .OfType<CodeInterpreterToolCallContent>());
 
+        // result content opted-in is found
         Assert.NotEmpty(response.Messages
                 .SelectMany(x => x.Contents)
                 .OfType<CodeInterpreterToolResultContent>());
