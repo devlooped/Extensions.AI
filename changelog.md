@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.9.1](https://github.com/devlooped/AI/tree/v0.9.1) (2025-12-06)
+
+[Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0...v0.9.1)
+
+:twisted_rightwards_arrows: Merged:
+
+- Add proper readme to Grok package [\#178](https://github.com/devlooped/AI/pull/178) (@kzu)
+
 ## [v0.9.0](https://github.com/devlooped/AI/tree/v0.9.0) (2025-12-06)
 
 [Full Changelog](https://github.com/devlooped/AI/compare/v0.9.0-rc.2...v0.9.0)
