@@ -129,10 +129,7 @@
 	weak
 [file "src/nuget.config"]
 	url = https://github.com/devlooped/oss/blob/main/src/nuget.config
-	sha = 032439dbf180fca0539a5bd3a019f18ab3484b76
-
-	etag = da7c0104131bd474b52fc9bc9f9bda6470e24ae38d4fb9f5c4f719bc01370ab5
-	weak
+	skip
 [file "src/Tests/Extensions/Attributes.cs"]
 	url = https://github.com/devlooped/catbag/blob/main/Xunit/Attributes.cs
 	sha = 40914971d4d6b42d6f8a90923b131136f7e609a5
