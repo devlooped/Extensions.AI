@@ -95,6 +95,7 @@ class GrokChatClient : IChatClient
 
         return new ChatResponse(message)
         {
+            ConversationId = options is GrokChatOptions { StoreMessages: true } ? response.Id : null,
             ResponseId = response.Id,
             ModelId = response.Model,
             CreatedAt = response.Created.ToDateTimeOffset(),
@@ -298,6 +299,11 @@ class GrokChatClient : IChatClient
         IList<IncludeOption> includes = [IncludeOption.InlineCitations];
         if (options is GrokChatOptions grokOptions)
         {
+            request.StoreMessages = grokOptions.StoreMessages == true;
+            // TODO: should we throw if we find a conversation id but not StoreMessages=true as it might be a user error?
+            if (request.StoreMessages && options.ConversationId is not null)
+                request.PreviousResponseId = options.ConversationId;
+
             // NOTE: overrides our default include for inline citations, potentially.
             request.Include.Clear();
             request.Include.AddRange(grokOptions.Include);

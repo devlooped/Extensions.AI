@@ -1,17 +1,35 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Nodes;
-using Azure;
 using Devlooped.Extensions.AI.Grok;
 using Devlooped.Grok;
 using Microsoft.Extensions.AI;
-using OpenAI.Realtime;
 using static ConfigurationExtensions;
-using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
 namespace Devlooped.Extensions.AI;
 
 public class GrokTests(ITestOutputHelper output)
 {
+    [SecretsFact("XAI_API_KEY")]
+    public async Task GrokRemembersConversation()
+    {
+        var chat = new GrokClient(Configuration["XAI_API_KEY"]!).AsIChatClient("grok-4-1-fast-non-reasoning")
+            .AsBuilder()
+            .UseLogging(output.AsLoggerFactory())
+            .Build();
+
+        var options = new GrokChatOptions { StoreMessages = true };
+        var response = await chat.GetResponseAsync("Hey, my alias is kzu. Keep that in mind.", options);
+
+        Assert.NotNull(response.ConversationId);
+
+        var id = response.ConversationId;
+        options.ConversationId = id;
+
+        response = await chat.GetResponseAsync("What is my alias?", options);
+
+        Assert.Contains("kzu", response.Text);
+    }
+
+
     [SecretsFact("XAI_API_KEY")]
     public async Task GrokInvokesTools()
     {

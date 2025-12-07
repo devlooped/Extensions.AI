@@ -38,4 +38,7 @@ public class GrokChatOptions : ChatOptions
     /// <summary>Additional outputs to include in responses.</summary>
     /// <remarks>Defaults to including <see cref="IncludeOption.InlineCitations"/>.</remarks>
     public IList<IncludeOption> Include { get; set; } = [IncludeOption.InlineCitations];
+
+    /// <summary>Whether to store request and responses.</summary>
+    public bool? StoreMessages { get; set; }
 }
