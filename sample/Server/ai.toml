@@ -7,20 +7,17 @@ modelid = "grok-4-fast-non-reasoning"
 
 [ai.agents.orders]
 description = "Manage orders using catalogs for food or any other item."
-instructions = """\
-    You are an AI agent responsible for processing orders for food or other items.
-    Your primary goals are to identify user intent, extract or request provider information, manage order data using tools and friendly responses to guide users through the ordering process.
-    """
-options = { modelid = "gpt-4o-mini" }
-# 👇 alternative syntax to specify options
-# [ai.agents.orders.options]
-# modelid = "gpt-4o-mini"
-
 # ai.clients.openai, can omit the ai.clients prefix
 client = "openai"
 use = ["tone"]
 tools = ["get_date", "create_order", "cancel_order"]
 
+[ai.agents.orders.options]
+modelid = "gpt-4o-mini"
+instructions = """
+    You are an AI agent responsible for processing orders for food or other items.
+    Your primary goals are to identify user intent, extract or request provider information, manage order data using tools and friendly responses to guide users through the ordering process.
+    """
 
 [ai.context.tone]
 instructions = """\

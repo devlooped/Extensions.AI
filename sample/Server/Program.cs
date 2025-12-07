@@ -2,8 +2,7 @@
 using System.Text;
 using Devlooped.Extensions.AI;
 using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.Hosting;
-using Microsoft.Agents.AI.Hosting.OpenAI;
+using Microsoft.Agents.AI.DevUI;
 using Microsoft.Extensions.AI;
 using Spectre.Console;
 
@@ -34,6 +33,9 @@ builder.Services.AddKeyedSingleton<AIContextProvider, NotesContextProvider>("not
 builder.AddAIAgents()
     .WithTools<NotesTools>();
 
+builder.AddOpenAIResponses();
+builder.AddOpenAIConversations();
+
 var app = builder.Build();
 
 // From ServiceDefaults.cs
@@ -42,15 +44,19 @@ app.MapDefaultEndpoints();
 #if DEBUG
 // 👇 render all configured agents
 await app.Services.RenderAgentsAsync(builder.Services);
+app.MapDevUI();
 #endif
 
 // Map each agent's endpoints via response API
-var catalog = app.Services.GetRequiredService<AgentCatalog>();
 // List configured agents
-await foreach (var agent in catalog.GetAgentsAsync())
+var registered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+foreach (var agent in app.Services.GetKeyedServices<AIAgent>(KeyedService.AnyKey))
 {
-    if (agent.Name != null)
-        app.MapOpenAIResponses(agent.Name);
+    if (agent.Name != null && !registered.Contains(agent.Name))
+    {
+        app.MapOpenAIResponses(agent);
+        registered.Add(agent.Name);
+    }
 }
 
 // Map the agents HTTP endpoints

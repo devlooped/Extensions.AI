@@ -1,17 +1,15 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
-using Microsoft.Agents.AI.Hosting;
+using Microsoft.Agents.AI;
 
 static class AgentDiscoveryExtensions
 {
     public static void MapAgentDiscovery(this IEndpointRouteBuilder endpoints, [StringSyntax("Route")] string path)
     {
         var routeGroup = endpoints.MapGroup(path);
-        routeGroup.MapGet("/", async (AgentCatalog catalog, CancellationToken cancellation)
-            => Results.Ok(await catalog
-                .GetAgentsAsync(cancellation)
-                .Select(agent => new AgentDiscoveryCard(agent.Name!, agent.Description))
-                .ToArrayAsync()))
+        routeGroup.MapGet("/", () => Results.Ok(endpoints.ServiceProvider
+            .GetKeyedServices<AIAgent>(KeyedService.AnyKey)
+            .Select(agent => new AgentDiscoveryCard(agent.Name!, agent.Description)).ToArray()))
             .WithName("GetAgents");
     }
 

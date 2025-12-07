@@ -4,7 +4,8 @@ description: Provides free-form memory
 beta: true
 visibility: unlisted
 client: grok
-model: grok-4-fast
+options:
+  modelid: grok-4-fast
 use: ["tone", "notes"]
 tools: ["get_notes", "save_notes", "get_date"]
 ---

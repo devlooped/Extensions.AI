@@ -1,12 +1,9 @@
 ﻿using Devlooped.Agents.AI;
-using DotNetEnv.Configuration;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Tomlyn.Extensions.Configuration;
-
-
 
 #if WEB
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -25,7 +22,6 @@ static class ConfigureOpenTelemetryExtensions
 
         // .env/secrets override other config, which may contain dummy API keys, for example
         builder.Configuration
-            .AddDotNetEnv()
             .AddEnvironmentVariables()
             .AddUserSecrets<Program>();
 

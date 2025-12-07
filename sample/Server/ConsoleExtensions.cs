@@ -1,6 +1,6 @@
 ﻿using Devlooped.Agents.AI;
 using Devlooped.Extensions.AI;
-using Microsoft.Agents.AI.Hosting;
+using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -13,7 +13,6 @@ public static class ConsoleExtensions
     {
         public async ValueTask RenderAgentsAsync(IServiceCollection collection)
         {
-            var catalog = services.GetRequiredService<AgentCatalog>();
             var settings = new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Include,
@@ -38,14 +37,24 @@ public static class ConsoleExtensions
             }
 
             // List configured agents
-            await foreach (var agent in catalog.GetAgentsAsync())
+            var rendered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var descriptor in collection.AsEnumerable().Where(x => x.ServiceType == typeof(AIAgent) && x.IsKeyedService && x.ServiceKey is string))
             {
+                if (rendered.Contains((string)descriptor.ServiceKey!))
+                    continue;
+
+                var agent = services.GetKeyedService<AIAgent>(descriptor.ServiceKey);
+                if (agent is null)
+                    continue;
+
                 var metadata = agent.GetService<ConfigurableAIAgentMetadata>();
 
                 AnsiConsole.Write(new Panel(new JsonText(JsonConvert.SerializeObject(new { Agent = agent, Metadata = metadata }, settings)))
                 {
                     Header = new PanelHeader($"| 🤖 {agent.DisplayName} from {metadata?.ConfigurationSection} |"),
                 });
+
+                rendered.Add((string)descriptor.ServiceKey!);
             }
         }
     }

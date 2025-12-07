@@ -91,7 +91,6 @@ public static class ConfigurableAgentsExtensions
             var section = string.Join(':', entry.Key.Split(':')[..^1]);
             // key == name (unlike chat clients, the AddAIAgent expects the key to be the name). 
             var name = builder.Configuration[$"{section}:name"] ?? section[(prefix.Length + 1)..];
-
             var options = builder.Configuration.GetRequiredSection(section).Get<ChatClientAgentOptions>();
             // We need logging set up for the configurable client to log changes
             builder.Services.AddLogging();

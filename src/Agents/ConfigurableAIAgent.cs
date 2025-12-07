@@ -90,20 +90,19 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
         var options = configSection.Get<AgentClientOptions>();
         options?.Name ??= name;
         options?.Description = options?.Description?.Dedent();
-        options?.Instructions = options?.Instructions?.Dedent();
 
         var properties = configSection.Get<AdditionalPropertiesDictionary>();
         if (properties is not null)
         {
-            properties?.Remove(nameof(AgentClientOptions.Name));
-            properties?.Remove(nameof(AgentClientOptions.Description));
-            properties?.Remove(nameof(AgentClientOptions.Instructions));
-            properties?.Remove(nameof(AgentClientOptions.Client));
-            properties?.Remove(nameof(AgentClientOptions.Model));
-            properties?.Remove(nameof(AgentClientOptions.Use));
-            properties?.Remove(nameof(AgentClientOptions.Tools));
+            properties.Remove(nameof(AgentClientOptions.Name));
+            properties.Remove(nameof(AgentClientOptions.Description));
+            properties.Remove(nameof(AgentClientOptions.Client));
+            properties.Remove(nameof(AgentClientOptions.Use));
+            properties.Remove(nameof(AgentClientOptions.Tools));
+            properties.Remove(nameof(ChatOptions.ModelId));
+            properties.Remove(nameof(ChatOptions.Instructions));
 
-            AdditionalProperties = properties;
+            AdditionalProperties = properties.Count == 0 ? null : properties;
         }
 
         // If there was a custom id, we must validate it didn't change since that's not supported.
@@ -120,10 +119,10 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
             ? configSection.GetSection("options").Get<GrokChatOptions>()
             : configSection.GetSection("options").Get<ExtendedChatOptions>();
 
+        chat?.Instructions = chat?.Instructions?.Dedent();
+
         if (chat is not null)
             options.ChatOptions = chat;
-        else if (options.Model is not null)
-            (options.ChatOptions ??= new()).ModelId = options.Model;
 
         configure?.Invoke(name, options);
 
@@ -237,7 +236,6 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
     internal class AgentClientOptions : ChatClientAgentOptions
     {
         public string? Client { get; set; }
-        public string? Model { get; set; }
         public IList<string>? Use { get; set; }
         public IList<string>? Tools { get; set; }
     }

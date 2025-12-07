@@ -1,5 +1,4 @@
 ﻿using Devlooped.Extensions.AI;
-using Devlooped.Extensions.AI.Grok;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -110,7 +109,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
                     Line 3
 
                 """,
-            ["ai:agents:bot:instructions"] =
+            ["ai:agents:bot:options:instructions"] =
                 """
                         Agent Instructions:
                             - Step 1
@@ -139,7 +138,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
                 - Step 1
                 - Step 2
                 - Step 3
-            """, agent.GetService<ChatClientAgentOptions>()?.Instructions);
+            """, agent.GetService<ChatClientAgentOptions>()?.ChatOptions?.Instructions);
     }
 
     [Fact]
@@ -166,7 +165,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         var agent = app.Services.GetRequiredKeyedService<AIAgent>("bot");
 
         Assert.Equal("Helpful chat agent", agent.Description);
-        Assert.Equal("You are a helpful agent.", agent.GetService<ChatClientAgentOptions>()?.Instructions);
+        Assert.Equal("You are a helpful agent.", agent.GetService<ChatClientAgentOptions>()?.ChatOptions?.Instructions);
         Assert.Equal("openai", agent.GetService<AIAgentMetadata>()?.ProviderName);
 
         // Change the configuration to point to a different client
@@ -179,7 +178,7 @@ public class ConfigurableAgentTests(ITestOutputHelper output)
         configuration.Reload();
 
         Assert.Equal("Very helpful chat agent", agent.Description);
-        Assert.Equal("You are a very helpful chat agent.", agent.GetService<ChatClientAgentOptions>()?.Instructions);
+        Assert.Equal("You are a very helpful chat agent.", agent.GetService<ChatClientAgentOptions>()?.ChatOptions?.Instructions);
         Assert.Equal("xai", agent.GetService<AIAgentMetadata>()?.ProviderName);
     }
 
