@@ -121,6 +121,7 @@ public class OpenAITests(ITestOutputHelper output)
     }
 
     [SecretsTheory("OPENAI_API_KEY")]
+    [InlineData(ReasoningEffort.None)]
     [InlineData(ReasoningEffort.Minimal)]
     [InlineData(ReasoningEffort.Low)]
     [InlineData(ReasoningEffort.Medium)]
@@ -135,7 +136,7 @@ public class OpenAITests(ITestOutputHelper output)
 
         var requests = new List<JsonNode>();
 
-        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-5-nano",
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-5.2",
             OpenAIClientOptions.Observable(requests.Add).WriteTo(output));
 
         var options = new ChatOptions
@@ -164,6 +165,45 @@ public class OpenAITests(ITestOutputHelper output)
         });
 
         output.WriteLine($"Effort: {effort}, Time: {watch.ElapsedMilliseconds}ms, Tokens: {response.Usage?.TotalTokenCount}");
+    }
+
+    [SecretsFact("OPENAI_API_KEY")]
+    public async Task GPT5_NoReasoningTokens()
+    {
+        var requests = new List<JsonNode>();
+
+        //var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4o",
+        //    OpenAIClientOptions.Observable(requests.Add).WriteTo(output));
+
+        var chat = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
+            OpenAIClientOptions.Observable(requests.Add).WriteTo(output))
+            .GetOpenAIResponseClient("gpt-4o")
+            .AsIChatClient();
+
+        var reasoned = await chat.GetResponseAsync(
+            "How much gold would it take to coat the Statue of Liberty in a 1mm layer?",
+            new ChatOptions
+            {
+                ModelId = "gpt-5.1",
+                ReasoningEffort = ReasoningEffort.Low
+            }.ApplyExtensions());
+
+        Assert.StartsWith("gpt-5.1", reasoned.ModelId);
+        Assert.NotNull(reasoned.Usage?.AdditionalCounts);
+        Assert.True(reasoned.Usage.AdditionalCounts.ContainsKey("OutputTokenDetails.ReasoningTokenCount"));
+        Assert.True(reasoned.Usage.AdditionalCounts["OutputTokenDetails.ReasoningTokenCount"] > 0);
+
+        var nonreasoned = await chat.GetResponseAsync(
+            "How much gold would it take to coat the Statue of Liberty in a 1mm layer?",
+            new ChatOptions
+            {
+                ModelId = "gpt-5.1",
+                ReasoningEffort = ReasoningEffort.None
+            }.ApplyExtensions());
+
+        Assert.NotNull(nonreasoned.Usage?.AdditionalCounts);
+        Assert.True(nonreasoned.Usage.AdditionalCounts.ContainsKey("OutputTokenDetails.ReasoningTokenCount"));
+        Assert.True(nonreasoned.Usage.AdditionalCounts["OutputTokenDetails.ReasoningTokenCount"] == 0);
     }
 
     [SecretsTheory("OPENAI_API_KEY")]

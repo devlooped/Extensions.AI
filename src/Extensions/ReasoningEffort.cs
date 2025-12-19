@@ -6,6 +6,11 @@
 public enum ReasoningEffort
 {
     /// <summary>
+    /// Lowest latency by indicating no reasoning tokens should be spent at all. Support depends on the model.
+    /// </summary>
+    /// <seealso href="https://platform.openai.com/docs/guides/latest-model#lower-reasoning-effort"/>
+    None,
+    /// <summary>
     /// Minimal reasoning effort, which may result in faster responses. Support depends on the model.
     /// </summary>
     Minimal,

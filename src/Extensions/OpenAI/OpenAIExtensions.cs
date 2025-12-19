@@ -5,9 +5,23 @@ using OpenAI.Responses;
 
 namespace Devlooped.Extensions.AI.OpenAI;
 
-static class OpenAIExtensions
+/// <summary>
+/// Allows applying extension properties to the <see cref="ChatOptions"/> when using 
+/// them with an OpenAI client.
+/// </summary>
+public static class OpenAIExtensions
 {
-    public static ChatOptions? SetResponseOptions(this ChatOptions? options)
+    /// <summary>
+    /// Applies the extension properties to the <paramref name="options"/> so that 
+    /// the underlying OpenAI client can properly forward them to the endpoint.
+    /// </summary>
+    /// <remarks>
+    /// Only use this if you are not using <see cref="OpenAIChatClient"/>, which already applies 
+    /// extensions before sending requests.
+    /// </remarks>
+    /// <returns>An options with the right <see cref="ChatOptions.RawRepresentationFactory"/> replaced 
+    /// so it can forward extensions to the underlying OpenAI API.</returns>
+    public static ChatOptions? ApplyExtensions(this ChatOptions? options)
     {
         if (options is null)
             return null;
