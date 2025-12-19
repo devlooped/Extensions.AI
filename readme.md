@@ -68,7 +68,7 @@ The support for OpenAI chat clients provided in [Microsoft.Extensions.AI.OpenAI]
   a single model identifier for all requests, at the time the `OpenAIClient.GetChatClient` is 
   invoked.
 * Setting reasoning effort: the Microsoft.Extensions.AI API does not expose a way to set reasoning 
-  effort for reasoning-capable models, which is very useful for some models like `o4-mini`.
+  effort for reasoning-capable models, which is very useful for some models like `gpt-5.2`.
 
 So solve both issues, this package provides an `OpenAIChatClient` that wraps the underlying 
 `OpenAIClient` and allows setting the model identifier and reasoning effort per request, just 
@@ -86,7 +86,7 @@ IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPEN
 var options = new ChatOptions
 {
     ModelId = "gpt-5-mini",                 // 👈 can override the model on the client
-    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low/Minimal, extension property
+    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low/Minimal/None, extension property
 };
 
 var response = await chat.GetResponseAsync(messages, options);
@@ -94,7 +94,7 @@ var response = await chat.GetResponseAsync(messages, options);
 
 > [!TIP]
 > We provide support for the newest `Minimal` reasoning effort in the just-released
-> GPT-5 model family.
+> GPT-5 model family as well as `None` which is the new default in GPT-5.2.
 
 ### Web Search
 
