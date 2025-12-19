@@ -37,11 +37,11 @@ public class OpenAIChatClient : IChatClient
 
     /// <inheritdoc/>
     public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellation = default)
-            => GetChatClient(options?.ModelId ?? modelId).GetResponseAsync(messages, options.SetResponseOptions(), cancellation);
+            => GetChatClient(options?.ModelId ?? modelId).GetResponseAsync(messages, options.ApplyExtensions(), cancellation);
 
     /// <inheritdoc/>
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellation = default)
-            => GetChatClient(options?.ModelId ?? modelId).GetStreamingResponseAsync(messages, options.SetResponseOptions(), cancellation);
+            => GetChatClient(options?.ModelId ?? modelId).GetStreamingResponseAsync(messages, options.ApplyExtensions(), cancellation);
 
     IChatClient GetChatClient(string modelId) => clients.GetOrAdd(modelId, model
         => new PipelineClient(pipeline, options).GetOpenAIResponseClient(modelId).AsIChatClient());
