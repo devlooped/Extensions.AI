@@ -3,7 +3,7 @@
 [![GitHub](https://img.shields.io/badge/-source-181717.svg?logo=GitHub)](https://github.com/devlooped/AI)
 
 <!-- include ../../readme.md#grok-title -->
-<!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
 <!-- include ../../readme.md#grok -->
+<!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
 <!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
 <!-- exclude -->
