@@ -240,10 +240,6 @@ var openai = new OpenAIClient(
     new OpenAIClientOptions().UseJsonConsoleLogging());
 ```
 
-For a Grok client with search-enabled, a request would look like the following:
-
-![](https://raw.githubusercontent.com/devlooped/Extensions.AI/main/assets/img/chatmessage.png)
-
 Both alternatives receive an optional `JsonConsoleOptions` instance to configure 
 the output, including truncating or wrapping long messages, setting panel style, 
 and more.
@@ -251,7 +247,7 @@ and more.
 The chat pipeline logging is added similar to other pipeline extensions:
 
 ```csharp
-IChatClient client = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!, "grok-3-mini")
+IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY")!, "gpt-5.2");
     .AsBuilder()
     .UseOpenTelemetry()
     // other extensions...
@@ -265,7 +261,11 @@ IChatClient client = new GrokChatClient(Environment.GetEnvironmentVariable("XAI_
 ```
 <!-- #extensions -->
 
-## Grok
+# Devlooped.Extensions.AI.Grok
+
+[![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.Grok.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI.Grok)
+[![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.Grok.svg?color=green)](https://www.nuget.org/packages/Devlooped.Extensions.AI.Grok)
+
 <!-- #grok-title -->
 Microsoft.Extensions.AI `IChatClient` for Grok with full support for all 
 [agentic tools](https://docs.x.ai/docs/guides/tools/overview):
@@ -276,7 +276,7 @@ var grok = new GrokClient(Environment.GetEnvironmentVariable("XAI_API_KEY")!)
 ```
 <!-- #grok-title -->
 <!-- #grok -->
-### Web Search
+## Web Search
 
 ```csharp
 var messages = new Chat()
@@ -316,7 +316,7 @@ You can alternatively set `ExcludedDomains` instead, and enable image
 understanding with `EnableImageUndestanding`. Learn more about these filters 
 at [web search parameters](https://docs.x.ai/docs/guides/tools/search-tools#web-search-parameters).
 
-### X Search
+## X Search
 
 In addition to web search, Grok also supports searching on X (formerly Twitter):
 
@@ -341,7 +341,7 @@ Learn more about available filters at [X search parameters](https://docs.x.ai/do
 
 You can combine both web and X search in the same request by adding both tools.
 
-### Code Execution
+## Code Execution
 
 The code execution tool enables Grok to write and execute Python code in real-time, 
 dramatically expanding its capabilities beyond text generation. This powerful feature 
@@ -389,7 +389,7 @@ foreach (AIContent output in content.Outputs)
 
 Learn more about the [code execution tool](https://docs.x.ai/docs/guides/tools/code-execution-tool).
 
-### Collection Search
+## Collection Search
 
 If you maintain a [collection](https://docs.x.ai/docs/key-information/collections), 
 Grok can perform semantic search on it:
@@ -405,7 +405,7 @@ var options = new ChatOptions
 
 Learn more about [collection search](https://docs.x.ai/docs/guides/tools/collections-search-tool).
 
-### Remote MCP
+## Remote MCP
 
 Remote MCP Tools allow Grok to connect to external MCP (Model Context Protocol) servers.
 This example sets up the GitHub MCP server so queries about releases (limited specifically 
