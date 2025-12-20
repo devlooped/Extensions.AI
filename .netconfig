@@ -166,3 +166,8 @@
     weak
 	sha = a1ec2c6746d96b4f6f140509aa68dcff09271146
 	etag = 9e5c6908edc34eb661d647671f79153d8f3a54ebdc848c8765c78d2715f2f657
+[file "src/Tests/Extensions/CallHelpers.cs"]
+	url = https://github.com/grpc/grpc-dotnet/blob/master/examples/Tester/Tests/Client/Helpers/CallHelpers.cs
+	sha = a04684ab2306e5a17bad26d3da69636b326cce14
+	etag = 7faacded709d2bede93356fd58b93af84884949f3bab098b8b8d121a03696449
+	weak

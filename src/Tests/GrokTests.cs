@@ -4,7 +4,8 @@ using Azure;
 using Devlooped.Extensions.AI.Grok;
 using Devlooped.Grok;
 using Microsoft.Extensions.AI;
-using OpenAI.Realtime;
+using Moq;
+using Tests.Client.Helpers;
 using static ConfigurationExtensions;
 using OpenAIClientOptions = OpenAI.OpenAIClientOptions;
 
@@ -464,6 +465,41 @@ public class GrokTests(ITestOutputHelper output)
         Assert.Equal(DateOnly.FromDateTime(DateTime.Today), typed.Today);
         Assert.EndsWith("1.0.0", typed.Release);
         Assert.True(typed.Price > 100);
+    }
+
+    [Fact]
+    public async Task GrokCustomFactoryInvokedFromOptions()
+    {
+        var invoked = false;
+        var client = new Mock<Devlooped.Grok.Chat.ChatClient>(MockBehavior.Strict);
+        client.Setup(x => x.GetCompletionAsync(It.IsAny<GetCompletionsRequest>(), null, null, CancellationToken.None))
+            .Returns(CallHelpers.CreateAsyncUnaryCall(new GetChatCompletionResponse
+            {
+                Outputs =
+                {
+                    new CompletionOutput
+                    {
+                        Message = new CompletionMessage
+                        {
+                            Content = "Hey Cazzulino!"
+                        }
+                    }
+                }
+            }));
+
+        var grok = new GrokChatClient(client.Object, "grok-4-1-fast");
+        var response = await grok.GetResponseAsync("Hi, my internet alias is kzu. Lookup my real full name online.",
+            new GrokChatOptions
+            {
+                RawRepresentationFactory = (client) =>
+                {
+                    invoked = true;
+                    return new GetCompletionsRequest();
+                }
+            });
+
+        Assert.True(invoked);
+        Assert.Equal("Hey Cazzulino!", response.Text);
     }
 
     record Response(DateOnly Today, string Release, decimal Price);

@@ -26,6 +26,7 @@
   <ItemGroup>
     <Compile Include="..\Extensions\Extensions\ChatOptionsExtensions.cs" Link="Extensions\ChatOptionsExtensions.cs" />
     <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
+    <InternalsVisibleTo Include="Tests"/>
   </ItemGroup>
 
 </Project>
