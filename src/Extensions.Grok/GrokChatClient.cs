@@ -15,8 +15,19 @@ class GrokChatClient : IChatClient
     readonly GrokClientOptions clientOptions;
 
     internal GrokChatClient(GrpcChannel channel, GrokClientOptions clientOptions, string defaultModelId)
+        : this(new ChatClient(channel), clientOptions, defaultModelId)
+    { }
+
+    /// <summary>
+    /// Test constructor.
+    /// </summary>
+    internal GrokChatClient(ChatClient client, string defaultModelId)
+        : this(client, new(), defaultModelId)
+    { }
+
+    GrokChatClient(ChatClient client, GrokClientOptions clientOptions, string defaultModelId)
     {
-        client = new ChatClient(channel);
+        this.client = client;
         this.clientOptions = clientOptions;
         this.defaultModelId = defaultModelId;
         metadata = new ChatClientMetadata("xai", clientOptions.Endpoint, defaultModelId);
@@ -97,7 +108,7 @@ class GrokChatClient : IChatClient
         {
             ResponseId = response.Id,
             ModelId = response.Model,
-            CreatedAt = response.Created.ToDateTimeOffset(),
+            CreatedAt = response.Created?.ToDateTimeOffset(),
             FinishReason = lastOutput != null ? MapFinishReason(lastOutput.FinishReason) : null,
             Usage = MapToUsage(response.Usage),
         };
@@ -210,12 +221,15 @@ class GrokChatClient : IChatClient
 
     GetCompletionsRequest MapToRequest(IEnumerable<ChatMessage> messages, ChatOptions? options)
     {
-        var request = new GetCompletionsRequest
+        var request = options?.RawRepresentationFactory?.Invoke(this) as GetCompletionsRequest ?? new GetCompletionsRequest()
         {
             // By default always include citations in the final output if available
             Include = { IncludeOption.InlineCitations },
             Model = options?.ModelId ?? defaultModelId,
         };
+
+        if (string.IsNullOrEmpty(request.Model))
+            request.Model = options?.ModelId ?? defaultModelId;
 
         if ((options?.EndUserId ?? clientOptions.EndUserId) is { } user) request.User = user;
         if (options?.MaxOutputTokens is { } maxTokens) request.MaxTokens = maxTokens;
