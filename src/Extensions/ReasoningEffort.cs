@@ -1,4 +1,6 @@
-﻿namespace Devlooped.Extensions.AI;
+﻿using System.ComponentModel;
+
+namespace Devlooped.Extensions.AI;
 
 /// <summary>
 /// Effort a reasoning model should apply when generating a response.
@@ -12,7 +14,9 @@ public enum ReasoningEffort
     None,
     /// <summary>
     /// Minimal reasoning effort, which may result in faster responses. Support depends on the model.
+    /// Unsupported as of gpt-5.1+
     /// </summary>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     Minimal,
     /// <summary>
     /// Low effort reasoning, which may result in faster responses but less detailed or accurate answers.
@@ -25,5 +29,9 @@ public enum ReasoningEffort
     /// <summary>
     /// High effort reasoning, which may take longer but provides more detailed and accurate responses.
     /// </summary>
-    High
+    High,
+    /// <summary>
+    /// New highest reasoning level as of gpt-5.2+.
+    /// </summary>
+    XHigh
 }
