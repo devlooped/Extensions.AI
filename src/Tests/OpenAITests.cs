@@ -121,12 +121,13 @@ public class OpenAITests(ITestOutputHelper output)
     }
 
     [SecretsTheory("OPENAI_API_KEY")]
+    [InlineData(ReasoningEffort.Minimal, "gpt-5")] // Obsolete as of 5.1
     [InlineData(ReasoningEffort.None)]
-    [InlineData(ReasoningEffort.Minimal)]
     [InlineData(ReasoningEffort.Low)]
     [InlineData(ReasoningEffort.Medium)]
     [InlineData(ReasoningEffort.High)]
-    public async Task GPT5_ThinkingTime(ReasoningEffort effort)
+    [InlineData(ReasoningEffort.XHigh)]
+    public async Task GPT5_ThinkingTime(ReasoningEffort effort, string modelId = "gpt-5.2")
     {
         var messages = new Chat()
         {
@@ -136,7 +137,7 @@ public class OpenAITests(ITestOutputHelper output)
 
         var requests = new List<JsonNode>();
 
-        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-5.2",
+        var chat = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, modelId,
             OpenAIClientOptions.Observable(requests.Add).WriteTo(output));
 
         var options = new ChatOptions
