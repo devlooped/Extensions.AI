@@ -72,6 +72,9 @@ jobs:
         run: dotnet build -m:1 -bl:build.binlog
 
       - name: 🧪 test
+        env: 
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
         run: |
           dotnet tool update -g dotnet-retest
           dotnet retest -- --no-build
