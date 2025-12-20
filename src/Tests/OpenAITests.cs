@@ -142,7 +142,6 @@ public class OpenAITests(ITestOutputHelper output)
 
         var options = new ChatOptions
         {
-            ModelId = "gpt-5",
             ReasoningEffort = effort
         };
 
