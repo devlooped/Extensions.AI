@@ -41,6 +41,15 @@ public class Chat : IEnumerable<ChatMessage>
             _ => new ChatRole(role)
         }, message));
 
+    /// <summary>Creates a user message.</summary>
+    public static ChatMessage User(string message) => new(ChatRole.User, message);
+
+    /// <summary>Creates an assistant message.</summary>
+    public static ChatMessage Assistant(string message) => new(ChatRole.Assistant, message);
+
+    /// <summary>Creates a system message.</summary>
+    public static ChatMessage System(string message) => new(ChatRole.System, message);
+
     IEnumerator<ChatMessage> IEnumerable<ChatMessage>.GetEnumerator() => messages.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => messages.GetEnumerator();
