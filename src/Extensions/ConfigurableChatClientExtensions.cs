@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using Devlooped.Extensions.AI;
-using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -39,9 +38,13 @@ public static class ConfigurableChatClientExtensions
     /// <param name="configurePipeline">Optional action to configure the pipeline for each client.</param>
     /// <param name="configureClient">Optional action to configure each client.</param>
     /// <param name="prefix">The configuration prefix for clients. Defaults to "ai:clients".</param>
+    /// <param name="useDefaultProviders">Whether to register the default built-in <see cref="IChatClientProvider"/> providers for mapping configuration sections to <see cref="IChatClient"/> instances.</param>
     /// <returns>The service collection.</returns>
-    public static IServiceCollection AddChatClients(this IServiceCollection services, IConfiguration configuration, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients")
+    public static IServiceCollection AddChatClients(this IServiceCollection services, IConfiguration configuration, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients", bool useDefaultProviders = true)
     {
+        // Ensure the factory and providers are registered
+        services.AddChatClientFactory(useDefaultProviders);
+
         foreach (var entry in configuration.AsEnumerable().Where(x =>
             x.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) &&
             x.Key.EndsWith("modelid", StringComparison.OrdinalIgnoreCase)))
@@ -57,7 +60,10 @@ public static class ConfigurableChatClientExtensions
             services.TryAdd(new ServiceDescriptor(typeof(IChatClient), id,
                 factory: (sp, _) =>
                 {
-                    var client = new ConfigurableChatClient(configuration, sp.GetRequiredService<ILogger<ConfigurableChatClient>>(), section, id, configureClient);
+                    var client = new ConfigurableChatClient(configuration,
+                        sp.GetRequiredService<IChatClientFactory>(),
+                        sp.GetRequiredService<ILogger<ConfigurableChatClient>>(),
+                        section, id, configureClient);
 
                     if (configurePipeline != null)
                     {
