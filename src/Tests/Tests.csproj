@@ -48,4 +48,12 @@
     <Content Include="*.json;*.ini;*.toml" Exclude="@(Content)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="GrokTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="GrokTests.cs" />
+  </ItemGroup>
+
 </Project>
