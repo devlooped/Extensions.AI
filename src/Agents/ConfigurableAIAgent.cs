@@ -2,12 +2,12 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Devlooped.Extensions.AI;
-using Devlooped.Extensions.AI.Grok;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using xAI;
 
 namespace Devlooped.Agents.AI;
 

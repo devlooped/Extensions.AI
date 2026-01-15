@@ -3,12 +3,12 @@ using System.ComponentModel;
 using Azure;
 using Azure.AI.Inference;
 using Azure.AI.OpenAI;
-using Devlooped.Extensions.AI.Grok;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenAI;
+using xAI;
 
 namespace Devlooped.Extensions.AI;
 
