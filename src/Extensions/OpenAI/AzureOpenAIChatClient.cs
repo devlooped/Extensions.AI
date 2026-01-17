@@ -9,7 +9,7 @@ namespace Devlooped.Extensions.AI.OpenAI;
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for Azure OpenAI that supports per-request model selection.
 /// </summary>
-public class AzureOpenAIChatClient : IChatClient
+internal class AzureOpenAIChatClient : IChatClient
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
 
@@ -45,11 +45,11 @@ public class AzureOpenAIChatClient : IChatClient
 
     /// <inheritdoc/>
     public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellation = default)
-        => GetChatClient(options?.ModelId ?? modelId).GetResponseAsync(messages, options.ApplyExtensions(), cancellation);
+        => GetChatClient(options?.ModelId ?? modelId).GetResponseAsync(messages, options, cancellation);
 
     /// <inheritdoc/>
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellation = default)
-        => GetChatClient(options?.ModelId ?? modelId).GetStreamingResponseAsync(messages, options.ApplyExtensions(), cancellation);
+        => GetChatClient(options?.ModelId ?? modelId).GetStreamingResponseAsync(messages, options, cancellation);
 
     IChatClient GetChatClient(string modelId) => clients.GetOrAdd(modelId, model
         => new PipelineClient(pipeline, endpoint, options).GetOpenAIResponseClient(modelId).AsIChatClient());
