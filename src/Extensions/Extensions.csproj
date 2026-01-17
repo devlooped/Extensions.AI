@@ -34,7 +34,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Extensions.CodeAnalysis\Extensions.CodeAnalysis.csproj" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Extensions.Grok\Extensions.Grok.csproj" />
+    <PackageReference Include="xAI" Version="*" />
   </ItemGroup>
 
   <ItemGroup>
