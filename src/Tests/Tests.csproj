@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Extensions.CodeAnalysis\Extensions.CodeAnalysis.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="..\Extensions.Grok\Extensions.Grok.csproj" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
   </ItemGroup>
 
@@ -46,14 +45,6 @@
     <None Update="Content\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <Content Update="Content\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="*.json;*.ini;*.toml" Exclude="@(Content)" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="GrokTests.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="GrokTests.cs" />
   </ItemGroup>
 
 </Project>

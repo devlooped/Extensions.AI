@@ -5,7 +5,6 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="src/Extensions.CodeAnalysis/Extensions.CodeAnalysis.csproj" />
-  <Project Path="src/Extensions.Grok/Extensions.Grok.csproj" Id="3590dc05-72f0-4ada-823b-60cb7b5ea828" />
   <Project Path="src/Extensions/Extensions.csproj" />
   <Project Path="src/Tests/Tests.csproj" />
 </Solution>
