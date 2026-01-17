@@ -276,11 +276,10 @@ public class OpenAITests(ITestOutputHelper output)
 
         var options = new ChatOptions
         {
-            Tools = [new WebSearchTool("AR")
+            Tools = [new Devlooped.Extensions.AI.OpenAI.WebSearchTool("AR")
             {
                 Region = "Bariloche",
                 TimeZone = "America/Argentina/Buenos_Aires",
-                ContextSize = WebSearchToolContextSize.High
             }]
         };
 
