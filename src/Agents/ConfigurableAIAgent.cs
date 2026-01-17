@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Devlooped.Extensions.AI;
+using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -118,7 +119,7 @@ public sealed partial class ConfigurableAIAgent : AIAgent, IHasAdditionalPropert
         var provider = client.GetService<ChatClientMetadata>()?.ProviderName;
         ChatOptions? chat = provider == "xai"
             ? configSection.GetSection("options").Get<GrokChatOptions>()
-            : configSection.GetSection("options").Get<ExtendedChatOptions>();
+            : configSection.GetSection("options").Get<OpenAIChatOptions>();
 
         if (chat is not null)
             options.ChatOptions = chat;

@@ -8,7 +8,7 @@ namespace Devlooped.Extensions.AI.OpenAI;
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for Azure AI Inference that supports per-request model selection.
 /// </summary>
-public class AzureInferenceChatClient : IChatClient
+internal class AzureInferenceChatClient : IChatClient
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
 

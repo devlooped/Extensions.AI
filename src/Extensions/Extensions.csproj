@@ -41,6 +41,7 @@
     <None Update="Devlooped.Extensions.AI.props" PackFolder="build" />
     <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
     <InternalsVisibleTo Include="Devlooped.Agents.AI" />
+    <InternalsVisibleTo Include="Tests" />
   </ItemGroup>
 
 </Project>

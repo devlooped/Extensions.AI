@@ -186,7 +186,7 @@ public class OpenAITests(ITestOutputHelper output)
             {
                 ModelId = "gpt-5.1",
                 ReasoningEffort = ReasoningEffort.Low
-            }.ApplyExtensions());
+            });
 
         Assert.StartsWith("gpt-5.1", reasoned.ModelId);
         Assert.NotNull(reasoned.Usage?.AdditionalCounts);
@@ -199,7 +199,7 @@ public class OpenAITests(ITestOutputHelper output)
             {
                 ModelId = "gpt-5.1",
                 ReasoningEffort = ReasoningEffort.None
-            }.ApplyExtensions());
+            });
 
         Assert.NotNull(nonreasoned.Usage?.AdditionalCounts);
         Assert.True(nonreasoned.Usage.AdditionalCounts.ContainsKey("OutputTokenDetails.ReasoningTokenCount"));
