@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace Devlooped.Extensions.AI;
+namespace Devlooped.Extensions.AI.OpenAI;
 
 /// <summary>
 /// Effort a reasoning model should apply when generating a response.

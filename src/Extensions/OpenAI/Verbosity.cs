@@ -1,4 +1,4 @@
-﻿namespace Devlooped.Extensions.AI;
+﻿namespace Devlooped.Extensions.AI.OpenAI;
 
 /// <summary>
 /// Verbosity determines how many output tokens are generated for models that support it, such as GPT-5.
