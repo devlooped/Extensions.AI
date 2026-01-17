@@ -9,7 +9,7 @@ namespace Devlooped.Extensions.AI.OpenAI;
 /// <summary>
 /// An <see cref="IChatClient"/> implementation for Azure OpenAI that supports per-request model selection.
 /// </summary>
-internal class AzureOpenAIChatClient : IChatClient
+class AzureOpenAIChatClient : IChatClient
 {
     readonly ConcurrentDictionary<string, IChatClient> clients = new();
 
