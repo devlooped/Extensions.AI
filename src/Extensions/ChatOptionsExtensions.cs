@@ -3,7 +3,7 @@
 namespace Devlooped.Extensions.AI;
 
 /// <summary>Extensions for <see cref="ChatOptions"/>.</summary>
-static partial class ChatOptionsExtensions
+public static partial class ChatOptionsExtensions
 {
     extension(ChatOptions options)
     {
