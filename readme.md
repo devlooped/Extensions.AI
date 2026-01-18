@@ -6,21 +6,6 @@
 [![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
 [![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.svg?color=green)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
 
-Extensions for Microsoft.Extensions.AI.
-
-<!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
-## Open Source Maintenance Fee
-
-To ensure the long-term sustainability of this project, users of this package who generate 
-revenue must pay an [Open Source Maintenance Fee](https://opensourcemaintenancefee.org). 
-While the source code is freely available under the terms of the [License](license.txt), 
-this package and other aspects of the project require [adherence to the Maintenance Fee](osmfeula.txt).
-
-To pay the Maintenance Fee, [become a Sponsor](https://github.com/sponsors/devlooped) at the proper 
-OSMF tier. A single fee covers all of [Devlooped packages](https://www.nuget.org/profiles/Devlooped).
-
-<!-- https://github.com/devlooped/.github/raw/main/osmf.md -->
-
 <!-- #extensions-title -->
 Extensions for Microsoft.Extensions.AI
 <!-- #extensions-title -->
@@ -60,19 +45,8 @@ var grok = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
 Changing the `appsettings.json` file will automatically update the client 
 configuration without restarting the application.
 
-## OpenAI
-
-The support for OpenAI chat clients provided in [Microsoft.Extensions.AI.OpenAI](https://www.nuget.org/packages/Microsoft.Extensions.AI.OpenAI) fall short in some scenarios:
-
-* Specifying per-chat model identifier: the OpenAI client options only allow setting 
-  a single model identifier for all requests, at the time the `OpenAIClient.GetChatClient` is 
-  invoked.
-* Setting reasoning effort: the Microsoft.Extensions.AI API does not expose a way to set reasoning 
-  effort for reasoning-capable models, which is very useful for some models like `gpt-5.2`.
-
-So solve both issues, this package provides an `OpenAIChatClient` that wraps the underlying 
-`OpenAIClient` and allows setting the model identifier and reasoning effort per request, just 
-like the above Grok examples showed:
+There's also a simpler `Chat` class for streamlined creation of chat messages, which can 
+be used instead of creating an array of `ChatMessage` using `ChatRole.[System|Assistant|User]`:
 
 ```csharp
 var messages = new Chat()
@@ -80,87 +54,6 @@ var messages = new Chat()
     { "system", "You are a highly intelligent AI assistant." },
     { "user", "What is 101*3?" },
 };
-
-IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY")!, "gpt-5");
-
-var options = new ChatOptions
-{
-    ModelId = "gpt-5-mini",                 // 👈 can override the model on the client
-    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low/Minimal/None, extension property
-};
-
-var response = await chat.GetResponseAsync(messages, options);
-```
-
-> [!TIP]
-> We provide support for the newest `Minimal` reasoning effort in the just-released
-> GPT-5 model family as well as `None` which is the new default in GPT-5.2.
-
-### Web Search
-
-Similar to the Grok client, we provide the `WebSearchTool` to enable search customization 
-in OpenAI too:
-
-```csharp
-var options = new ChatOptions
-{
-    //                          👇 search in Argentina, Bariloche region
-    Tools = [new WebSearchTool("AR")
-    {
-        Region = "Bariloche",                        // 👈 Bariloche region
-        TimeZone = "America/Argentina/Buenos_Aires", // 👈 IANA timezone
-        ContextSize = WebSearchToolContextSize.High      // 👈 high search context size
-    }]
-};
-```
-
-> [!NOTE]
-> This enables all features supported by the [Web search](https://platform.openai.com/docs/guides/tools-web-search) 
-> feature in OpenAI.
-
-If advanced search settings are not needed, you can use the built-in M.E.AI `HostedWebSearchTool` 
-instead, which is a more generic tool and provides the basics out of the box.
-
-
-## Observing Request/Response
-
-The underlying HTTP pipeline provided by the Azure SDK allows setting up 
-policies that can observe requests and responses. This is useful for 
-monitoring the requests and responses sent to the AI service, regardless 
-of the chat pipeline configuration used. 
-
-This is added to the `OpenAIClientOptions` (or more properly, any 
-`ClientPipelineOptions`-derived options) using the `Observe` method:
-
-```csharp
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    new OpenAIClientOptions().Observe(
-        onRequest: request => Console.WriteLine($"Request: {request}"),
-        onResponse: response => Console.WriteLine($"Response: {response}"),
-    ));
-```
-
-You can for example trivially collect both requests and responses for 
-payload analysis in tests as follows:
-
-```csharp
-var requests = new List<JsonNode>();
-var responses = new List<JsonNode>();
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    new OpenAIClientOptions().Observe(requests.Add, responses.Add));
-```
-
-We also provide a shorthand factory method that creates the options 
-and observes is in a single call:
-
-```csharp
-var requests = new List<JsonNode>();
-var responses = new List<JsonNode>();
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    OpenAIClientOptions.Observable(requests.Add, responses.Add));
 ```
 
 ## Tool Results
@@ -218,6 +111,95 @@ else
 > when using local functions to avoid invalid characters and honor 
 > its original name.
 
+## OpenAI
+
+OpenAI-specific extensions enable more seamless usage with the MS.E.AI API:
+
+* Setting reasoning effort: the Microsoft.Extensions.AI API does not expose a way to set reasoning 
+  effort for reasoning-capable models, which is very useful for some models like 
+  [`gpt-5.2`](https://platform.openai.com/docs/guides/latest-model#lower-reasoning-effort)
+* Setting output verbosity: similarly, [output verbosity](https://platform.openai.com/docs/guides/latest-model#verbosity) is not exposed in the base API.
+
+These can be used as extension properties on `ChatOptions` whenever `Devlooped.Extensions.AI.OpenAI` is imported: 
+
+```csharp
+var options = new ChatOptions
+{
+    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low/Minimal/None, extension property
+    Verbosity = Verbosity.Low               // 👈 or Medium/High, extension property
+};
+
+var response = await chat.GetResponseAsync(messages, options);
+```
+
+Or you can opt to use the `ChatOptions`-derived `OpenAIChatOptions` class directly:
+
+### Web Search
+
+The `WebSearchTool` can be used to customize the web search behavior in a typed manner, 
+unlike the generic `HostedWebSearchTool`:
+
+```csharp
+var options = new ChatOptions
+{
+    //                          👇 search in Argentina, Bariloche region
+    Tools = [new WebSearchTool("AR")
+    {
+        AllowedDomains = ["catedralaltapatagonia.com"], // 👈 restrict domain
+        Region = "Bariloche",                           // 👈 Bariloche region
+        TimeZone = "America/Argentina/Buenos_Aires",    // 👈 IANA timezone
+    }]
+};
+```
+
+> [!NOTE]
+> This enables all features supported by the [Web search](https://platform.openai.com/docs/guides/tools-web-search) 
+> feature in OpenAI.
+
+If advanced search settings are not needed, you can use the built-in M.E.AI `HostedWebSearchTool` 
+instead, which is a more generic tool and provides the basics out of the box.
+
+## Observing Request/Response
+
+The underlying HTTP pipeline provided by the Azure SDK allows setting up 
+policies that can observe requests and responses. This is useful for 
+monitoring the requests and responses sent to the AI service, regardless 
+of the chat pipeline configuration used. 
+
+This is added to the `OpenAIClientOptions` (or more properly, any 
+`ClientPipelineOptions`-derived options) using the `Observe` method:
+
+```csharp
+var openai = new OpenAIClient(
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
+    new OpenAIClientOptions().Observe(
+        onRequest: request => Console.WriteLine($"Request: {request}"),
+        onResponse: response => Console.WriteLine($"Response: {response}"),
+    ));
+```
+
+You can for example trivially collect both requests and responses for 
+payload analysis in tests as follows:
+
+```csharp
+var requests = new List<JsonNode>();
+var responses = new List<JsonNode>();
+var openai = new OpenAIClient(
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
+    new OpenAIClientOptions().Observe(requests.Add, responses.Add));
+```
+
+We also provide a shorthand factory method that creates the options 
+and observes is in a single call:
+
+```csharp
+var requests = new List<JsonNode>();
+var responses = new List<JsonNode>();
+var openai = new OpenAIClient(
+    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
+    OpenAIClientOptions.Observable(requests.Add, responses.Add));
+```
+
 ## Console Logging
 
 Additional `UseJsonConsoleLogging` extension for rich JSON-formatted console logging of AI requests 
@@ -261,14 +243,18 @@ IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPEN
 ```
 <!-- #extensions -->
 
-# xAI (Grok)
+<!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
+## Open Source Maintenance Fee
 
-[![Version](https://img.shields.io/nuget/vpre/xAI.svg?color=royalblue)](https://www.nuget.org/packages/xAI)
-[![Downloads](https://img.shields.io/nuget/dt/xAI.svg?color=green)](https://www.nuget.org/packages/xAI)
+To ensure the long-term sustainability of this project, users of this package who generate 
+revenue must pay an [Open Source Maintenance Fee](https://opensourcemaintenancefee.org). 
+While the source code is freely available under the terms of the [License](license.txt), 
+this package and other aspects of the project require [adherence to the Maintenance Fee](osmfeula.txt).
 
-For Microsoft.Extensions.AI `IChatClient` integration with Grok (xAI), see the 
-[xAI](https://nuget.org/packages/xAI) package, which provides full support for all 
-[agentic tools](https://docs.x.ai/docs/guides/tools/overview).
+To pay the Maintenance Fee, [become a Sponsor](https://github.com/sponsors/devlooped) at the proper 
+OSMF tier. A single fee covers all of [Devlooped packages](https://www.nuget.org/profiles/Devlooped).
+
+<!-- https://github.com/devlooped/.github/raw/main/osmf.md -->
 
 <!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
 # Sponsors 

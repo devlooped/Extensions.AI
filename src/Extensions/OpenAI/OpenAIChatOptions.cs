@@ -1,5 +1,4 @@
-﻿using System.ComponentModel;
-using Microsoft.Extensions.AI;
+﻿using Microsoft.Extensions.AI;
 
 namespace Devlooped.Extensions.AI.OpenAI;
 

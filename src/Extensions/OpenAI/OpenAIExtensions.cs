@@ -1,8 +1,5 @@
-﻿using System.ClientModel.Primitives;
-using System.ComponentModel;
-using System.Text.Json;
+﻿using System.ComponentModel;
 using Microsoft.Extensions.AI;
-using OpenAI.Responses;
 
 namespace Devlooped.Extensions.AI.OpenAI;
 
@@ -26,6 +23,7 @@ public static class OpenAIExtensions
     /// has been set to a non-OpenAI factory.</exception>
     extension(ChatOptions options)
     {
+        /// <summary>Controls how many reasoning tokens the model generates before producing a response.</summary>
         public ReasoningEffort? ReasoningEffort
         {
             get => options.AdditionalProperties?.TryGetValue("reasoning_effort", out var value) == true && value is ReasoningEffort effort ? effort : null;
