@@ -33,6 +33,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Extensions.CodeAnalysis\Extensions.CodeAnalysis.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
+    <ProjectReference Include="..\Extensions.Console\Extensions.Console.csproj" />
   </ItemGroup>
 
   <ItemGroup>
