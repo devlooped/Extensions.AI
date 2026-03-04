@@ -144,7 +144,7 @@ public class JsonConsoleOptions
     }
 
 #pragma warning disable CS9113 // Parameter is unread. BOGUS
-    sealed class WrappedJsonText(string json, int maxWidth) : Renderable
+    sealed class WrappedJsonText(string json, int fixedMaxWidth) : Renderable
 #pragma warning restore CS9113 // Parameter is unread. BOGUS
     {
         readonly JsonText jsonText = new(json);
@@ -152,7 +152,8 @@ public class JsonConsoleOptions
         protected override Measurement Measure(RenderOptions options, int maxWidth)
         {
             // Clamp the measurement to the desired maxWidth
-            return new Measurement(Math.Min(maxWidth, maxWidth), Math.Min(maxWidth, maxWidth));
+            var width = Math.Min(fixedMaxWidth, maxWidth);
+            return new Measurement(width, width);
         }
 
         protected override IEnumerable<Segment> Render(RenderOptions options, int maxWidth)
@@ -170,7 +171,7 @@ public class JsonConsoleOptions
                 var idx = 0;
                 while (idx < text.Length)
                 {
-                    var len = Math.Min(maxWidth, text.Length - idx);
+                    var len = Math.Min(fixedMaxWidth, text.Length - idx);
                     wrapped.Add(new Segment(text.Substring(idx, len), style));
                     idx += len;
                     if (idx < text.Length)

@@ -6,5 +6,6 @@
   </Configurations>
   <Project Path="src/Extensions.CodeAnalysis/Extensions.CodeAnalysis.csproj" />
   <Project Path="src/Extensions/Extensions.csproj" />
+  <Project Path="src/Extensions.Console/Extensions.Console.csproj" />
   <Project Path="src/Tests/Tests.csproj" />
 </Solution>
