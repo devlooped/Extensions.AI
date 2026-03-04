@@ -15,7 +15,7 @@ namespace Devlooped.Extensions.AI;
 /// </summary>
 public class YamlConsoleOptions
 {
-    static readonly JsonSerializerOptions jsonOptions = new(JsonSerializerDefaults.Web)
+    static readonly JsonSerializerOptions serializationOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition =
             JsonIgnoreCondition.WhenWritingNull |
@@ -95,7 +95,7 @@ public class YamlConsoleOptions
         JsonNode? node = value switch
         {
             JsonNode existing => existing,
-            _ => JsonSerializer.SerializeToNode(value, value.GetType(), jsonOptions),
+            _ => JsonSerializer.SerializeToNode(value, value.GetType(), serializationOptions),
         };
 
         if (node is null)

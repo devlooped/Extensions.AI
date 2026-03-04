@@ -51,7 +51,7 @@ public static class YamlConsoleLoggingExtensions
         {
             consoleOptions ??= YamlConsoleOptions.Default;
 
-            if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable YAML console logging for HTTP pipeline messages?"))
+            if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable YAML console logging for chat messages and responses?"))
                 return builder;
 
             if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)

@@ -51,7 +51,7 @@ public static class JsonConsoleLoggingExtensions
         {
             consoleOptions ??= JsonConsoleOptions.Default;
 
-            if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable rich JSON console logging for HTTP pipeline messages?"))
+            if (consoleOptions.InteractiveConfirm && ConsoleExtensions.IsConsoleInteractive && !AnsiConsole.Confirm("Do you want to enable rich JSON console logging for chat messages and responses?"))
                 return builder;
 
             if (consoleOptions.InteractiveOnly && !ConsoleExtensions.IsConsoleInteractive)
