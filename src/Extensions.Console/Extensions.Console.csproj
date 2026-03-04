@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <LangVersion>Preview</LangVersion>
+    <AssemblyName>Devlooped.Extensions.AI.Console</AssemblyName>
+    <RootNamespace>Devlooped.Extensions.AI</RootNamespace>
+    <PackageId>Devlooped.Extensions.AI.Console</PackageId>
+    <Description>Console logging extensions for Devlooped.Extensions.AI</Description>
+    <PackageLicenseExpression></PackageLicenseExpression>
+    <PackageLicenseFile>OSMFEULA.txt</PackageLicenseFile>
+    <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NuGetizer" Version="1.4.7" PrivateAssets="all" />
+    <PackageReference Include="Spectre.Console" Version="0.54.0" />
+    <PackageReference Include="Spectre.Console.Json" Version="0.54.0" />
+    <PackageReference Include="YamlDotNet" Version="13.7.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Extensions\Extensions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Devlooped.Agents.AI" />
+    <InternalsVisibleTo Include="Tests" />
+  </ItemGroup>
+
+</Project>
