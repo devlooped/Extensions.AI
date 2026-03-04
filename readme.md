@@ -115,9 +115,6 @@ else
 
 OpenAI-specific extensions enable more seamless usage with the MS.E.AI API:
 
-* Setting reasoning effort: the Microsoft.Extensions.AI API does not expose a way to set reasoning 
-  effort for reasoning-capable models, which is very useful for some models like 
-  [`gpt-5.2`](https://platform.openai.com/docs/guides/latest-model#lower-reasoning-effort)
 * Setting output verbosity: similarly, [output verbosity](https://platform.openai.com/docs/guides/latest-model#verbosity) is not exposed in the base API.
 
 These can be used as extension properties on `ChatOptions` whenever `Devlooped.Extensions.AI.OpenAI` is imported: 
@@ -125,14 +122,13 @@ These can be used as extension properties on `ChatOptions` whenever `Devlooped.E
 ```csharp
 var options = new ChatOptions
 {
-    ReasoningEffort = ReasoningEffort.High, // 👈 or Medium/Low/Minimal/None, extension property
     Verbosity = Verbosity.Low               // 👈 or Medium/High, extension property
 };
 
 var response = await chat.GetResponseAsync(messages, options);
 ```
 
-Or you can opt to use the `ChatOptions`-derived `OpenAIChatOptions` class directly:
+Or you can opt to use the `ChatOptions`-derived `OpenAIChatOptions` class directly.
 
 ### Web Search
 
@@ -199,11 +195,13 @@ var openai = new OpenAIClient(
     Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
     OpenAIClientOptions.Observable(requests.Add, responses.Add));
 ```
+<!-- #extensions -->
 
+<!-- #console -->
 ## Console Logging
 
-Additional `UseJsonConsoleLogging` extension for rich JSON-formatted console logging of AI requests 
-are provided at two levels: 
+Additional `UseJsonConsoleLogging` extension for rich JSON-formatted console logging 
+of `IChatClient` requests and responses are provided at two levels: 
 
 * Chat pipeline: similar to `UseLogging`.
 * HTTP pipeline: lowest possible layer before the request is sent to the AI service, 
@@ -241,7 +239,11 @@ IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPEN
     })
     .Build();
 ```
-<!-- #extensions -->
+
+> [!IMPORTANT]
+> By default, the logging will only be performed if the console is interactive.
+
+<!-- #console -->
 
 <!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
 ## Open Source Maintenance Fee
