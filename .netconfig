@@ -164,8 +164,8 @@
 [file "src/Agents/Extensions/YamlConfigurationStreamParser.cs"]
     url = https://github.com/andrewlock/NetEscapades.Configuration/blob/master/src/NetEscapades.Configuration.Yaml/YamlConfigurationStreamParser.cs
     weak
-	sha = a1ec2c6746d96b4f6f140509aa68dcff09271146
-	etag = 9e5c6908edc34eb661d647671f79153d8f3a54ebdc848c8765c78d2715f2f657
+	sha = bdde4ffcd91b969ea6aba33375722aaed322f6b3
+	etag = 9fc141786168bded839071aaf0fb1f9c2f52ad9baaef5f0c22ff9882e4393e73
 [file "src/Tests/Extensions/CallHelpers.cs"]
 	url = https://github.com/grpc/grpc-dotnet/blob/master/examples/Tester/Tests/Client/Helpers/CallHelpers.cs
 	sha = a04684ab2306e5a17bad26d3da69636b326cce14
