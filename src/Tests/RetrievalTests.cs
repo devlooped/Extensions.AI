@@ -25,7 +25,7 @@ public class RetrievalTests(ITestOutputHelper output)
                     result = client.GetVectorStoreClient().GetVectorStoreFile(result.Value.VectorStoreId, result.Value.FileId);
                 }
 
-                var responses = new OpenAIResponseClient(model, Configuration["OPENAI_API_KEY"]);
+                var responses = new ResponsesClient(model, Configuration["OPENAI_API_KEY"]);
 
                 var options = new ChatOptions();
                 options.Tools ??= [];

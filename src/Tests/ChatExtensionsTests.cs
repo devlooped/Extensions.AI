@@ -8,7 +8,7 @@ using Moq;
 using OpenAI.Responses;
 using static Devlooped.Extensions.AI.Chat;
 
-namespace Devlooped;
+namespace Devlooped.Extensions.AI;
 
 public class ChatExtensionsTests
 {
@@ -32,20 +32,6 @@ public class ChatExtensionsTests
     }
 
     [Fact]
-    public void ReasoningEffort_AutoSetsFactory()
-    {
-        var options = new ChatOptions();
-
-        Assert.Null(options.RawRepresentationFactory);
-
-        options.ReasoningEffort = ReasoningEffort.High;
-
-        // Factory should now be auto-configured
-        Assert.NotNull(options.RawRepresentationFactory);
-        Assert.Equal(ReasoningEffort.High, options.ReasoningEffort);
-    }
-
-    [Fact]
     public void Verbosity_AutoSetsFactory()
     {
         var options = new ChatOptions();
@@ -60,24 +46,6 @@ public class ChatExtensionsTests
     }
 
     [Fact]
-    public void ReasoningEffortAndVerbosity_ShareFactory()
-    {
-        var options = new ChatOptions();
-
-        options.ReasoningEffort = ReasoningEffort.Medium;
-        var factory1 = options.RawRepresentationFactory;
-
-        options.Verbosity = Verbosity.High;
-        var factory2 = options.RawRepresentationFactory;
-
-        // Factory should be the same - not replaced
-        Assert.Same(factory1, factory2);
-
-        Assert.Equal(ReasoningEffort.Medium, options.ReasoningEffort);
-        Assert.Equal(Verbosity.High, options.Verbosity);
-    }
-
-    [Fact]
     public void ThrowsWhenCustomFactoryAlreadySet()
     {
         var options = new ChatOptions();
@@ -86,7 +54,6 @@ public class ChatExtensionsTests
         options.RawRepresentationFactory = _ => new object();
 
         // Should throw when trying to use extension properties
-        Assert.Throws<InvalidOperationException>(() => options.ReasoningEffort = ReasoningEffort.High);
         Assert.Throws<InvalidOperationException>(() => options.Verbosity = Verbosity.Low);
     }
 
@@ -95,7 +62,7 @@ public class ChatExtensionsTests
     {
         var options = new ChatOptions();
 
-        options.ReasoningEffort = null;
+        options.Verbosity = null;
 
         // Factory should not be configured
         Assert.Null(options.RawRepresentationFactory);
@@ -106,11 +73,9 @@ public class ChatExtensionsTests
     {
         var options = new OpenAIChatOptions
         {
-            ReasoningEffort = ReasoningEffort.Low,
             Verbosity = Verbosity.Medium
         };
 
-        Assert.Equal(ReasoningEffort.Low, options.ReasoningEffort);
         Assert.Equal(Verbosity.Medium, options.Verbosity);
 
         // Factory should be auto-configured via extension property setters
@@ -118,6 +83,6 @@ public class ChatExtensionsTests
 
         var responseOptions = options.RawRepresentationFactory(Mock.Of<IChatClient>());
 
-        Assert.IsType<ResponseCreationOptions>(responseOptions);
+        Assert.IsType<CreateResponseOptions>(responseOptions);
     }
 }

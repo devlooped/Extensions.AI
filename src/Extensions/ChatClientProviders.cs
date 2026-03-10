@@ -1,3 +1,4 @@
+using System.ClientModel;
 using Azure;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
@@ -28,7 +29,7 @@ sealed class OpenAIChatClientProvider : IChatClientProvider
         Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
         Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
 
-        return new OpenAIChatClient(options.ApiKey, options.ModelId, options);
+        return new OpenAIClient(new ApiKeyCredential(options.ApiKey), options).GetChatClient(options.ModelId).AsIChatClient();
     }
 
     internal sealed class OpenAIProviderOptions : OpenAIClientOptions

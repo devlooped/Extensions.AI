@@ -12,18 +12,6 @@ namespace Devlooped.Extensions.AI.OpenAI;
 public class OpenAIChatOptions : ChatOptions
 {
     /// <summary>
-    /// Gets or sets the effort level for a reasoning AI model when generating responses.
-    /// </summary>
-    /// <remarks>
-    /// This property is specific to the OpenAI Responses API.
-    /// </remarks>
-    public ReasoningEffort? ReasoningEffort
-    {
-        get => ((ChatOptions)this).ReasoningEffort;
-        set => ((ChatOptions)this).ReasoningEffort = value;
-    }
-
-    /// <summary>
     /// Gets or sets the verbosity level for a GPT-5+ model when generating responses.
     /// </summary>
     /// <remarks>
