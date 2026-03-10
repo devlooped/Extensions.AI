@@ -52,7 +52,7 @@ class AzureOpenAIChatClient : IChatClient
         => GetChatClient(options?.ModelId ?? modelId).GetStreamingResponseAsync(messages, options, cancellation);
 
     IChatClient GetChatClient(string modelId) => clients.GetOrAdd(modelId, model
-        => new PipelineClient(pipeline, endpoint, options).GetOpenAIResponseClient(modelId).AsIChatClient());
+        => new PipelineClient(pipeline, endpoint, options).GetResponsesClient(modelId).AsIChatClient());
 
     void IDisposable.Dispose() => GC.SuppressFinalize(this);
 

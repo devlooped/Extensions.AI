@@ -1,6 +1,8 @@
-﻿using System.ComponentModel;
+﻿using System.ClientModel;
+using System.ComponentModel;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
+using OpenAI;
 using static ConfigurationExtensions;
 
 namespace Devlooped.Extensions.AI;
@@ -28,8 +30,8 @@ public class ToolsTests(ITestOutputHelper output)
             { "user", "I want to create an order for a dozen eggs" },
         };
 
-        var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            global::OpenAI.OpenAIClientOptions.WriteTo(output))
+        var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -60,8 +62,8 @@ public class ToolsTests(ITestOutputHelper output)
             { "user", "I want to create an order for a dozen eggs" },
         };
 
-        var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            global::OpenAI.OpenAIClientOptions.WriteTo(output))
+        var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -93,8 +95,8 @@ public class ToolsTests(ITestOutputHelper output)
             { "user", "I want to create an order for a dozen eggs" },
         };
 
-        var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            global::OpenAI.OpenAIClientOptions.WriteTo(output))
+        var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -125,8 +127,8 @@ public class ToolsTests(ITestOutputHelper output)
             { "user", "I want to create an order for a dozen eggs" },
         };
 
-        var client = new OpenAIChatClient(Configuration["OPENAI_API_KEY"]!, "gpt-4.1",
-            global::OpenAI.OpenAIClientOptions.WriteTo(output))
+        var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();

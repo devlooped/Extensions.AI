@@ -23,25 +23,6 @@ public static class OpenAIExtensions
     /// has been set to a non-OpenAI factory.</exception>
     extension(ChatOptions options)
     {
-        /// <summary>Controls how many reasoning tokens the model generates before producing a response.</summary>
-        public ReasoningEffort? ReasoningEffort
-        {
-            get => options.AdditionalProperties?.TryGetValue("reasoning_effort", out var value) == true && value is ReasoningEffort effort ? effort : null;
-            set
-            {
-                if (value is not null)
-                {
-                    options.AdditionalProperties ??= [];
-                    options.AdditionalProperties["reasoning_effort"] = value;
-                    EnsureFactory(options);
-                }
-                else
-                {
-                    options.AdditionalProperties?.Remove("reasoning_effort");
-                }
-            }
-        }
-
         /// <summary>
         /// Gets or sets the <see cref="AI.Verbosity"/> level for a GPT-5 model when generating responses.
         /// </summary>
@@ -78,11 +59,11 @@ public static class OpenAIExtensions
             options.RawRepresentationFactory.Target is not ResponseOptionsFactory)
         {
             throw new InvalidOperationException(
-                "Cannot use OpenAI Responses API extension properties (ReasoningEffort, Verbosity) when " +
+                "Cannot use OpenAI Responses API extension properties (i.e. Verbosity) when " +
                 "RawRepresentationFactory has already been set to a custom factory. These extension " +
                 "properties automatically configure the factory for the OpenAI Responses API.");
         }
 
-        options.RawRepresentationFactory ??= new ResponseOptionsFactory(options).CreateResponseCreationOptions;
+        options.RawRepresentationFactory ??= new ResponseOptionsFactory(options).NewCreateResponseOptions;
     }
 }

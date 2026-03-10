@@ -7,27 +7,14 @@ namespace Devlooped.Extensions.AI.OpenAI;
 
 class ResponseOptionsFactory(ChatOptions options)
 {
-    public ResponseCreationOptions CreateResponseCreationOptions(IChatClient client)
+    public CreateResponseOptions NewCreateResponseOptions(IChatClient client)
     {
-        var creation = new ResponseCreationOptions();
-
-        if (options.ReasoningEffort is { } effort)
-            creation.ReasoningOptions = new ReasoningEffortOptions(effort);
+        var creation = new CreateResponseOptions();
 
         if (options.Verbosity is { } verbosity)
             creation.TextOptions = new VerbosityOptions(verbosity);
 
         return creation;
-    }
-
-    class ReasoningEffortOptions(ReasoningEffort effort) : ResponseReasoningOptions
-    {
-        protected override void JsonModelWriteCore(Utf8JsonWriter writer, ModelReaderWriterOptions options)
-        {
-            writer.WritePropertyName("effort"u8);
-            writer.WriteStringValue(effort.ToString().ToLowerInvariant());
-            base.JsonModelWriteCore(writer, options);
-        }
     }
 
     class VerbosityOptions(Verbosity verbosity) : ResponseTextOptions
