@@ -32,8 +32,8 @@ public class Chat : IEnumerable<ChatMessage>
     /// };
     /// </code>
     /// </remarks>
-    public void Add(string role, string message)
-        => messages.Add(new ChatMessage(role.ToLowerInvariant() switch
+    public void Add(string role, string message) => Add(
+        new ChatMessage(role.ToLowerInvariant() switch
         {
             "system" => ChatRole.System,
             "assistant" => ChatRole.Assistant,
@@ -49,6 +49,9 @@ public class Chat : IEnumerable<ChatMessage>
 
     /// <summary>Creates a system message.</summary>
     public static ChatMessage System(string message) => new(ChatRole.System, message);
+
+    /// <summary>Creates a developer message.</summary>
+    public static ChatMessage Developer(string message) => new(new("developer"), message);
 
     IEnumerator<ChatMessage> IEnumerable<ChatMessage>.GetEnumerator() => messages.GetEnumerator();
 
