@@ -24,8 +24,8 @@ boosts the dev loop:
   "AI": {
     "Clients": {
       "Grok": {
-        "Endpoint": "https://api.grok.ai/v1",
-        "ModelId": "grok-4-fast-non-reasoning",
+        "Endpoint": "https://api.x.ai/v1",
+        "ModelId": "grok-4-1-fast-non-reasoning",
         "ApiKey": "xai-asdf"
       }
     }
