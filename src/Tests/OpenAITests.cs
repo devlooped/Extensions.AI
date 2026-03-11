@@ -31,7 +31,7 @@ public class OpenAITests(ITestOutputHelper output)
         };
 
         var chat = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1-nano").AsIChatClient();
+            OpenAIClientOptions.WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-4.1-nano");
 
         var options = new ChatOptions
         {
@@ -60,7 +60,7 @@ public class OpenAITests(ITestOutputHelper output)
         var requests = new List<JsonNode>();
 
         var chat = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            OpenAIClientOptions.Observable(requests.Add).WriteTo(output)).GetResponsesClient("gpt-5-nano").AsIChatClient();
+            OpenAIClientOptions.Observable(requests.Add).WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-5-nano");
 
         var options = new ChatOptions
         {
@@ -111,7 +111,7 @@ public class OpenAITests(ITestOutputHelper output)
         var responses = new List<JsonNode>();
 
         var chat = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            OpenAIClientOptions.Observable(requests.Add, responses.Add).WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient();
+            OpenAIClientOptions.Observable(requests.Add, responses.Add).WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-4.1");
 
         var options = new ChatOptions
         {

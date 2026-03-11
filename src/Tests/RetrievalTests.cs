@@ -25,7 +25,7 @@ public class RetrievalTests(ITestOutputHelper output)
                     result = client.GetVectorStoreClient().GetVectorStoreFile(result.Value.VectorStoreId, result.Value.FileId);
                 }
 
-                var responses = new ResponsesClient(model, Configuration["OPENAI_API_KEY"]);
+                var responses = new ResponsesClient(Configuration["OPENAI_API_KEY"]);
 
                 var options = new ChatOptions();
                 options.Tools ??= [];
@@ -38,7 +38,7 @@ public class RetrievalTests(ITestOutputHelper output)
                     MaximumResultCount = 10,
                 });
 
-                var chat = responses.AsIChatClient()
+                var chat = responses.AsIChatClient(model)
                     .AsBuilder()
                     .UseLogging(output.AsLoggerFactory())
                     //.Use((messages, options, next, cancellationToken) =>

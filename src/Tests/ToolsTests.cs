@@ -31,7 +31,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-4.1")
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -63,7 +63,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-4.1")
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -96,7 +96,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-4.1")
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
@@ -128,7 +128,7 @@ public class ToolsTests(ITestOutputHelper output)
         };
 
         var client = new OpenAIClient(new ApiKeyCredential(Configuration["OPENAI_API_KEY"]!),
-            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient("gpt-4.1").AsIChatClient()
+            global::OpenAI.OpenAIClientOptions.WriteTo(output)).GetResponsesClient().AsIChatClient("gpt-4.1")
             .AsBuilder()
             .UseFunctionInvocation()
             .Build();
