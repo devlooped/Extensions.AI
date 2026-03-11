@@ -17,6 +17,10 @@ public class Chat : IEnumerable<ChatMessage>
     /// </summary>
     public void Add(ChatMessage message) => messages.Add(message);
 
+    /// <summary>Adds a range of messages to the list of chat messages.</summary>
+    /// <param name="messages">The messages to add</param>
+    public void AddRange(IEnumerable<ChatMessage> messages) => this.messages.AddRange(messages);
+
     /// <summary>
     /// Adds a message to the list of chat messages.
     /// </summary>
