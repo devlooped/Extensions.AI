@@ -1,12 +1,36 @@
 # Changelog
 
+## [v2.0.0](https://github.com/devlooped/Extensions.AI/tree/v2.0.0) (2026-03-11)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v1.0.0...v2.0.0)
+
+:sparkles: Implemented enhancements:
+
+- Add Developer factory to Chat [\#229](https://github.com/devlooped/Extensions.AI/pull/229) (@kzu)
+- Refactor: update to new OpenAI SDK & provider model [\#228](https://github.com/devlooped/Extensions.AI/pull/228) (@kzu)
+- Refactor WebSearchTool and move to OpenAI namespace [\#215](https://github.com/devlooped/Extensions.AI/pull/215) (@kzu)
+- Internalize IChatClient implementations and auto-configure RawRepresentationFactory [\#214](https://github.com/devlooped/Extensions.AI/pull/214) (@Copilot)
+- Refactor: introduce provider/factory model for chat clients [\#210](https://github.com/devlooped/Extensions.AI/pull/210) (@kzu)
+- Add helper factory methods to Chat [\#204](https://github.com/devlooped/Extensions.AI/pull/204) (@kzu)
+- Make it possible to construct the raw completion request from gRPC [\#201](https://github.com/devlooped/Extensions.AI/pull/201) (@kzu)
+- Update with latest reasoning features from GPT 5.2 [\#199](https://github.com/devlooped/Extensions.AI/pull/199) (@kzu)
+
+:hammer: Other:
+
+- Move console logging to separate package [\#123](https://github.com/devlooped/Extensions.AI/issues/123)
+- Create analyzer that detects AsIChatClient on a D.E.AI chat client and wrong extension method [\#94](https://github.com/devlooped/Extensions.AI/issues/94)
+
+:twisted_rightwards_arrows: Merged:
+
+- Extract console logging into Devlooped.Extensions.AI.Console \(JSON only\) [\#224](https://github.com/devlooped/Extensions.AI/pull/224) (@Copilot)
+- Remove Agents folder which is now in another repo [\#216](https://github.com/devlooped/Extensions.AI/pull/216) (@kzu)
+- Replace Extensions.Grok project with xAI nuget package [\#212](https://github.com/devlooped/Extensions.AI/pull/212) (@Copilot)
+- Remove unused upstream file [\#200](https://github.com/devlooped/Extensions.AI/pull/200) (@kzu)
+- Run AI tests in CI too [\#198](https://github.com/devlooped/Extensions.AI/pull/198) (@kzu)
+
 ## [v1.0.0](https://github.com/devlooped/Extensions.AI/tree/v1.0.0) (2025-12-19)
 
-[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v1.0.0-beta...v1.0.0)
-
-## [v1.0.0-beta](https://github.com/devlooped/Extensions.AI/tree/v1.0.0-beta) (2025-12-19)
-
-[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.9.1...v1.0.0-beta)
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v0.9.1...v1.0.0)
 
 :sparkles: Implemented enhancements:
 
