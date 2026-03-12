@@ -1,5 +1,14 @@
 # Changelog
 
+## [v2.0.1](https://github.com/devlooped/Extensions.AI/tree/v2.0.1) (2026-03-12)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v2.0.0...v2.0.1)
+
+:sparkles: Implemented enhancements:
+
+- Improve debug rendering of Chat messages [\#234](https://github.com/devlooped/Extensions.AI/pull/234) (@kzu)
+- Add messages range support for Chat [\#233](https://github.com/devlooped/Extensions.AI/pull/233) (@kzu)
+
 ## [v2.0.0](https://github.com/devlooped/Extensions.AI/tree/v2.0.0) (2026-03-11)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v1.0.0...v2.0.0)
