@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.0.2](https://github.com/devlooped/Extensions.AI/tree/v2.0.2) (2026-03-17)
+
+[Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v2.0.1...v2.0.2)
+
+:sparkles: Implemented enhancements:
+
+- Allow retrieving native client options from chat client [\#239](https://github.com/devlooped/Extensions.AI/pull/239) (@kzu)
+
 ## [v2.0.1](https://github.com/devlooped/Extensions.AI/tree/v2.0.1) (2026-03-12)
 
 [Full Changelog](https://github.com/devlooped/Extensions.AI/compare/v2.0.0...v2.0.1)
