@@ -1,10 +1,10 @@
 ![Icon](assets/img/icon-32.png) Devlooped AI Extensions
 ============
 
+[![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
+[![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.svg?color=darkmagenta)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
 [![EULA](https://img.shields.io/badge/EULA-OSMF-blue?labelColor=black&color=C9FF30)](osmfeula.txt)
 [![OSS](https://img.shields.io/github/license/devlooped/oss.svg?color=blue)](license.txt) 
-[![Version](https://img.shields.io/nuget/vpre/Devlooped.Extensions.AI.svg?color=royalblue)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
-[![Downloads](https://img.shields.io/nuget/dt/Devlooped.Extensions.AI.svg?color=green)](https://www.nuget.org/packages/Devlooped.Extensions.AI)
 
 <!-- #extensions-title -->
 Extensions for Microsoft.Extensions.AI
