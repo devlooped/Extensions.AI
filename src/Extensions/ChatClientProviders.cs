@@ -1,5 +1,7 @@
 using System.ClientModel;
 using Azure;
+using Azure.AI.Inference;
+using Azure.AI.OpenAI;
 using Devlooped.Extensions.AI.OpenAI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
@@ -29,7 +31,9 @@ sealed class OpenAIChatClientProvider : IChatClientProvider
         Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
         Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
 
-        return new OpenAIClient(new ApiKeyCredential(options.ApiKey), options).GetChatClient(options.ModelId).AsIChatClient();
+        return new ProviderOptionsChatClient<OpenAIClientOptions>(
+            new OpenAIClient(new ApiKeyCredential(options.ApiKey), options).GetChatClient(options.ModelId).AsIChatClient(),
+            options);
     }
 
     internal sealed class OpenAIProviderOptions : OpenAIClientOptions
@@ -61,7 +65,9 @@ sealed class AzureOpenAIChatClientProvider : IChatClientProvider
         Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
         Throw.IfNull(options.Endpoint, $"{section.Path}:endpoint");
 
-        return new AzureOpenAIChatClient(options.Endpoint, new AzureKeyCredential(options.ApiKey), options.ModelId, options);
+        return new ProviderOptionsChatClient<AzureOpenAIClientOptions>(
+            new AzureOpenAIChatClient(options.Endpoint, new AzureKeyCredential(options.ApiKey), options.ModelId, options),
+            options);
     }
 
     internal sealed class AzureOpenAIProviderOptions : Azure.AI.OpenAI.AzureOpenAIClientOptions
@@ -94,8 +100,10 @@ sealed class AzureAIInferenceChatClientProvider : IChatClientProvider
         Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
         Throw.IfNull(options.Endpoint, $"{section.Path}:endpoint");
 
-        return new Azure.AI.Inference.ChatCompletionsClient(options.Endpoint, new AzureKeyCredential(options.ApiKey), options)
-            .AsIChatClient(options.ModelId);
+        return new ProviderOptionsChatClient<AzureAIInferenceClientOptions>(
+            new Azure.AI.Inference.ChatCompletionsClient(options.Endpoint, new AzureKeyCredential(options.ApiKey), options)
+                .AsIChatClient(options.ModelId),
+            options);
     }
 
     internal sealed class AzureInferenceProviderOptions : Azure.AI.Inference.AzureAIInferenceClientOptions
@@ -127,13 +135,26 @@ sealed class GrokChatClientProvider : IChatClientProvider
         Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
         Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
 
-        return new GrokClient(options.ApiKey, section.Get<GrokClientOptions>() ?? new())
-            .AsIChatClient(options.ModelId);
+        return new ProviderOptionsChatClient<GrokClientOptions>(
+            new GrokClient(options.ApiKey, options).AsIChatClient(options.ModelId),
+            options);
     }
 
-    internal sealed class GrokProviderOptions
+    internal sealed class GrokProviderOptions : GrokClientOptions
     {
         public string? ApiKey { get; set; }
         public string? ModelId { get; set; }
     }
+}
+
+sealed class ProviderOptionsChatClient<TOptions>(IChatClient inner, TOptions options) : DelegatingChatClient(inner)
+    where TOptions : notnull
+{
+    public override object? GetService(Type serviceType, object? serviceKey = null)
+        => IsOptionsRequest(serviceType, serviceKey) ? options : inner.GetService(serviceType, serviceKey);
+
+    bool IsOptionsRequest(Type serviceType, object? serviceKey)
+        => serviceType == typeof(object) ?
+           serviceKey is string key && string.Equals(key, "options", StringComparison.OrdinalIgnoreCase) :
+           typeof(TOptions).IsAssignableFrom(serviceType);
 }

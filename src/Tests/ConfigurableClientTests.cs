@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OpenAI;
+using xAI;
 
 namespace Devlooped.Extensions.AI;
 
@@ -30,6 +32,37 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         Assert.Equal("openai", openai.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
+    }
+
+    [Fact]
+    public void CanGetClientOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1.nano",
+                ["ai:clients:openai:ApiKey"] = "sk-asdfasdf",
+                ["ai:clients:grok:modelid"] = "grok-4-fast",
+                ["ai:clients:grok:ApiKey"] = "xai-asdfasdf",
+                ["ai:clients:grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var openai = services.GetRequiredKeyedService<IChatClient>("openai");
+        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+
+        // Untyped by name+object
+        Assert.NotNull(openai.GetService<object>("options"));
+        // Typed to concrete options, no need for key
+        Assert.NotNull(openai.GetService<OpenAIClientOptions>());
+
+        Assert.NotNull(grok.GetService<object>("Options"));
+        Assert.NotNull(grok.GetService<GrokClientOptions>());
     }
 
     [Fact]
@@ -258,5 +291,109 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         Assert.Equal("azure.ai.openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("gpt-5", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
+
+    [Fact]
+    public void CanInspectOpenAIProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1.nano",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+                ["ai:clients:openai:UserAgentApplicationId"] = "myapp/1.0",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        var options = Assert.IsType<OpenAIChatClientProvider.OpenAIProviderOptions>(
+            client.GetService(typeof(object), "OpTiOnS"));
+
+        Assert.Same(options, client.GetService(typeof(OpenAIChatClientProvider.OpenAIProviderOptions), "options"));
+        Assert.Equal("gpt-4.1.nano", options.ModelId);
+        Assert.Equal("myapp/1.0", options.UserAgentApplicationId);
+    }
+
+    [Fact]
+    public void CanInspectAzureOpenAIProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:chat:modelid"] = "gpt-5",
+                ["ai:clients:chat:apikey"] = "asdfasdf",
+                ["ai:clients:chat:endpoint"] = "https://chat.openai.azure.com/",
+                ["ai:clients:chat:UserAgentApplicationId"] = "myapp/1.0",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var options = Assert.IsType<AzureOpenAIChatClientProvider.AzureOpenAIProviderOptions>(
+            client.GetService(typeof(object), "options"));
+
+        Assert.Same(options, client.GetService(typeof(AzureOpenAIChatClientProvider.AzureOpenAIProviderOptions), "OPTIONS"));
+        Assert.Equal(new Uri("https://chat.openai.azure.com/"), options.Endpoint);
+        Assert.Equal("myapp/1.0", options.UserAgentApplicationId);
+    }
+
+    [Fact]
+    public void CanInspectAzureInferenceProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:chat:modelid"] = "gpt-5",
+                ["ai:clients:chat:apikey"] = "asdfasdf",
+                ["ai:clients:chat:endpoint"] = "https://ai.azure.com/.default",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var options = Assert.IsType<AzureAIInferenceChatClientProvider.AzureInferenceProviderOptions>(
+            client.GetService(typeof(object), "options"));
+
+        Assert.Same(options, client.GetService(typeof(AzureAIInferenceChatClientProvider.AzureInferenceProviderOptions), "OPTIONS"));
+        Assert.Equal(new Uri("https://ai.azure.com/.default"), options.Endpoint);
+        Assert.Equal("gpt-5", options.ModelId);
+    }
+
+    [Fact]
+    public void CanInspectGrokProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:grok:modelid"] = "grok-4-fast",
+                ["ai:clients:grok:apikey"] = "xai-asdfasdf",
+                ["ai:clients:grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("grok");
+        var options = Assert.IsType<GrokChatClientProvider.GrokProviderOptions>(
+            client.GetService(typeof(object), "options"));
+
+        Assert.Same(options, client.GetService(typeof(GrokChatClientProvider.GrokProviderOptions), "OPTIONS"));
+        Assert.Equal("grok-4-fast", options.ModelId);
     }
 }
