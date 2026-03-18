@@ -289,6 +289,7 @@ OSMF tier. A single fee covers all of [Devlooped packages](https://www.nuget.org
 [![mccaffers](https://avatars.githubusercontent.com/u/16667079?u=f5b761303b6c7a7f18123b5bd20f06760d3fbd3e&v=4&s=39 "mccaffers")](https://github.com/mccaffers)
 [![Seika Logiciel](https://avatars.githubusercontent.com/u/2564602?v=4&s=39 "Seika Logiciel")](https://github.com/SeikaLogiciel)
 [![Andrew Grant](https://avatars.githubusercontent.com/devlooped-user?s=39 "Andrew Grant")](https://github.com/wizardness)
+[![Lars](https://avatars.githubusercontent.com/u/1727124?v=4&s=39 "Lars")](https://github.com/latonz)
 
 
 <!-- sponsors.md -->
