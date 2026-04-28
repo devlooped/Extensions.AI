@@ -13,6 +13,38 @@ namespace Devlooped.Extensions.AI;
 public class ChatExtensionsTests
 {
     [Fact]
+    public void ImplementsIList()
+    {
+        var first = User("hello");
+        var second = Assistant("world");
+        var replacement = Developer("updated");
+        var chat = new Chat();
+        IList<ChatMessage> list = chat;
+
+        list.Add(first);
+        list.Insert(1, second);
+
+        Assert.Equal(2, chat.Count);
+        Assert.False(chat.IsReadOnly);
+        Assert.Same(first, chat[0]);
+        Assert.Same(second, chat[1]);
+        Assert.Contains(first, chat);
+        Assert.Equal(1, chat.IndexOf(second));
+
+        chat[1] = replacement;
+
+        var copy = new ChatMessage[2];
+        chat.CopyTo(copy, 0);
+
+        Assert.Same(first, copy[0]);
+        Assert.Same(replacement, copy[1]);
+
+        chat.RemoveAt(0);
+        Assert.True(chat.Remove(replacement));
+        Assert.Empty(chat);
+    }
+
+    [Fact]
     public void FactoryMethods()
     {
         var message = User("hello");

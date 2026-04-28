@@ -10,15 +10,37 @@ namespace Devlooped.Extensions.AI;
 /// </summary>
 [DebuggerTypeProxy(typeof(ChatDebugView))]
 [DebuggerDisplay("Count = {messages.Count}")]
-public class Chat : IEnumerable<ChatMessage>
+public class Chat : IList<ChatMessage>
 {
     readonly List<ChatMessage> messages = [];
+
+    /// <summary>Gets or sets the message at the specified index.</summary>
+    public ChatMessage this[int index]
+    {
+        get => messages[index];
+        set => messages[index] = value;
+    }
+
+    /// <summary>Gets the number of messages in the chat.</summary>
+    public int Count => messages.Count;
+
+    /// <summary>Gets a value indicating whether the chat is read-only.</summary>
+    public bool IsReadOnly => ((ICollection<ChatMessage>)messages).IsReadOnly;
 
     /// <summary>
     /// Adds a message to the list of chat messages. 
     /// For use with collection initializer syntax.
     /// </summary>
     public void Add(ChatMessage message) => messages.Add(message);
+
+    /// <summary>Clears all messages from the chat.</summary>
+    public void Clear() => messages.Clear();
+
+    /// <summary>Determines whether the chat contains the specified message.</summary>
+    public bool Contains(ChatMessage item) => messages.Contains(item);
+
+    /// <summary>Copies the messages to the specified array.</summary>
+    public void CopyTo(ChatMessage[] array, int arrayIndex) => messages.CopyTo(array, arrayIndex);
 
     /// <summary>Adds a range of messages to the list of chat messages.</summary>
     /// <param name="messages">The messages to add</param>
@@ -60,7 +82,20 @@ public class Chat : IEnumerable<ChatMessage>
     /// <summary>Creates a developer message.</summary>
     public static ChatMessage Developer(string message) => new(new("developer"), message);
 
-    IEnumerator<ChatMessage> IEnumerable<ChatMessage>.GetEnumerator() => messages.GetEnumerator();
+    /// <summary>Returns an enumerator that iterates through the chat messages.</summary>
+    public IEnumerator<ChatMessage> GetEnumerator() => messages.GetEnumerator();
+
+    /// <summary>Returns the index of the specified message.</summary>
+    public int IndexOf(ChatMessage item) => messages.IndexOf(item);
+
+    /// <summary>Inserts a message at the specified index.</summary>
+    public void Insert(int index, ChatMessage item) => messages.Insert(index, item);
+
+    /// <summary>Removes the specified message from the chat.</summary>
+    public bool Remove(ChatMessage item) => messages.Remove(item);
+
+    /// <summary>Removes the message at the specified index.</summary>
+    public void RemoveAt(int index) => messages.RemoveAt(index);
 
     IEnumerator IEnumerable.GetEnumerator() => messages.GetEnumerator();
 
