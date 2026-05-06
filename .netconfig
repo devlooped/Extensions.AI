@@ -151,21 +151,6 @@
 	sha = 3012d56be7554c483e5c5d277144c063969cada9
 	etag = 43c81c6c6dcdf5baee40a9e3edc5e871e473e6c954c901b82bb87a3a48888ea0
 	weak
-[file "src/Agents/Extensions/Throw.cs"]
-	url = https://github.com/devlooped/catbag/blob/main/System/Throw.cs
-	sha = 3012d56be7554c483e5c5d277144c063969cada9
-	etag = 43c81c6c6dcdf5baee40a9e3edc5e871e473e6c954c901b82bb87a3a48888ea0
-	weak
-[file "src/Agents/Extensions/Dedent.cs"]
-	url = https://github.com/devlooped/catbag/blob/main/System/Dedent.cs
-	sha = c0a15b3c5e42a6f5e73b8e43ad3a335d7d6f3787
-	etag = fe8de7929a8ecdb631911233ae3c6bad034b26b9802e62c3521918207f6d4068
-	weak
-[file "src/Agents/Extensions/YamlConfigurationStreamParser.cs"]
-    url = https://github.com/andrewlock/NetEscapades.Configuration/blob/master/src/NetEscapades.Configuration.Yaml/YamlConfigurationStreamParser.cs
-    weak
-	sha = bdde4ffcd91b969ea6aba33375722aaed322f6b3
-	etag = 9fc141786168bded839071aaf0fb1f9c2f52ad9baaef5f0c22ff9882e4393e73
 [file "src/Tests/Extensions/CallHelpers.cs"]
 	url = https://github.com/grpc/grpc-dotnet/blob/master/examples/Tester/Tests/Client/Helpers/CallHelpers.cs
 	sha = a04684ab2306e5a17bad26d3da69636b326cce14
