@@ -105,10 +105,8 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         // Create a configuration section wrapper that includes the resolved apikey
         var effectiveSection = new ApiKeyResolvingConfigurationSection(configSection, apikey);
 
-        IChatClient client = factory.CreateClient(effectiveSection);
-
+        var client = factory.CreateClient(effectiveSection);
         configure?.Invoke(id, client);
-
         LogConfigured(id);
 
         var metadata = client.GetService<ChatClientMetadata>() ?? new ChatClientMetadata(null, null, null);
