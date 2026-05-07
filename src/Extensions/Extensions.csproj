@@ -13,9 +13,10 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <!-- OPENAI001: responses API -->
+    <!-- MEAI001: speech APIs -->
     <!-- AOAI001: Azure.AI.OpenAI.AzureOpenAIClientOptions.DefaultHeaders -->
     <!-- SYSLIB1100/SYSLIB1101: not all ChatOptions are supported for binder gen: ResponseFormat, ToolMode, Tools -->
-    <NoWarn>$(NoWarn);OPENAI001;AOAI001;SYSLIB1100;SYSLIB1101</NoWarn>
+    <NoWarn>$(NoWarn);OPENAI001;MEAI001;AOAI001;SYSLIB1100;SYSLIB1101</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,7 +29,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
-    <PackageReference Include="xAI" Version="2.0.6" />
+    <PackageReference Include="xAI" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>

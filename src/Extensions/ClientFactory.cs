@@ -3,24 +3,18 @@ using Microsoft.Extensions.Configuration;
 
 namespace Devlooped.Extensions.AI;
 
-/// <summary>
-/// Default implementation of <see cref="IChatClientFactory"/> that resolves providers
-/// by name or by matching endpoint URIs.
-/// </summary>
-public class ChatClientFactory : IChatClientFactory
+/// <summary>Default implementation of <see cref="IClientFactory"/> that resolves providers by name or by matching endpoint URIs.</summary>
+public class ClientFactory : IClientFactory
 {
-    readonly IChatClientProvider defaultProvider = new OpenAIChatClientProvider();
+    readonly IClientProvider defaultProvider = new OpenAIClientProvider();
 
-    readonly Dictionary<string, IChatClientProvider> providersByName;
-    readonly List<(Uri BaseUri, IChatClientProvider Provider)> providersByBaseUri;
-    readonly List<(string HostSuffix, IChatClientProvider Provider)> providersByHostSuffix;
+    readonly Dictionary<string, IClientProvider> providersByName;
+    readonly List<(Uri BaseUri, IClientProvider Provider)> providersByBaseUri;
+    readonly List<(string HostSuffix, IClientProvider Provider)> providersByHostSuffix;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ChatClientFactory"/> class
-    /// with the specified providers.
-    /// </summary>
+    /// <summary>Initializes a new instance of the <see cref="ClientFactory"/> class with the specified providers.</summary>
     /// <param name="providers">The collection of registered providers.</param>
-    public ChatClientFactory(IEnumerable<IChatClientProvider> providers)
+    public ClientFactory(IEnumerable<IClientProvider> providers)
     {
         providersByName = new(StringComparer.OrdinalIgnoreCase);
         providersByBaseUri = [];
@@ -43,31 +37,33 @@ public class ChatClientFactory : IChatClientFactory
         providersByHostSuffix.Sort((a, b) => b.HostSuffix.Length.CompareTo(a.HostSuffix.Length));
     }
 
-    /// <summary>
-    /// Creates a <see cref="ChatClientFactory"/> with the built-in providers registered.
-    /// </summary>
+    /// <summary>Creates a <see cref="ClientFactory"/> with the built-in providers registered.</summary>
     /// <returns>A factory with OpenAI, Azure OpenAI, Azure AI Inference, and Grok providers.</returns>
-    public static ChatClientFactory CreateDefault() => new(
+    public static ClientFactory CreateDefault() => new(
     [
-        new OpenAIChatClientProvider(),
-        new AzureOpenAIChatClientProvider(),
-        new AzureAIInferenceChatClientProvider(),
-        new GrokChatClientProvider(),
+        new OpenAIClientProvider(),
+        new AzureOpenAIClientProvider(),
+        new AzureAIInferenceClientProvider(),
+        new GrokClientProvider(),
     ]);
 
     /// <inheritdoc/>
-    public IChatClient CreateClient(IConfigurationSection section)
-        => ResolveProvider(section).Create(section);
+    public IChatClient CreateChatClient(IConfigurationSection section)
+        => ResolveProvider(section).GetFactory().CreateChatClient(section);
 
-    /// <summary>
-    /// Resolves the appropriate provider for the given configuration section.
-    /// </summary>
+    /// <inheritdoc/>
+    public ISpeechToTextClient CreateSpeechToTextClient(IConfigurationSection section)
+        => ResolveProvider(section).GetFactory().CreateSpeechToTextClient(section);
+
+    /// <inheritdoc/>
+    public ITextToSpeechClient CreateTextToSpeechClient(IConfigurationSection section)
+        => ResolveProvider(section).GetFactory().CreateTextToSpeechClient(section);
+
+    /// <summary>Resolves the appropriate provider for the given configuration section.</summary>
     /// <param name="section">The configuration section.</param>
     /// <returns>The resolved provider.</returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when no matching provider is found.
-    /// </exception>
-    protected virtual IChatClientProvider ResolveProvider(IConfigurationSection section)
+    /// <exception cref="InvalidOperationException">Thrown when no matching provider is found.</exception>
+    protected virtual IClientProvider ResolveProvider(IConfigurationSection section)
     {
         // First, try explicit provider name
         var providerName = section["provider"];
@@ -77,7 +73,7 @@ public class ChatClientFactory : IChatClientFactory
                 return namedProvider;
 
             throw new InvalidOperationException(
-                $"No chat client provider registered with name '{providerName}'. " +
+                $"No client provider registered with name '{providerName}'. " +
                 $"Available providers: {string.Join(", ", providersByName.Keys)}.");
         }
 
@@ -104,14 +100,12 @@ public class ChatClientFactory : IChatClientFactory
             return defaultProvider;
 
         throw new InvalidOperationException(
-            $"No chat client provider found for configuration section '{section.Path}'. " +
+            $"No client provider found for configuration section '{section.Path}'. " +
             $"Specify a 'provider' key or use an 'endpoint' that matches a registered provider. " +
             $"Available providers: {string.Join(", ", providersByName.Keys)}.");
     }
 
-    /// <summary>
-    /// Determines if the endpoint URI matches the provider's base URI pattern.
-    /// </summary>
+    /// <summary>Determines if the endpoint URI matches the provider's base URI pattern.</summary>
     /// <param name="endpoint">The endpoint URI from configuration.</param>
     /// <param name="baseUri">The provider's base URI pattern.</param>
     /// <returns><c>true</c> if the endpoint matches the pattern; otherwise, <c>false</c>.</returns>

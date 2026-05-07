@@ -311,10 +311,10 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");
-        var options = Assert.IsType<OpenAIChatClientProvider.OpenAIProviderOptions>(
+        var options = Assert.IsType<OpenAIClientProvider.OpenAIProviderOptions>(
             client.GetService(typeof(object), "OpTiOnS"));
 
-        Assert.Same(options, client.GetService(typeof(OpenAIChatClientProvider.OpenAIProviderOptions), "options"));
+        Assert.Same(options, client.GetService(typeof(OpenAIClientProvider.OpenAIProviderOptions), "options"));
         Assert.Equal("gpt-4.1.nano", options.ModelId);
         Assert.Equal("myapp/1.0", options.UserAgentApplicationId);
     }
@@ -338,10 +338,10 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
-        var options = Assert.IsType<AzureOpenAIChatClientProvider.AzureOpenAIProviderOptions>(
+        var options = Assert.IsType<AzureOpenAIClientProvider.AzureOpenAIProviderOptions>(
             client.GetService(typeof(object), "options"));
 
-        Assert.Same(options, client.GetService(typeof(AzureOpenAIChatClientProvider.AzureOpenAIProviderOptions), "OPTIONS"));
+        Assert.Same(options, client.GetService(typeof(AzureOpenAIClientProvider.AzureOpenAIProviderOptions), "OPTIONS"));
         Assert.Equal(new Uri("https://chat.openai.azure.com/"), options.Endpoint);
         Assert.Equal("myapp/1.0", options.UserAgentApplicationId);
     }
@@ -364,10 +364,10 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
-        var options = Assert.IsType<AzureAIInferenceChatClientProvider.AzureInferenceProviderOptions>(
+        var options = Assert.IsType<AzureAIInferenceClientProvider.AzureInferenceProviderOptions>(
             client.GetService(typeof(object), "options"));
 
-        Assert.Same(options, client.GetService(typeof(AzureAIInferenceChatClientProvider.AzureInferenceProviderOptions), "OPTIONS"));
+        Assert.Same(options, client.GetService(typeof(AzureAIInferenceClientProvider.AzureInferenceProviderOptions), "OPTIONS"));
         Assert.Equal(new Uri("https://ai.azure.com/.default"), options.Endpoint);
         Assert.Equal("gpt-5", options.ModelId);
     }
@@ -390,10 +390,94 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("grok");
-        var options = Assert.IsType<GrokChatClientProvider.GrokProviderOptions>(
+        var options = Assert.IsType<GrokClientProvider.GrokProviderOptions>(
             client.GetService(typeof(object), "options"));
 
-        Assert.Same(options, client.GetService(typeof(GrokChatClientProvider.GrokProviderOptions), "OPTIONS"));
+        Assert.Same(options, client.GetService(typeof(GrokClientProvider.GrokProviderOptions), "OPTIONS"));
         Assert.Equal("grok-4-fast", options.ModelId);
+    }
+
+    [Fact]
+    public void CanInspectOpenAISpeechProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4o-transcribe",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+                ["ai:clients:openai:UserAgentApplicationId"] = "myapp/1.0",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClientFactory()
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredService<IClientFactory>();
+        var section = configuration.GetRequiredSection("ai:clients:openai");
+        var speechToText = factory.CreateSpeechToTextClient(section);
+        var textToSpeech = factory.CreateTextToSpeechClient(section);
+
+        var speechOptions = Assert.IsType<OpenAIClientProvider.OpenAIProviderOptions>(
+            speechToText.GetService(typeof(object), "options"));
+        var textOptions = Assert.IsType<OpenAIClientProvider.OpenAIProviderOptions>(
+            textToSpeech.GetService(typeof(object), "OPTIONS"));
+
+        Assert.Same(speechOptions, speechToText.GetService(typeof(OpenAIClientProvider.OpenAIProviderOptions), "options"));
+        Assert.Same(textOptions, textToSpeech.GetService(typeof(OpenAIClientProvider.OpenAIProviderOptions), "options"));
+        Assert.Equal("gpt-4o-transcribe", speechOptions.ModelId);
+        Assert.Equal("myapp/1.0", textOptions.UserAgentApplicationId);
+    }
+
+    [Fact]
+    public void CanInspectAzureOpenAISpeechProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:audio:modelid"] = "audio-deployment",
+                ["ai:clients:audio:apikey"] = "asdfasdf",
+                ["ai:clients:audio:endpoint"] = "https://chat.openai.azure.com/",
+                ["ai:clients:audio:UserAgentApplicationId"] = "myapp/1.0",
+            })
+            .Build();
+
+        var factory = ClientFactory.CreateDefault();
+        var section = configuration.GetRequiredSection("ai:clients:audio");
+        var speechToText = factory.CreateSpeechToTextClient(section);
+        var textToSpeech = factory.CreateTextToSpeechClient(section);
+
+        var speechOptions = Assert.IsType<AzureOpenAIClientProvider.AzureOpenAIProviderOptions>(
+            speechToText.GetService(typeof(object), "options"));
+        var textOptions = Assert.IsType<AzureOpenAIClientProvider.AzureOpenAIProviderOptions>(
+            textToSpeech.GetService(typeof(object), "OPTIONS"));
+
+        Assert.Same(speechOptions, speechToText.GetService(typeof(AzureOpenAIClientProvider.AzureOpenAIProviderOptions), "options"));
+        Assert.Same(textOptions, textToSpeech.GetService(typeof(AzureOpenAIClientProvider.AzureOpenAIProviderOptions), "options"));
+        Assert.Equal(new Uri("https://chat.openai.azure.com/"), speechOptions.Endpoint);
+        Assert.Equal("myapp/1.0", textOptions.UserAgentApplicationId);
+    }
+
+    [Fact]
+    public void ThrowsForUnsupportedSpeechProvider()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:azure:modelid"] = "gpt-4o",
+                ["ai:clients:azure:apikey"] = "azure-asdfasdf",
+                ["ai:clients:azure:endpoint"] = "https://ai.azure.com/deployment",
+            })
+            .Build();
+
+        var factory = ClientFactory.CreateDefault();
+        var section = configuration.GetRequiredSection("ai:clients:azure");
+
+        var speechToText = Assert.Throws<NotSupportedException>(() => factory.CreateSpeechToTextClient(section));
+        var textToSpeech = Assert.Throws<NotSupportedException>(() => factory.CreateTextToSpeechClient(section));
+
+        Assert.Contains(nameof(ISpeechToTextClient), speechToText.Message);
+        Assert.Contains(nameof(ITextToSpeechClient), textToSpeech.Message);
     }
 }
