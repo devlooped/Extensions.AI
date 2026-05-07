@@ -4,10 +4,7 @@ using Microsoft.Extensions.AI;
 
 namespace Devlooped.Extensions.AI;
 
-/// <summary>
-/// Collection of <see cref="ChatMessage"/> for more convenient usage 
-/// in fluent construction of chat messages.
-/// </summary>
+/// <summary>Collection of <see cref="ChatMessage"/> for more convenient usage in fluent construction of chat messages.</summary>
 [DebuggerTypeProxy(typeof(ChatDebugView))]
 [DebuggerDisplay("Count = {messages.Count}")]
 public class Chat : IList<ChatMessage>
@@ -27,10 +24,7 @@ public class Chat : IList<ChatMessage>
     /// <summary>Gets a value indicating whether the chat is read-only.</summary>
     public bool IsReadOnly => ((ICollection<ChatMessage>)messages).IsReadOnly;
 
-    /// <summary>
-    /// Adds a message to the list of chat messages. 
-    /// For use with collection initializer syntax.
-    /// </summary>
+    /// <summary>Adds a message to the list of chat messages. For use with collection initializer syntax.</summary>
     public void Add(ChatMessage message) => messages.Add(message);
 
     /// <summary>Clears all messages from the chat.</summary>
@@ -46,9 +40,7 @@ public class Chat : IList<ChatMessage>
     /// <param name="messages">The messages to add</param>
     public void AddRange(IEnumerable<ChatMessage> messages) => this.messages.AddRange(messages);
 
-    /// <summary>
-    /// Adds a message to the list of chat messages.
-    /// </summary>
+    /// <summary>Adds a message to the list of chat messages.</summary>
     /// <param name="role">The message role</param>
     /// <param name="message">The message text</param>
     /// <remarks>

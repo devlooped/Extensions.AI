@@ -7,9 +7,7 @@ static class JsonExtensions
 {
     static readonly JsonSerializerOptions options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
 
-    /// <summary>
-    /// Recursively truncates long strings in an object before serialization and optionally excludes additional properties.
-    /// </summary>
+    /// <summary>Recursively truncates long strings in an object before serialization and optionally excludes additional properties.</summary>
     public static string ToShortJsonString(this object? value, int? maxStringLength = 100, bool includeAdditionalProperties = true)
     {
         if (value is null)

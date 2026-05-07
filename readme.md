@@ -45,6 +45,17 @@ var grok = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
 Changing the `appsettings.json` file will automatically update the client 
 configuration without restarting the application.
 
+The same provider resolution can also create speech clients from configuration 
+through `IClientFactory`:
+
+```csharp
+var section = host.Configuration.GetRequiredSection("AI:Clients:OpenAI");
+var factory = app.Services.GetRequiredService<IClientFactory>();
+var chat = factory.CreateChatClient(section);
+var speechToText = factory.CreateSpeechToTextClient(section);
+var textToSpeech = factory.CreateTextToSpeechClient(section);
+```
+
 There's also a simpler `Chat` class for streamlined creation of chat messages, which can 
 be used instead of creating an array of `ChatMessage` using `ChatRole.[System|Assistant|User]`:
 

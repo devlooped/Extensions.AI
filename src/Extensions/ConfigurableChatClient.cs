@@ -5,14 +5,11 @@ using Microsoft.Extensions.Primitives;
 
 namespace Devlooped.Extensions.AI;
 
-/// <summary>
-/// A configuration-driven <see cref="IChatClient"/> which monitors configuration changes and 
-/// re-applies them to the inner client automatically.
-/// </summary>
+/// <summary>A configuration-driven <see cref="IChatClient"/> which monitors configuration changes and re-applies them to the inner client automatically.</summary>
 public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
 {
     readonly IConfiguration configuration;
-    readonly IChatClientFactory factory;
+    readonly IClientFactory factory;
     readonly string section;
     readonly string id;
     readonly ILogger logger;
@@ -21,16 +18,14 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     IChatClient innerClient;
     ChatClientMetadata metadata;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ConfigurableChatClient"/> class.
-    /// </summary>
+    /// <summary>Initializes a new instance of the <see cref="ConfigurableChatClient"/> class.</summary>
     /// <param name="configuration">The configuration to read settings from.</param>
     /// <param name="factory">The factory to use for creating chat clients.</param>
     /// <param name="logger">The logger to use for logging.</param>
     /// <param name="section">The configuration section to use.</param>
     /// <param name="id">The unique identifier for the client.</param>
     /// <param name="configure">An optional action to configure the client after creation.</param>
-    public ConfigurableChatClient(IConfiguration configuration, IChatClientFactory factory, ILogger logger, string section, string id, Action<string, IChatClient>? configure)
+    public ConfigurableChatClient(IConfiguration configuration, IClientFactory factory, ILogger logger, string section, string id, Action<string, IChatClient>? configure)
     {
         if (section.Contains('.'))
             throw new ArgumentException("Section separator must be ':', not '.'");
@@ -46,17 +41,14 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ConfigurableChatClient"/> class 
-    /// using the default <see cref="ChatClientFactory"/>.
-    /// </summary>
+    /// <summary>Initializes a new instance of the <see cref="ConfigurableChatClient"/> class using the default <see cref="ClientFactory"/>.</summary>
     /// <param name="configuration">The configuration to read settings from.</param>
     /// <param name="logger">The logger to use for logging.</param>
     /// <param name="section">The configuration section to use.</param>
     /// <param name="id">The unique identifier for the client.</param>
     /// <param name="configure">An optional action to configure the client after creation.</param>
     public ConfigurableChatClient(IConfiguration configuration, ILogger logger, string section, string id, Action<string, IChatClient>? configure)
-        : this(configuration, ChatClientFactory.CreateDefault(), logger, section, id, configure)
+        : this(configuration, ClientFactory.CreateDefault(), logger, section, id, configure)
     {
     }
 
@@ -105,7 +97,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         // Create a configuration section wrapper that includes the resolved apikey
         var effectiveSection = new ApiKeyResolvingConfigurationSection(configSection, apikey);
 
-        var client = factory.CreateClient(effectiveSection);
+        var client = factory.CreateChatClient(effectiveSection);
         configure?.Invoke(id, client);
         LogConfigured(id);
 
@@ -129,9 +121,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     [LoggerMessage(LogLevel.Information, "ChatClient '{Id}' configured.")]
     private partial void LogConfigured(string id);
 
-    /// <summary>
-    /// A configuration section wrapper that overrides the apikey value with a resolved value.
-    /// </summary>
+    /// <summary>A configuration section wrapper that overrides the apikey value with a resolved value.</summary>
     sealed class ApiKeyResolvingConfigurationSection(IConfigurationSection inner, string? resolvedApiKey) : IConfigurationSection
     {
         public string? this[string key]
