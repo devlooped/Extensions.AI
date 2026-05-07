@@ -26,7 +26,7 @@ public static class ChatExtensions
         /// <summary>Gets or sets the end user ID for the chat session.</summary>
         public string? EndUserId
         {
-            get => (options.AdditionalProperties ??= []).TryGetValue("EndUserId", out var value) ? value as string : null;
+            get => options.AdditionalProperties is null ? null : (options.AdditionalProperties ??= []).TryGetValue("EndUserId", out var value) ? value as string : null;
             set => (options.AdditionalProperties ??= [])["EndUserId"] = value;
         }
     }
