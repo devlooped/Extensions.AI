@@ -15,19 +15,17 @@ namespace Devlooped.Extensions.AI;
 /// </summary>
 sealed class OpenAIClientProvider : IClientProvider
 {
-    static readonly IClientFactory factory = new OpenAIClientFactory();
-
     public string ProviderName => "openai";
 
     public Uri? BaseUri => new("https://api.openai.com/");
 
     public string? HostSuffix => null;
 
-    public IClientFactory GetFactory() => factory;
+    public IClientFactory GetFactory(IConfigurationSection section) => new OpenAIClientFactory(section);
 
-    class OpenAIClientFactory : IClientFactory
+    class OpenAIClientFactory(IConfigurationSection section) : IClientFactory
     {
-        public IChatClient CreateChatClient(IConfigurationSection section)
+        public IChatClient CreateChatClient()
         {
             var options = section.Get<OpenAIProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -38,7 +36,7 @@ sealed class OpenAIClientProvider : IClientProvider
                 options);
         }
 
-        public ISpeechToTextClient CreateSpeechToTextClient(IConfigurationSection section)
+        public ISpeechToTextClient CreateSpeechToTextClient()
         {
             var options = section.Get<OpenAIProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -49,7 +47,7 @@ sealed class OpenAIClientProvider : IClientProvider
                 options);
         }
 
-        public ITextToSpeechClient CreateTextToSpeechClient(IConfigurationSection section)
+        public ITextToSpeechClient CreateTextToSpeechClient()
         {
             var options = section.Get<OpenAIProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -73,19 +71,17 @@ sealed class OpenAIClientProvider : IClientProvider
 /// </summary>
 sealed class AzureOpenAIClientProvider : IClientProvider
 {
-    static readonly IClientFactory factory = new AzureOpenAIClientFactory();
-
     public string ProviderName => "azure.openai";
 
     public Uri? BaseUri => null;
 
     public string? HostSuffix => ".openai.azure.com";
 
-    public IClientFactory GetFactory() => factory;
+    public IClientFactory GetFactory(IConfigurationSection section) => new AzureOpenAIClientFactory(section);
 
-    class AzureOpenAIClientFactory : IClientFactory
+    class AzureOpenAIClientFactory(IConfigurationSection section) : IClientFactory
     {
-        public IChatClient CreateChatClient(IConfigurationSection section)
+        public IChatClient CreateChatClient()
         {
             var options = section.Get<AzureOpenAIProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -97,7 +93,7 @@ sealed class AzureOpenAIClientProvider : IClientProvider
                 options);
         }
 
-        public ISpeechToTextClient CreateSpeechToTextClient(IConfigurationSection section)
+        public ISpeechToTextClient CreateSpeechToTextClient()
         {
             var options = section.Get<AzureOpenAIProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -111,7 +107,7 @@ sealed class AzureOpenAIClientProvider : IClientProvider
                 options);
         }
 
-        public ITextToSpeechClient CreateTextToSpeechClient(IConfigurationSection section)
+        public ITextToSpeechClient CreateTextToSpeechClient()
         {
             var options = section.Get<AzureOpenAIProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -140,7 +136,6 @@ sealed class AzureOpenAIClientProvider : IClientProvider
 sealed class AzureAIInferenceClientProvider : IClientProvider
 {
     const string providerName = "azure.inference";
-    static readonly IClientFactory factory = new AzureAIInferenceClientFactory();
 
     public string ProviderName => providerName;
 
@@ -148,11 +143,11 @@ sealed class AzureAIInferenceClientProvider : IClientProvider
 
     public string? HostSuffix => null;
 
-    public IClientFactory GetFactory() => factory;
+    public IClientFactory GetFactory(IConfigurationSection section) => new AzureAIInferenceClientFactory(section);
 
-    class AzureAIInferenceClientFactory : IClientFactory
+    class AzureAIInferenceClientFactory(IConfigurationSection section) : IClientFactory
     {
-        public IChatClient CreateChatClient(IConfigurationSection section)
+        public IChatClient CreateChatClient()
         {
             var options = section.Get<AzureInferenceProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -165,10 +160,10 @@ sealed class AzureAIInferenceClientProvider : IClientProvider
                 options);
         }
 
-        public ISpeechToTextClient CreateSpeechToTextClient(IConfigurationSection section)
+        public ISpeechToTextClient CreateSpeechToTextClient()
             => throw ClientProviderCapabilities.Unsupported(providerName, nameof(ISpeechToTextClient));
 
-        public ITextToSpeechClient CreateTextToSpeechClient(IConfigurationSection section)
+        public ITextToSpeechClient CreateTextToSpeechClient()
             => throw ClientProviderCapabilities.Unsupported(providerName, nameof(ITextToSpeechClient));
     }
 
@@ -186,7 +181,6 @@ sealed class AzureAIInferenceClientProvider : IClientProvider
 sealed class GrokClientProvider : IClientProvider
 {
     const string providerName = "xai";
-    static readonly IClientFactory factory = new GrokClientFactory();
 
     public string ProviderName => providerName;
 
@@ -194,11 +188,11 @@ sealed class GrokClientProvider : IClientProvider
 
     public string? HostSuffix => null;
 
-    public IClientFactory GetFactory() => factory;
+    public IClientFactory GetFactory(IConfigurationSection section) => new GrokClientFactory(section);
 
-    class GrokClientFactory : IClientFactory
+    class GrokClientFactory(IConfigurationSection section) : IClientFactory
     {
-        public IChatClient CreateChatClient(IConfigurationSection section)
+        public IChatClient CreateChatClient()
         {
             var options = section.Get<GrokProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
@@ -209,22 +203,20 @@ sealed class GrokClientProvider : IClientProvider
                 options);
         }
 
-        public ISpeechToTextClient CreateSpeechToTextClient(IConfigurationSection section)
+        public ISpeechToTextClient CreateSpeechToTextClient()
         {
             var options = section.Get<GrokProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
-            Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
 
             return new ProviderOptionsSpeechToTextClient<GrokClientOptions>(
                 new GrokClient(options.ApiKey, options).AsISpeechToTextClient(),
                 options);
         }
 
-        public ITextToSpeechClient CreateTextToSpeechClient(IConfigurationSection section)
+        public ITextToSpeechClient CreateTextToSpeechClient()
         {
             var options = section.Get<GrokProviderOptions>() ?? new();
             Throw.IfNullOrEmpty(options.ApiKey, $"{section.Path}:apikey");
-            Throw.IfNullOrEmpty(options.ModelId, $"{section.Path}:modelid");
 
             return new ProviderOptionsTextToSpeechClient<GrokClientOptions>(
                 new GrokClient(options.ApiKey, options).AsITextToSpeechClient(),

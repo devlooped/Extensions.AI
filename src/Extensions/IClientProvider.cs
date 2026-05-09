@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Configuration;
+
 namespace Devlooped.Extensions.AI;
 
 /// <summary>
@@ -35,6 +37,6 @@ public interface IClientProvider
     /// </remarks>
     string? HostSuffix { get; }
 
-    /// <summary>Gets the provider-specific factory that knows how to create individual clients.</summary>
-    IClientFactory GetFactory();
+    /// <summary>Gets the provider-specific factory bound to the specified configuration section.</summary>
+    IClientFactory GetFactory(IConfigurationSection section);
 }

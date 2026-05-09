@@ -1,0 +1,10 @@
+{
+    AI: {
+        Clients: {
+            XAI: {
+                Provider: "xai",
+                ModelId: "grok-latest"
+            }
+        }
+    }
+}
