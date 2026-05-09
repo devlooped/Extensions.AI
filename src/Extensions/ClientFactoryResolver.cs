@@ -1,10 +1,9 @@
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 
 namespace Devlooped.Extensions.AI;
 
-/// <summary>Default implementation of <see cref="IClientFactory"/> that resolves providers by name or by matching endpoint URIs.</summary>
-public class ClientFactory : IClientFactory
+/// <summary>Resolves providers by name or by matching endpoint URIs, then returns section-bound factories.</summary>
+public class ClientFactoryResolver : IClientFactoryResolver
 {
     readonly IClientProvider defaultProvider = new OpenAIClientProvider();
 
@@ -12,9 +11,9 @@ public class ClientFactory : IClientFactory
     readonly List<(Uri BaseUri, IClientProvider Provider)> providersByBaseUri;
     readonly List<(string HostSuffix, IClientProvider Provider)> providersByHostSuffix;
 
-    /// <summary>Initializes a new instance of the <see cref="ClientFactory"/> class with the specified providers.</summary>
+    /// <summary>Initializes a new instance of the <see cref="ClientFactoryResolver"/> class with the specified providers.</summary>
     /// <param name="providers">The collection of registered providers.</param>
-    public ClientFactory(IEnumerable<IClientProvider> providers)
+    public ClientFactoryResolver(IEnumerable<IClientProvider> providers)
     {
         providersByName = new(StringComparer.OrdinalIgnoreCase);
         providersByBaseUri = [];
@@ -37,9 +36,9 @@ public class ClientFactory : IClientFactory
         providersByHostSuffix.Sort((a, b) => b.HostSuffix.Length.CompareTo(a.HostSuffix.Length));
     }
 
-    /// <summary>Creates a <see cref="ClientFactory"/> with the built-in providers registered.</summary>
-    /// <returns>A factory with OpenAI, Azure OpenAI, Azure AI Inference, and Grok providers.</returns>
-    public static ClientFactory CreateDefault() => new(
+    /// <summary>Creates a <see cref="ClientFactoryResolver"/> with the built-in providers registered.</summary>
+    /// <returns>A resolver with OpenAI, Azure OpenAI, Azure AI Inference, and Grok providers.</returns>
+    public static ClientFactoryResolver CreateDefault() => new(
     [
         new OpenAIClientProvider(),
         new AzureOpenAIClientProvider(),
@@ -48,16 +47,7 @@ public class ClientFactory : IClientFactory
     ]);
 
     /// <inheritdoc/>
-    public IChatClient CreateChatClient(IConfigurationSection section)
-        => ResolveProvider(section).GetFactory().CreateChatClient(section);
-
-    /// <inheritdoc/>
-    public ISpeechToTextClient CreateSpeechToTextClient(IConfigurationSection section)
-        => ResolveProvider(section).GetFactory().CreateSpeechToTextClient(section);
-
-    /// <inheritdoc/>
-    public ITextToSpeechClient CreateTextToSpeechClient(IConfigurationSection section)
-        => ResolveProvider(section).GetFactory().CreateTextToSpeechClient(section);
+    public IClientFactory Resolve(IConfigurationSection section) => ResolveProvider(section).GetFactory(section);
 
     /// <summary>Resolves the appropriate provider for the given configuration section.</summary>
     /// <param name="section">The configuration section.</param>

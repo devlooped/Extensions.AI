@@ -62,7 +62,7 @@ public static class ConfigurableChatClientExtensions
                 factory: (sp, _) =>
                 {
                     var client = new ConfigurableChatClient(configuration,
-                        sp.GetRequiredService<IClientFactory>(),
+                        sp.GetRequiredService<ClientFactoryResolver>(),
                         sp.GetRequiredService<ILogger<ConfigurableChatClient>>(),
                         section, id, configureClient);
 
@@ -88,6 +88,14 @@ public static class ConfigurableChatClientExtensions
     /// <summary>Gets a chat client by id (case-insensitive) from the service provider.</summary>
     public static IChatClient? GetChatClient(this IServiceProvider services, string id)
         => services.GetKeyedService<IChatClient>(id) ?? services.GetKeyedService<IChatClient>(new ServiceKey(id));
+
+    /// <summary>Gets a text to speech client by id (case-insensitive) from the service provider.</summary>
+    public static ITextToSpeechClient? GetTextToSpeechClient(this IServiceProvider services, string id)
+        => services.GetKeyedService<ITextToSpeechClient>(id) ?? services.GetKeyedService<ITextToSpeechClient>(new ServiceKey(id));
+
+    /// <summary>Gets a speech to text client by id (case-insensitive) from the service provider.</summary>
+    public static ISpeechToTextClient? GetSpeechToTextClient(this IServiceProvider services, string id)
+        => services.GetKeyedService<ISpeechToTextClient>(id) ?? services.GetKeyedService<ISpeechToTextClient>(new ServiceKey(id));
 
     internal class ChatClientOptions : OpenAIClientOptions
     {

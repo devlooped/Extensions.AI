@@ -411,13 +411,12 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClientFactory()
+            .AddClients(configuration)
             .BuildServiceProvider();
 
-        var factory = services.GetRequiredService<IClientFactory>();
-        var section = configuration.GetRequiredSection("ai:clients:openai");
-        var speechToText = factory.CreateSpeechToTextClient(section);
-        var textToSpeech = factory.CreateTextToSpeechClient(section);
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var speechToText = factory.CreateSpeechToTextClient();
+        var textToSpeech = factory.CreateTextToSpeechClient();
 
         var speechOptions = Assert.IsType<OpenAIClientProvider.OpenAIProviderOptions>(
             speechToText.GetService(typeof(object), "options"));
@@ -443,10 +442,10 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             })
             .Build();
 
-        var factory = ClientFactory.CreateDefault();
         var section = configuration.GetRequiredSection("ai:clients:audio");
-        var speechToText = factory.CreateSpeechToTextClient(section);
-        var textToSpeech = factory.CreateTextToSpeechClient(section);
+        var factory = ClientFactoryResolver.CreateDefault().Resolve(section);
+        var speechToText = factory.CreateSpeechToTextClient();
+        var textToSpeech = factory.CreateTextToSpeechClient();
 
         var speechOptions = Assert.IsType<AzureOpenAIClientProvider.AzureOpenAIProviderOptions>(
             speechToText.GetService(typeof(object), "options"));
@@ -457,6 +456,34 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         Assert.Same(textOptions, textToSpeech.GetService(typeof(AzureOpenAIClientProvider.AzureOpenAIProviderOptions), "options"));
         Assert.Equal(new Uri("https://chat.openai.azure.com/"), speechOptions.Endpoint);
         Assert.Equal("myapp/1.0", textOptions.UserAgentApplicationId);
+    }
+
+    [Fact]
+    public void CanInspectXAIProviderOptions()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:grok:modelid"] = "grok-4-fast",
+                ["ai:clients:grok:apikey"] = "xai-asdfasdf",
+                ["ai:clients:grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var section = configuration.GetRequiredSection("ai:clients:grok");
+        var factory = ClientFactoryResolver.CreateDefault().Resolve(section);
+
+        var chat = factory.CreateChatClient();
+        var speechToText = factory.CreateSpeechToTextClient();
+        var textToSpeech = factory.CreateTextToSpeechClient();
+
+        var speechOptions = speechToText.GetService<GrokClientOptions>();
+        var textOptions = textToSpeech.GetService<GrokClientOptions>();
+
+        Assert.Same(speechOptions, speechToText.GetService(typeof(object), "options"));
+        Assert.Same(textOptions, textToSpeech.GetService(typeof(object), "options"));
+
+        Assert.Equal("grok-4-fast", chat.GetRequiredService<GrokClientProvider.GrokProviderOptions>().ModelId);
     }
 
     [Fact]
@@ -471,13 +498,85 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             })
             .Build();
 
-        var factory = ClientFactory.CreateDefault();
         var section = configuration.GetRequiredSection("ai:clients:azure");
+        var factory = ClientFactoryResolver.CreateDefault().Resolve(section);
 
-        var speechToText = Assert.Throws<NotSupportedException>(() => factory.CreateSpeechToTextClient(section));
-        var textToSpeech = Assert.Throws<NotSupportedException>(() => factory.CreateTextToSpeechClient(section));
+        var speechToText = Assert.Throws<NotSupportedException>(() => factory.CreateSpeechToTextClient());
+        var textToSpeech = Assert.Throws<NotSupportedException>(() => factory.CreateTextToSpeechClient());
 
         Assert.Contains(nameof(ISpeechToTextClient), speechToText.Message);
         Assert.Contains(nameof(ITextToSpeechClient), textToSpeech.Message);
+    }
+
+    [Fact]
+    public void CanResolveKeyedClientFactoryBySectionPath()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1.nano",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var alternative = services.GetRequiredKeyedService<IClientFactory>(new ServiceKey("AI:CLIENTS:OPENAI"));
+        var client = factory.CreateChatClient();
+
+        Assert.Same(factory, alternative);
+        Assert.Equal("gpt-4.1.nano", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
+
+    [Fact]
+    public void AddClientsOnlyRegistersSectionsWithDirectApiKey()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:grok:apikey"] = "xai-asdfasdf",
+                ["ai:clients:grok:router:modelid"] = "grok-4-fast",
+                ["ai:clients:grok:router:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        Assert.NotNull(services.GetKeyedService<IClientFactory>("ai:clients:grok"));
+        Assert.Null(services.GetKeyedService<IClientFactory>("ai:clients:grok:router"));
+    }
+
+    [Fact]
+    public void BoundFactoryReflectsConfigurationChanges()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var original = factory.CreateChatClient();
+
+        configuration["ai:clients:openai:modelid"] = "gpt-5";
+
+        var updated = factory.CreateChatClient();
+
+        Assert.Equal("gpt-4.1", original.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+        Assert.Equal("gpt-5", updated.GetRequiredService<ChatClientMetadata>().DefaultModelId);
     }
 }
