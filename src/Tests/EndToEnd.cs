@@ -17,7 +17,7 @@ public class EndToEnd
     {
         var services = new ServiceCollection()
             .AddChatClients(configuration,
-                configurePipeline: (id, builder) => builder.UseLogging()
+                configure: (id, builder) => builder.UseLogging()
                 //configureClient: (id, client) => client.AsBuilder().UseLogging().build
             )
             .BuildServiceProvider();
