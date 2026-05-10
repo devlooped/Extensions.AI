@@ -19,15 +19,14 @@ public static class ConfigurableChatClientExtensions
     /// Adds configuration-driven chat clients to the host application builder.
     /// </summary>
     /// <param name="builder">The host application builder.</param>
-    /// <param name="configurePipeline">Optional action to configure the pipeline for each client.</param>
-    /// <param name="configureClient">Optional action to configure each client.</param>
+    /// <param name="configure">Optional action to configure the pipeline for each client.</param>
     /// <param name="prefix">The configuration prefix for clients. Defaults to "ai:clients".</param>
     /// <param name="useDefaultProviders">Whether to register the default built-in <see cref="IClientProvider"/> providers for mapping configuration sections to <see cref="IChatClient"/> instances.</param>
     /// <returns>The host application builder.</returns>
-    public static TBuilder AddChatClients<TBuilder>(this TBuilder builder, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients", bool useDefaultProviders = true)
+    public static TBuilder AddChatClients<TBuilder>(this TBuilder builder, Action<string, ChatClientBuilder>? configure = default, string prefix = "ai:clients", bool useDefaultProviders = true)
         where TBuilder : IHostApplicationBuilder
     {
-        AddChatClients(builder.Services, builder.Configuration, configurePipeline, configureClient, prefix, useDefaultProviders);
+        AddChatClients(builder.Services, builder.Configuration, configure, prefix, useDefaultProviders);
         return builder;
     }
 
@@ -36,12 +35,11 @@ public static class ConfigurableChatClientExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The configuration.</param>
-    /// <param name="configurePipeline">Optional action to configure the pipeline for each client.</param>
-    /// <param name="configureClient">Optional action to configure each client.</param>
+    /// <param name="configure">Optional action to configure the pipeline for each client.</param>
     /// <param name="prefix">The configuration prefix for clients. Defaults to "ai:clients".</param>
     /// <param name="useDefaultProviders">Whether to register the default built-in <see cref="IClientProvider"/> providers for mapping configuration sections to <see cref="IChatClient"/> instances.</param>
     /// <returns>The service collection.</returns>
-    public static IServiceCollection AddChatClients(this IServiceCollection services, IConfiguration configuration, Action<string, ChatClientBuilder>? configurePipeline = default, Action<string, IChatClient>? configureClient = default, string prefix = "ai:clients", bool useDefaultProviders = true)
+    public static IServiceCollection AddChatClients(this IServiceCollection services, IConfiguration configuration, Action<string, ChatClientBuilder>? configure = default, string prefix = "ai:clients", bool useDefaultProviders = true)
     {
         // Ensure the factory and providers are registered
         services.AddClientFactory(useDefaultProviders);
@@ -62,14 +60,14 @@ public static class ConfigurableChatClientExtensions
                 factory: (sp, _) =>
                 {
                     var client = new ConfigurableChatClient(configuration,
-                        sp.GetRequiredService<ClientFactoryResolver>(),
+                        sp.GetRequiredService<IClientFactoryResolver>(),
                         sp.GetRequiredService<ILogger<ConfigurableChatClient>>(),
-                        section, id, configureClient);
+                        section, id);
 
-                    if (configurePipeline != null)
+                    if (configure != null)
                     {
                         var builder = client.AsBuilder();
-                        configurePipeline(id, builder);
+                        configure(id, builder);
                         return builder.Build(sp);
                     }
 

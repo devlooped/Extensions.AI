@@ -13,7 +13,6 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     readonly string section;
     readonly string id;
     readonly ILogger logger;
-    readonly Action<string, IChatClient>? configure;
     IDisposable reloadToken;
     IChatClient innerClient;
     ChatClientMetadata metadata;
@@ -25,7 +24,7 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     /// <param name="section">The configuration section to use.</param>
     /// <param name="id">The unique identifier for the client.</param>
     /// <param name="configure">An optional action to configure the client after creation.</param>
-    public ConfigurableChatClient(IConfiguration configuration, IClientFactoryResolver resolver, ILogger logger, string section, string id, Action<string, IChatClient>? configure)
+    public ConfigurableChatClient(IConfiguration configuration, IClientFactoryResolver resolver, ILogger logger, string section, string id)
     {
         if (section.Contains('.'))
             throw new ArgumentException("Section separator must be ':', not '.'");
@@ -35,7 +34,6 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
         this.logger = Throw.IfNull(logger);
         this.section = Throw.IfNullOrEmpty(section);
         this.id = Throw.IfNullOrEmpty(id);
-        this.configure = configure;
 
         (innerClient, metadata) = Configure(configuration.GetRequiredSection(section));
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
@@ -47,8 +45,8 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     /// <param name="section">The configuration section to use.</param>
     /// <param name="id">The unique identifier for the client.</param>
     /// <param name="configure">An optional action to configure the client after creation.</param>
-    public ConfigurableChatClient(IConfiguration configuration, ILogger logger, string section, string id, Action<string, IChatClient>? configure)
-        : this(configuration, ClientFactoryResolver.CreateDefault(), logger, section, id, configure)
+    public ConfigurableChatClient(IConfiguration configuration, ILogger logger, string section, string id)
+        : this(configuration, ClientFactoryResolver.CreateDefault(), logger, section, id)
     {
     }
 
@@ -96,11 +94,8 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
 
         // Create a configuration section wrapper that includes the resolved apikey
         var effectiveSection = new ApiKeyResolvingConfigurationSection(configSection, apikey);
-
         var client = resolver.Resolve(effectiveSection).CreateChatClient();
-        configure?.Invoke(id, client);
         LogConfigured(id);
-
         var metadata = client.GetService<ChatClientMetadata>() ?? new ChatClientMetadata(null, null, null);
 
         return (client, new ConfigurableChatClientMetadata(id, section, metadata.ProviderName, metadata.ProviderUri, metadata.DefaultModelId));
