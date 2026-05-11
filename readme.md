@@ -58,6 +58,45 @@ var speechToText = factory.CreateSpeechToTextClient();
 var textToSpeech = factory.CreateTextToSpeechClient();
 ```
 
+## Client Defaults
+
+Similar to `ConfigureHttpClientDefaults`, you can configure shared pipeline behaviors for all AI clients — or for clients from a specific configuration section — without modifying individual registration call sites.
+
+**Global defaults** apply to every client of that modality:
+
+```csharp
+// Apply to all IChatClient instances registered via AddChatClients or AddClients
+host.ConfigureChatClientDefaults(b => b
+    .UseLogging()
+    .UseOpenTelemetry());
+
+// Apply to all ITextToSpeechClient and ISpeechToTextClient from AddClients factories
+host.ConfigureTextToSpeechClientDefaults(b => b.UseLogging());
+host.ConfigureSpeechToTextClientDefaults(b => b.UseLogging());
+```
+
+**Section-specific defaults** match only clients whose configuration section path equals the given value (exact, case-insensitive, no parent inheritance). The section path uses `:` as separator, not `.`:
+
+```csharp
+// Only the client created from "AI:Clients:Grok" will get this pipeline
+host.ConfigureChatClientDefaults("AI:Clients:Grok", b => b
+    .UseRateLimiting());
+```
+
+Multiple calls accumulate and run in registration order. Global and section-specific registrations can be freely mixed:
+
+```csharp
+host
+    .ConfigureChatClientDefaults(b => b.UseLogging())               // global — runs first
+    .ConfigureChatClientDefaults("AI:Clients:Grok", b => b.UseRateLimiting()) // section
+    .ConfigureChatClientDefaults(b => b.UseOpenTelemetry())         // global — runs last
+    .AddChatClients();
+```
+
+For `AddChatClients`, defaults are applied outside `ConfigurableChatClient` so the outer pipeline
+survives configuration reloads. For `AddClients` factory clients, defaults are applied fresh on every
+`Create*` call so configuration changes are always reflected.
+
 There's also a simpler `Chat` class for streamlined creation of chat messages, which can 
 be used instead of creating an array of `ChatMessage` using `ChatRole.[System|Assistant|User]`:
 
