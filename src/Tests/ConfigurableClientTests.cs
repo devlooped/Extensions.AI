@@ -579,4 +579,303 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         Assert.Equal("gpt-4.1", original.GetRequiredService<ChatClientMetadata>().DefaultModelId);
         Assert.Equal("gpt-5", updated.GetRequiredService<ChatClientMetadata>().DefaultModelId);
     }
+
+    [Fact]
+    public void GlobalChatDefaultsApplyToAddChatClients()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        Assert.NotNull(client.GetService<MarkerChatClient>());
+    }
+
+    [Fact]
+    public void SectionSpecificChatDefaultsApplyOnlyToMatchingSection()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+                ["ai:clients:grok:modelid"] = "grok-4-fast",
+                ["ai:clients:grok:apikey"] = "xai-asdfasdf",
+                ["ai:clients:grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults("ai:clients:openai", b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var openai = services.GetRequiredKeyedService<IChatClient>("openai");
+        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+
+        Assert.NotNull(openai.GetService<MarkerChatClient>());
+        Assert.Null(grok.GetService<MarkerChatClient>());
+    }
+
+    [Fact]
+    public void MixedGlobalAndSectionDefaultsPreserveRegistrationOrder()
+    {
+        var order = new List<string>();
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults(b =>
+            {
+                order.Add("global-1");
+                b.Use(inner => new MarkerChatClient(inner));
+            })
+            .ConfigureChatClientDefaults("ai:clients:openai", b =>
+            {
+                order.Add("section");
+                b.Use(inner => new SecondMarkerChatClient(inner));
+            })
+            .ConfigureChatClientDefaults(b => order.Add("global-2"))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+
+        Assert.NotNull(client.GetService<MarkerChatClient>());
+        Assert.NotNull(client.GetService<SecondMarkerChatClient>());
+        Assert.Equal(["global-1", "section", "global-2"], order);
+    }
+
+    [Fact]
+    public void SectionSpecificDefaultsDoNotMatchSimilarlyPrefixedSections()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:foo:modelid"] = "gpt-4.1",
+                ["ai:clients:foo:apikey"] = "sk-asdfasdf",
+                ["ai:clients:foobar:modelid"] = "gpt-4.1",
+                ["ai:clients:foobar:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults("ai:clients:foo", b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        Assert.NotNull(services.GetRequiredKeyedService<IChatClient>("foo").GetService<MarkerChatClient>());
+        Assert.Null(services.GetRequiredKeyedService<IChatClient>("foobar").GetService<MarkerChatClient>());
+    }
+
+    [Fact]
+    public void ChatDefaultsWrapStableClientAcrossReload()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddChatClients(configuration)
+            .BuildServiceProvider();
+
+        var original = services.GetRequiredKeyedService<IChatClient>("openai");
+        Assert.NotNull(original.GetService<MarkerChatClient>());
+        Assert.Equal("gpt-4.1", original.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+
+        configuration["ai:clients:openai:modelid"] = "gpt-5";
+        configuration.Reload();
+
+        var updated = services.GetRequiredKeyedService<IChatClient>("openai");
+        Assert.Same(original, updated);
+        Assert.NotNull(updated.GetService<MarkerChatClient>());
+        Assert.Equal("gpt-5", updated.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
+
+    [Fact]
+    public void ExistingConfigureRunsAfterRegisteredDefaults()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration);
+
+#pragma warning disable CS0618
+        services.AddChatClients(configuration, (id, b) => b.Use(inner => new SecondMarkerChatClient(inner)));
+#pragma warning restore CS0618
+
+        var provider = services.BuildServiceProvider();
+        var client = provider.GetRequiredKeyedService<IChatClient>("openai");
+
+        Assert.NotNull(client.GetService<MarkerChatClient>());
+        Assert.NotNull(client.GetService<SecondMarkerChatClient>());
+    }
+
+    [Fact]
+    public void AddClientsAppliesDefaultsToChatFactory()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var dotted = services.GetRequiredKeyedService<IClientFactory>("ai.clients.openai");
+        var client = factory.CreateChatClient();
+
+        Assert.Same(factory, dotted);
+        Assert.NotNull(client.GetService<MarkerChatClient>());
+    }
+
+    [Fact]
+    public void AddClientsAppliesDefaultsToSpeechFactory()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4o-transcribe",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureTextToSpeechClientDefaults(b => b.Use(inner => new MarkerTextToSpeechClient(inner)))
+            .ConfigureSpeechToTextClientDefaults(b => b.Use(inner => new MarkerSpeechToTextClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var textToSpeech = factory.CreateTextToSpeechClient();
+        var speechToText = factory.CreateSpeechToTextClient();
+
+        Assert.NotNull(textToSpeech.GetService<MarkerTextToSpeechClient>());
+        Assert.NotNull(speechToText.GetService<MarkerSpeechToTextClient>());
+    }
+
+    [Fact]
+    public void UnsupportedSpeechProviderFailsBeforeDefaults()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:azure:modelid"] = "gpt-4o",
+                ["ai:clients:azure:apikey"] = "azure-asdfasdf",
+                ["ai:clients:azure:endpoint"] = "https://ai.azure.com/deployment",
+            })
+            .Build();
+
+        bool sttCalled = false;
+        bool ttsCalled = false;
+
+        var services = new ServiceCollection()
+            .ConfigureSpeechToTextClientDefaults(b => sttCalled = true)
+            .ConfigureTextToSpeechClientDefaults(b => ttsCalled = true)
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:azure");
+
+        Assert.Throws<NotSupportedException>(() => factory.CreateSpeechToTextClient());
+        Assert.Throws<NotSupportedException>(() => factory.CreateTextToSpeechClient());
+        Assert.False(sttCalled);
+        Assert.False(ttsCalled);
+    }
+
+    [Fact]
+    public void FactoryCreatedClientsReflectConfigChangesWithDefaults()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:openai:modelid"] = "gpt-4.1",
+                ["ai:clients:openai:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
+            .AddSingleton<IConfiguration>(configuration)
+            .AddClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var client1 = factory.CreateChatClient();
+
+        Assert.NotNull(client1.GetService<MarkerChatClient>());
+        Assert.Equal("gpt-4.1", client1.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+
+        configuration["ai:clients:openai:modelid"] = "gpt-5";
+
+        var client2 = factory.CreateChatClient();
+
+        Assert.NotNull(client2.GetService<MarkerChatClient>());
+        Assert.Equal("gpt-5", client2.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+        Assert.Equal("gpt-4.1", client1.GetRequiredService<ChatClientMetadata>().DefaultModelId);
+    }
+
+    sealed class MarkerChatClient(IChatClient inner) : DelegatingChatClient(inner)
+    {
+        public override object? GetService(Type serviceType, object? serviceKey = null)
+            => serviceType == typeof(MarkerChatClient) ? this : base.GetService(serviceType, serviceKey);
+    }
+
+    sealed class SecondMarkerChatClient(IChatClient inner) : DelegatingChatClient(inner)
+    {
+        public override object? GetService(Type serviceType, object? serviceKey = null)
+            => serviceType == typeof(SecondMarkerChatClient) ? this : base.GetService(serviceType, serviceKey);
+    }
+
+    sealed class MarkerTextToSpeechClient(ITextToSpeechClient inner) : DelegatingTextToSpeechClient(inner)
+    {
+        public override object? GetService(Type serviceType, object? serviceKey = null)
+            => serviceType == typeof(MarkerTextToSpeechClient) ? this : base.GetService(serviceType, serviceKey);
+    }
+
+    sealed class MarkerSpeechToTextClient(ISpeechToTextClient inner) : DelegatingSpeechToTextClient(inner)
+    {
+        public override object? GetService(Type serviceType, object? serviceKey = null)
+            => serviceType == typeof(MarkerSpeechToTextClient) ? this : base.GetService(serviceType, serviceKey);
+    }
 }

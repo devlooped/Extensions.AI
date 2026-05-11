@@ -16,10 +16,8 @@ public class EndToEnd
     public async Task GetText()
     {
         var services = new ServiceCollection()
-            .AddChatClients(configuration,
-                configure: (id, builder) => builder.UseLogging()
-                //configureClient: (id, client) => client.AsBuilder().UseLogging().build
-            )
+            .ConfigureChatClientDefaults(builder => builder.UseLogging())
+            .AddChatClients(configuration)
             .BuildServiceProvider();
 
         var chat = services.GetChatClient("XAI");

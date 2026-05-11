@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Devlooped.Extensions.AI;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -49,11 +50,17 @@ public static class ClientFactoryExtensions
     public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, string prefix = "ai:clients", bool useDefaultProviders = true)
     {
         services.AddClientFactory(useDefaultProviders);
+        // We need logging set up for the configurable client to log changes
+        services.AddLogging();
 
         foreach (var section in EnumerateFactorySections(configuration, prefix))
         {
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), section.Path,
-                factory: (sp, _) => sp.GetRequiredService<IClientFactoryResolver>().Resolve(section),
+                factory: (sp, _) =>
+                {
+                    var inner = sp.GetRequiredService<IClientFactoryResolver>().Resolve(section);
+                    return new DefaultsApplyingClientFactory(inner, section.Path, sp);
+                },
                 ServiceLifetime.Singleton));
 
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), new ServiceKey(section.Path),
@@ -63,7 +70,7 @@ public static class ClientFactoryExtensions
             var dottedKey = section.Path.Replace(':', '.');
 
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), dottedKey,
-                factory: (sp, _) => sp.GetRequiredService<IClientFactoryResolver>().Resolve(section),
+                factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(section.Path),
                 ServiceLifetime.Singleton));
 
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), new ServiceKey(dottedKey),
@@ -124,5 +131,69 @@ public static class ClientFactoryExtensions
             if (sections.Add(sectionPath))
                 yield return configuration.GetRequiredSection(sectionPath);
         }
+    }
+
+    sealed class DefaultsApplyingClientFactory(IClientFactory inner, string sectionPath, IServiceProvider sp) : IClientFactory
+    {
+        public IChatClient CreateChatClient()
+        {
+            var client = inner.CreateChatClient();
+            var entries = sp.GetServices<ChatDefaultsEntry>()
+                .Where(e => e.SectionPath == null ||
+                    string.Equals(e.SectionPath, sectionPath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (entries.Count == 0)
+                return client;
+
+            var builder = client.AsBuilder();
+            foreach (var entry in entries)
+                entry.Configure(builder);
+
+            return builder.Build(sp);
+        }
+
+        public ISpeechToTextClient CreateSpeechToTextClient()
+        {
+            var client = inner.CreateSpeechToTextClient();
+            var entries = sp.GetServices<SpeechToTextDefaultsEntry>()
+                .Where(e => e.SectionPath == null ||
+                    string.Equals(e.SectionPath, sectionPath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (entries.Count == 0)
+                return client;
+
+            var builder = client.AsBuilder();
+            foreach (var entry in entries)
+                entry.Configure(builder);
+
+            return builder.Build(sp);
+        }
+
+        public ITextToSpeechClient CreateTextToSpeechClient()
+        {
+            var client = inner.CreateTextToSpeechClient();
+            var entries = sp.GetServices<TextToSpeechDefaultsEntry>()
+                .Where(e => e.SectionPath == null ||
+                    string.Equals(e.SectionPath, sectionPath, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            if (entries.Count == 0)
+                return client;
+
+            var builder = client.AsBuilder();
+            foreach (var entry in entries)
+                entry.Configure(builder);
+
+            return builder.Build(sp);
+        }
+    }
+
+    internal class ClientOptions
+    {
+        public required string ApiKey { get; set; }
+        public string? Id { get; set; }
+        public ServiceLifetime Lifetime { get; set; } = ServiceLifetime.Singleton;
     }
 }
