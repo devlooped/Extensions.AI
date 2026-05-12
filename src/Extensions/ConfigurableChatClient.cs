@@ -1,15 +1,14 @@
 ﻿using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Primitives;
 
 namespace Devlooped.Extensions.AI;
 
 /// <summary>A configuration-driven <see cref="IChatClient"/> which monitors configuration changes and re-applies them to the inner client automatically.</summary>
-public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
+sealed partial class ConfigurableChatClient : IChatClient, IDisposable
 {
+    readonly IClientFactory factory;
     readonly IConfiguration configuration;
-    readonly IClientFactoryResolver resolver;
     readonly string section;
     readonly string id;
     readonly ILogger logger;
@@ -17,37 +16,25 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     IChatClient innerClient;
     ChatClientMetadata metadata;
 
-    /// <summary>Initializes a new instance of the <see cref="ConfigurableChatClient"/> class.</summary>
-    /// <param name="configuration">The configuration to read settings from.</param>
-    /// <param name="resolver">The resolver to use for creating provider-specific factories.</param>
+    /// <summary>Initializes a new instance of the <see cref="ConfigurableChatClient"/> class using an explicit client factory.</summary>
+    /// <param name="factory">The factory used to create (and re-create on reload) the inner chat client.</param>
+    /// <param name="configuration">The configuration to read settings from (used for id validation and reload tokens).</param>
     /// <param name="logger">The logger to use for logging.</param>
-    /// <param name="section">The configuration section to use.</param>
+    /// <param name="section">The configuration section path.</param>
     /// <param name="id">The unique identifier for the client.</param>
-    /// <param name="configure">An optional action to configure the client after creation.</param>
-    public ConfigurableChatClient(IConfiguration configuration, IClientFactoryResolver resolver, ILogger logger, string section, string id)
+    internal ConfigurableChatClient(IClientFactory factory, IConfiguration configuration, ILogger logger, string section, string id)
     {
         if (section.Contains('.'))
             throw new ArgumentException("Section separator must be ':', not '.'");
 
+        this.factory = Throw.IfNull(factory);
         this.configuration = Throw.IfNull(configuration);
-        this.resolver = Throw.IfNull(resolver);
         this.logger = Throw.IfNull(logger);
         this.section = Throw.IfNullOrEmpty(section);
         this.id = Throw.IfNullOrEmpty(id);
 
-        (innerClient, metadata) = Configure(configuration.GetRequiredSection(section));
+        (innerClient, metadata) = Configure();
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
-    }
-
-    /// <summary>Initializes a new instance of the <see cref="ConfigurableChatClient"/> class using the default <see cref="ClientFactoryResolver"/>.</summary>
-    /// <param name="configuration">The configuration to read settings from.</param>
-    /// <param name="logger">The logger to use for logging.</param>
-    /// <param name="section">The configuration section to use.</param>
-    /// <param name="id">The unique identifier for the client.</param>
-    /// <param name="configure">An optional action to configure the client after creation.</param>
-    public ConfigurableChatClient(IConfiguration configuration, ILogger logger, string section, string id)
-        : this(configuration, ClientFactoryResolver.CreateDefault(), logger, section, id)
-    {
     }
 
     /// <summary>Disposes the client and stops monitoring configuration changes.</summary>
@@ -68,119 +55,31 @@ public sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         => innerClient.GetStreamingResponseAsync(messages, options, cancellationToken);
 
-    (IChatClient, ChatClientMetadata) Configure(IConfigurationSection configSection)
+    (IChatClient, ChatClientMetadata) Configure()
     {
         // If there was a custom id, we must validate it didn't change since that's not supported.
         if (configuration[$"{section}:id"] is { } newid && newid != id)
             throw new InvalidOperationException($"The ID of a configured client cannot be changed at runtime. Expected '{id}' but was '{newid}'.");
 
-        // Resolve apikey from configuration with inheritance support
-        var apikey = configSection["apikey"];
-        // If the key contains a section-like value, get it from config
-        if (apikey?.Contains('.') == true || apikey?.Contains(':') == true)
-            apikey = configuration[apikey.Replace('.', ':')] ?? configuration[apikey.Replace('.', ':') + ":apikey"];
-
-        var keysection = section;
-        // ApiKey inheritance by section parents. 
-        // i.e. section ai:clients:grok:router does not need to have its own key, 
-        // it will inherit from ai:clients:grok:apikey, for example.
-        while (string.IsNullOrEmpty(apikey))
-        {
-            keysection = string.Join(':', keysection.Split(':')[..^1]);
-            if (string.IsNullOrEmpty(keysection))
-                break;
-            apikey = configuration[$"{keysection}:apikey"];
-        }
-
-        // Create a configuration section wrapper that includes the resolved apikey
-        var effectiveSection = new ApiKeyResolvingConfigurationSection(configSection, apikey);
-        var client = resolver.Resolve(effectiveSection).CreateChatClient();
+        var client = factory.CreateChatClient();
         LogConfigured(id);
-        var metadata = client.GetService<ChatClientMetadata>() ?? new ChatClientMetadata(null, null, null);
+        var clientMetadata = client.GetService<ChatClientMetadata>() ?? new ChatClientMetadata(null, null, null);
 
-        return (client, new ConfigurableChatClientMetadata(id, section, metadata.ProviderName, metadata.ProviderUri, metadata.DefaultModelId));
+        return (client, new ConfigurableChatClientMetadata(id, section, clientMetadata.ProviderName, clientMetadata.ProviderUri, clientMetadata.DefaultModelId));
     }
 
     void OnReload(object? state)
     {
-        var configSection = configuration.GetRequiredSection(section);
-
         (innerClient as IDisposable)?.Dispose();
         reloadToken?.Dispose();
 
-        (innerClient, metadata) = Configure(configSection);
+        (innerClient, metadata) = Configure();
 
         reloadToken = configuration.GetReloadToken().RegisterChangeCallback(OnReload, state: null);
     }
 
     [LoggerMessage(LogLevel.Information, "ChatClient '{Id}' configured.")]
     private partial void LogConfigured(string id);
-
-    /// <summary>A configuration section wrapper that overrides the apikey value with a resolved value.</summary>
-    sealed class ApiKeyResolvingConfigurationSection(IConfigurationSection inner, string? resolvedApiKey) : IConfigurationSection
-    {
-        public string? this[string key]
-        {
-            get => string.Equals(key, "apikey", StringComparison.OrdinalIgnoreCase) && resolvedApiKey != null
-                ? resolvedApiKey
-                : inner[key];
-            set => inner[key] = value;
-        }
-
-        public string Key => inner.Key;
-        public string Path => inner.Path;
-        public string? Value
-        {
-            get => inner.Value;
-            set => inner.Value = value;
-        }
-        public IEnumerable<IConfigurationSection> GetChildren()
-        {
-            var hasApiKey = false;
-
-            foreach (var child in inner.GetChildren())
-            {
-                if (string.Equals(child.Key, "apikey", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasApiKey = true;
-                    yield return new ApiKeyValueConfigurationSection(child, resolvedApiKey);
-                }
-                else
-                {
-                    yield return child;
-                }
-            }
-
-            if (!hasApiKey && resolvedApiKey is not null)
-                yield return new ApiKeyValueConfigurationSection(inner.GetSection("apikey"), resolvedApiKey);
-        }
-        public IChangeToken GetReloadToken() => inner.GetReloadToken();
-        public IConfigurationSection GetSection(string key)
-            => string.Equals(key, "apikey", StringComparison.OrdinalIgnoreCase)
-                ? new ApiKeyValueConfigurationSection(inner.GetSection(key), resolvedApiKey)
-                : inner.GetSection(key);
-    }
-
-    sealed class ApiKeyValueConfigurationSection(IConfigurationSection inner, string? resolvedApiKey) : IConfigurationSection
-    {
-        public string? this[string key]
-        {
-            get => inner[key];
-            set => inner[key] = value;
-        }
-
-        public string Key => inner.Key;
-        public string Path => inner.Path;
-        public string? Value
-        {
-            get => resolvedApiKey ?? inner.Value;
-            set => inner.Value = value;
-        }
-
-        public IEnumerable<IConfigurationSection> GetChildren() => inner.GetChildren();
-        public IChangeToken GetReloadToken() => inner.GetReloadToken();
-        public IConfigurationSection GetSection(string key) => inner.GetSection(key);
-    }
 }
 
 /// <summary>Metadata for a <see cref="ConfigurableChatClient"/>.</summary>

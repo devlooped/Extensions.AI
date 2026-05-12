@@ -4,6 +4,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -41,7 +42,14 @@ public static class ClientFactoryExtensions
         return builder;
     }
 
-    /// <summary>Adds keyed <see cref="IClientFactory"/> registrations for configuration sections with direct API keys.</summary>
+    /// <summary>Adds keyed <see cref="IClientFactory"/> and <see cref="IChatClient"/> registrations from configuration.</summary>
+    /// <remarks>
+    /// Registers a keyed <see cref="IClientFactory"/> for sections with a direct <c>apikey</c>, wrapped in a 
+    /// <see cref="DefaultsApplyingClientFactory"/> that applies <see cref="ChatDefaultsEntry"/> (and speech/text-to-speech 
+    /// equivalents) registered via <c>Configure*ClientDefaults</c>. Also registers a keyed <see cref="IChatClient"/> for 
+    /// sections with a <c>modelid</c>, using <see cref="ConfigurableChatClient"/> for auto-reload support. Chat defaults 
+    /// flow through the shared factory so they are applied once, including on every configuration reload.
+    /// </remarks>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <param name="prefix">The configuration prefix for clients. Defaults to <c>ai:clients</c>.</param>
@@ -50,7 +58,6 @@ public static class ClientFactoryExtensions
     public static IServiceCollection AddClients(this IServiceCollection services, IConfiguration configuration, string prefix = "ai:clients", bool useDefaultProviders = true)
     {
         services.AddClientFactory(useDefaultProviders);
-        // We need logging set up for the configurable client to log changes
         services.AddLogging();
 
         foreach (var section in EnumerateFactorySections(configuration, prefix))
@@ -58,8 +65,11 @@ public static class ClientFactoryExtensions
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), section.Path,
                 factory: (sp, _) =>
                 {
-                    var inner = sp.GetRequiredService<IClientFactoryResolver>().Resolve(section);
-                    return new DefaultsApplyingClientFactory(inner, section.Path, sp);
+                    var configurable = new ConfigurableClientFactory(
+                        configuration, section.Path,
+                        sp.GetRequiredService<IClientFactoryResolver>());
+
+                    return new DefaultsApplyingClientFactory(configurable, section.Path, sp);
                 },
                 ServiceLifetime.Singleton));
 
@@ -76,6 +86,39 @@ public static class ClientFactoryExtensions
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), new ServiceKey(dottedKey),
                 factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(section.Path),
                 ServiceLifetime.Singleton));
+        }
+
+        var normalizedPrefix = prefix.TrimEnd(':') + ":";
+        foreach (var entry in configuration.AsEnumerable().Where(x =>
+            x.Value is not null &&
+            x.Key.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase) &&
+            x.Key.EndsWith(":modelid", StringComparison.OrdinalIgnoreCase)))
+        {
+            var sectionPath = string.Join(':', entry.Key.Split(':')[..^1]);
+            var sectionOptions = configuration.GetRequiredSection(sectionPath).Get<ClientOptions>();
+            var id = sectionOptions?.Id ?? sectionPath[normalizedPrefix.Length..];
+            var lifetime = sectionOptions?.Lifetime ?? ServiceLifetime.Singleton;
+
+            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), id,
+                factory: (sp, _) =>
+                {
+                    // The keyed IClientFactory exists for sections with a direct apikey.
+                    // For sub-sections that inherit their apikey from a parent, create a
+                    // section-specific defaults-applying factory on the fly.
+                    var sectionFactory = sp.GetKeyedService<IClientFactory>(sectionPath)
+                        ?? new DefaultsApplyingClientFactory(
+                            new ConfigurableClientFactory(configuration, sectionPath, sp.GetRequiredService<IClientFactoryResolver>()),
+                            sectionPath, sp);
+
+                    return new ConfigurableChatClient(sectionFactory, configuration,
+                        sp.GetRequiredService<ILogger<ConfigurableChatClient>>(),
+                        sectionPath, id);
+                },
+                lifetime));
+
+            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), new ServiceKey(id),
+                factory: (sp, _) => sp.GetRequiredKeyedService<IChatClient>(id),
+                lifetime));
         }
 
         return services;
@@ -117,6 +160,18 @@ public static class ClientFactoryExtensions
         return services;
     }
 
+    /// <summary>Gets a chat client by id (case-insensitive) from the service provider.</summary>
+    public static IChatClient? GetChatClient(this IServiceProvider services, string id)
+        => services.GetKeyedService<IChatClient>(id) ?? services.GetKeyedService<IChatClient>(new ServiceKey(id));
+
+    /// <summary>Gets a text to speech client by id (case-insensitive) from the service provider.</summary>
+    public static ITextToSpeechClient? GetTextToSpeechClient(this IServiceProvider services, string id)
+        => services.GetKeyedService<ITextToSpeechClient>(id) ?? services.GetKeyedService<ITextToSpeechClient>(new ServiceKey(id));
+
+    /// <summary>Gets a speech to text client by id (case-insensitive) from the service provider.</summary>
+    public static ISpeechToTextClient? GetSpeechToTextClient(this IServiceProvider services, string id)
+        => services.GetKeyedService<ISpeechToTextClient>(id) ?? services.GetKeyedService<ISpeechToTextClient>(new ServiceKey(id));
+
     static IEnumerable<IConfigurationSection> EnumerateFactorySections(IConfiguration configuration, string prefix)
     {
         var normalizedPrefix = prefix.TrimEnd(':') + ":";
@@ -133,66 +188,9 @@ public static class ClientFactoryExtensions
         }
     }
 
-    sealed class DefaultsApplyingClientFactory(IClientFactory inner, string sectionPath, IServiceProvider sp) : IClientFactory
-    {
-        public IChatClient CreateChatClient()
-        {
-            var client = inner.CreateChatClient();
-            var entries = sp.GetServices<ChatDefaultsEntry>()
-                .Where(e => e.SectionPath == null ||
-                    string.Equals(e.SectionPath, sectionPath, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (entries.Count == 0)
-                return client;
-
-            var builder = client.AsBuilder();
-            foreach (var entry in entries)
-                entry.Configure(builder);
-
-            return builder.Build(sp);
-        }
-
-        public ISpeechToTextClient CreateSpeechToTextClient()
-        {
-            var client = inner.CreateSpeechToTextClient();
-            var entries = sp.GetServices<SpeechToTextDefaultsEntry>()
-                .Where(e => e.SectionPath == null ||
-                    string.Equals(e.SectionPath, sectionPath, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (entries.Count == 0)
-                return client;
-
-            var builder = client.AsBuilder();
-            foreach (var entry in entries)
-                entry.Configure(builder);
-
-            return builder.Build(sp);
-        }
-
-        public ITextToSpeechClient CreateTextToSpeechClient()
-        {
-            var client = inner.CreateTextToSpeechClient();
-            var entries = sp.GetServices<TextToSpeechDefaultsEntry>()
-                .Where(e => e.SectionPath == null ||
-                    string.Equals(e.SectionPath, sectionPath, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (entries.Count == 0)
-                return client;
-
-            var builder = client.AsBuilder();
-            foreach (var entry in entries)
-                entry.Configure(builder);
-
-            return builder.Build(sp);
-        }
-    }
-
     internal class ClientOptions
     {
-        public required string ApiKey { get; set; }
+        public string? ApiKey { get; set; }
         public string? Id { get; set; }
         public ServiceLifetime Lifetime { get; set; } = ServiceLifetime.Singleton;
     }
