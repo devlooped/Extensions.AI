@@ -1,4 +1,4 @@
-﻿using Json5;
+using Json5;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +17,7 @@ public class EndToEnd
     {
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults(builder => builder.UseLogging())
-            .AddChatClients(configuration)
+            .AddClients(configuration)
             .BuildServiceProvider();
 
         var chat = services.GetChatClient("XAI");

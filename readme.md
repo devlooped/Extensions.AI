@@ -36,7 +36,7 @@ boosts the dev loop:
 ```csharp
 var host = new HostApplicationBuilder(args);
 host.Configuration.AddJsonFile("appsettings.json, optional: false, reloadOnChange: true);
-host.AddChatClients();
+host.AddClients();
 
 var app = host.Build();
 var grok = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
@@ -45,8 +45,8 @@ var grok = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
 Changing the `appsettings.json` file will automatically update the client 
 configuration without restarting the application.
 
-The same provider resolution can also create speech clients from configuration
-through keyed `IClientFactory` registrations:
+The same provider resolution also registers keyed `IClientFactory` instances for sections with a direct 
+`apikey`, which can create speech clients from configuration:
 
 ```csharp
 host.AddClients();
@@ -65,7 +65,7 @@ Similar to `ConfigureHttpClientDefaults`, you can configure shared pipeline beha
 **Global defaults** apply to every client of that modality:
 
 ```csharp
-// Apply to all IChatClient instances registered via AddChatClients or AddClients
+// Apply to all IChatClient instances registered via AddClients
 host.ConfigureChatClientDefaults(b => b
     .UseLogging()
     .UseOpenTelemetry());
@@ -90,11 +90,11 @@ host
     .ConfigureChatClientDefaults(b => b.UseLogging())               // global — runs first
     .ConfigureChatClientDefaults("AI:Clients:Grok", b => b.UseRateLimiting()) // section
     .ConfigureChatClientDefaults(b => b.UseOpenTelemetry())         // global — runs last
-    .AddChatClients();
+    .AddClients();
 ```
 
-For `AddChatClients`, defaults are applied outside `ConfigurableChatClient` so the outer pipeline
-survives configuration reloads. For `AddClients` factory clients, defaults are applied fresh on every
+For keyed `IChatClient` registrations, defaults are applied outside `ConfigurableChatClient` so the outer pipeline
+survives configuration reloads. For `IClientFactory` clients, defaults are applied fresh on every
 `Create*` call so configuration changes are always reflected.
 
 There's also a simpler `Chat` class for streamlined creation of chat messages, which can 
