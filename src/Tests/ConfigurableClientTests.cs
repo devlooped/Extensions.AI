@@ -24,7 +24,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var openai = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -50,7 +50,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var openai = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -79,7 +79,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>(new ServiceKey("grok"));
@@ -103,7 +103,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("groked");
@@ -128,7 +128,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("xai");
@@ -151,7 +151,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("grok");
@@ -174,7 +174,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var grok = services.GetRequiredKeyedService<IChatClient>("grok");
@@ -196,7 +196,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -225,7 +225,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -259,7 +259,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -284,7 +284,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging(builder => builder.AddTestOutput(output))
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -307,7 +307,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -334,7 +334,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -360,7 +360,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("chat");
@@ -386,7 +386,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("grok");
@@ -411,7 +411,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
@@ -521,7 +521,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
@@ -546,7 +546,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         Assert.NotNull(services.GetKeyedService<IClientFactory>("ai:clients:grok"));
@@ -566,7 +566,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
@@ -594,7 +594,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -618,7 +618,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults("ai:clients:openai", b => b.Use(inner => new MarkerChatClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var openai = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -653,7 +653,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             })
             .ConfigureChatClientDefaults(b => order.Add("global-2"))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -679,7 +679,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults("ai:clients:foo", b => b.Use(inner => new MarkerChatClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         Assert.NotNull(services.GetRequiredKeyedService<IChatClient>("foo").GetService<MarkerChatClient>());
@@ -700,7 +700,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var original = services.GetRequiredKeyedService<IChatClient>("openai");
@@ -730,7 +730,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
@@ -756,7 +756,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .ConfigureTextToSpeechClientDefaults(b => b.Use(inner => new MarkerTextToSpeechClient(inner)))
             .ConfigureSpeechToTextClientDefaults(b => b.Use(inner => new MarkerSpeechToTextClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
@@ -786,7 +786,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .ConfigureSpeechToTextClientDefaults(b => sttCalled = true)
             .ConfigureTextToSpeechClientDefaults(b => ttsCalled = true)
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:azure");
@@ -811,7 +811,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults(b => b.Use(inner => new MarkerChatClient(inner)))
             .AddSingleton<IConfiguration>(configuration)
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
@@ -841,7 +841,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .Build();
 
         var services = new ServiceCollection()
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:chat");
@@ -872,7 +872,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .Build();
 
         var services = new ServiceCollection()
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         // Sub-section without direct apikey has no registered IClientFactory
@@ -901,7 +901,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
                 instanceCount++;
                 return new MarkerChatClient(inner);
             }))
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var client = services.GetRequiredKeyedService<IChatClient>("openai");

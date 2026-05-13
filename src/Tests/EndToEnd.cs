@@ -17,7 +17,7 @@ public class EndToEnd
     {
         var services = new ServiceCollection()
             .ConfigureChatClientDefaults(builder => builder.UseLogging())
-            .AddClients(configuration)
+            .AddAIClients(configuration)
             .BuildServiceProvider();
 
         var chat = services.GetChatClient("XAI");

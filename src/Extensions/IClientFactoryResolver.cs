@@ -3,7 +3,7 @@
 namespace Devlooped.Extensions.AI;
 
 /// <summary>Resolves providers by name or by matching endpoint URIs, then returns section-bound factories.</summary>
-public interface IClientFactoryResolver
+interface IClientFactoryResolver
 {
     /// <summary>Resolves the appropriate provider for the given configuration section and returns its bound factory.</summary>
     /// <param name="section">The configuration section containing client settings.</param>

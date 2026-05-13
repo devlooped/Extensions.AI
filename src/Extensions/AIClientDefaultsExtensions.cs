@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using Devlooped.Extensions.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Hosting;
 
@@ -200,3 +199,7 @@ public static class AIClientDefaultsExtensions
             throw new ArgumentException("sectionPath must not contain '.'. Use ':' separated paths.", nameof(sectionPath));
     }
 }
+
+sealed record ChatDefaultsEntry(string? SectionPath, Action<ChatClientBuilder> Configure);
+sealed record TextToSpeechDefaultsEntry(string? SectionPath, Action<TextToSpeechClientBuilder> Configure);
+sealed record SpeechToTextDefaultsEntry(string? SectionPath, Action<SpeechToTextClientBuilder> Configure);
