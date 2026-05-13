@@ -1,14 +1,15 @@
 <Project>
 
   <!--
-    Copies SKILL.md from this package to .github/skills/devlooped.extensions.ai/ in the consuming repo root.
+    Copies SKILL.md from this package to .agents/skills/devlooped.extensions.ai/ in the consuming repo root.
     Uses InitializeSourceControlInformation (SourceLink) to locate the repo root.
     Falls back to SolutionDir if the git root cannot be determined.
+    Falls back to the directory containing the nearest AGENTS.md file found above the project file.
     Silently skips if the base directory cannot be determined.
     Opt-out: set <DevloopedExtensionsAISkill>false</DevloopedExtensionsAISkill> in your project or Directory.Build.props.
   -->
   <Target Name="CopyDevloopedExtensionsAISkill"
-          AfterTargets="Build"
+          BeforeTargets="Build"
           DependsOnTargets="InitializeSourceControlInformation"
           Condition="'$(DevloopedExtensionsAISkill)' != 'false'">
 
@@ -19,7 +20,13 @@
     <PropertyGroup>
       <_DevloopedExtensionsAISkillRepoRoot>@(_DevloopedExtensionsAISkillSourceRoot)</_DevloopedExtensionsAISkillRepoRoot>
       <_DevloopedExtensionsAISkillRepoRoot Condition="'$(_DevloopedExtensionsAISkillRepoRoot)' == '' and '$(SolutionDir)' != '' and '$(SolutionDir)' != '*Undefined*'">$(SolutionDir)</_DevloopedExtensionsAISkillRepoRoot>
+      <_DevloopedExtensionsAISkillAgentsMd Condition="'$(_DevloopedExtensionsAISkillRepoRoot)' == ''">$([MSBuild]::GetPathOfFileAbove('AGENTS.md', '$(MSBuildProjectDirectory)'))</_DevloopedExtensionsAISkillAgentsMd>
+      <_DevloopedExtensionsAISkillRepoRoot Condition="'$(_DevloopedExtensionsAISkillRepoRoot)' == '' and '$(_DevloopedExtensionsAISkillAgentsMd)' != ''">$([System.IO.Path]::GetDirectoryName('$(_DevloopedExtensionsAISkillAgentsMd)'))\</_DevloopedExtensionsAISkillRepoRoot>
     </PropertyGroup>
+
+    <MakeDir Directories="$(_DevloopedExtensionsAISkillRepoRoot).agents\skills\devlooped.extensions.ai"
+             Condition="'$(_DevloopedExtensionsAISkillRepoRoot)' != '' and Exists('$(MSBuildThisFileDirectory)..\skills\devlooped.extensions.ai\SKILL.md')"
+             ContinueOnError="true" />
 
     <Copy SourceFiles="$(MSBuildThisFileDirectory)..\skills\devlooped.extensions.ai\SKILL.md"
           DestinationFiles="$(_DevloopedExtensionsAISkillRepoRoot).agents\skills\devlooped.extensions.ai\SKILL.md"
