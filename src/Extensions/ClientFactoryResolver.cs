@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 namespace Devlooped.Extensions.AI;
 
 /// <summary>Resolves providers by name or by matching endpoint URIs, then returns section-bound factories.</summary>
-public class ClientFactoryResolver : IClientFactoryResolver
+class ClientFactoryResolver : IClientFactoryResolver
 {
     readonly IClientProvider defaultProvider = new OpenAIClientProvider();
 

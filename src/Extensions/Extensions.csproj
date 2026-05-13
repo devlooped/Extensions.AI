@@ -38,6 +38,8 @@
 
   <ItemGroup>
     <None Update="Devlooped.Extensions.AI.props" PackFolder="build" />
+    <None Update="Devlooped.Extensions.AI.targets" PackFolder="build" />
+    <None Include="SKILL.md" PackagePath="skills/devlooped.extensions.ai/SKILL.md" CopyToOutputDirectory="Never" />
     <None Include="..\..\osmfeula.txt" Link="osmfeula.txt" PackagePath="OSMFEULA.txt" />
     <InternalsVisibleTo Include="Devlooped.Agents.AI" />
     <InternalsVisibleTo Include="Tests" />

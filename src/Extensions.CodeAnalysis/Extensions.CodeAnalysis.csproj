@@ -14,9 +14,4 @@
     <PackageReference Include="ThisAssembly.Resources" Version="2.1.2" PrivateAssets="all" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="ChatClientExtensions.cs" />
-    <EmbeddedResource Include="ChatClientExtensions.cs" />
-  </ItemGroup>
-
 </Project>
