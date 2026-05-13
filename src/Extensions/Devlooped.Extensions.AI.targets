@@ -9,7 +9,7 @@
     Opt-out: set <DevloopedExtensionsAISkill>false</DevloopedExtensionsAISkill> in your project or Directory.Build.props.
   -->
   <Target Name="CopyDevloopedExtensionsAISkill"
-          BeforeTargets="Build"
+          BeforeTargets="PrepareForBuild"
           DependsOnTargets="InitializeSourceControlInformation"
           Condition="'$(DevloopedExtensionsAISkill)' != 'false'">
 
