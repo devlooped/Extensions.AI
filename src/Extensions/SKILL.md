@@ -45,7 +45,7 @@ services.AddAIClients(configuration, prefix: "ai:clients", useDefaultProviders: 
 ```
 
 The `configure: (name, builder) => ...` callback has **no direct equivalent** in `AddAIClients`.
-Move that logic to `ConfigureChatClientDefaults` (see below).
+**NEVER remove it** — always convert it to one or more `ConfigureChatClientDefaults` calls (see below).
 
 ## ConfigureChatClientDefaults
 
@@ -82,6 +82,9 @@ services.ConfigureChatClientDefaults("AI:Clients:Grok", b => b.UseRateLimiting()
 ```
 
 ### Migration: configure callback → ConfigureChatClientDefaults
+
+> ⚠️ **The `configure` lambda must NEVER be removed.** Always convert it into the equivalent
+> `ConfigureChatClientDefaults` call(s). Dropping the logic would silently change runtime behavior.
 
 ```csharp
 // Before
