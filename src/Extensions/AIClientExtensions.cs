@@ -14,11 +14,12 @@ public static class AIClientExtensions
 {
     /// <summary>Adds keyed <see cref="IClientFactory"/> and <see cref="IChatClient"/> registrations from configuration.</summary>
     /// <remarks>
-    /// Registers a keyed <see cref="IClientFactory"/> for sections with a direct <c>apikey</c>, wrapped in a 
+    /// Registers keyed <see cref="IClientFactory"/> entries by full section path for sections with a direct <c>apikey</c>, wrapped in a 
     /// <see cref="DefaultsApplyingClientFactory"/> that applies <see cref="ChatDefaultsEntry"/> (and speech/text-to-speech 
-    /// equivalents) registered via <c>Configure*ClientDefaults</c>. Also registers a keyed <see cref="IChatClient"/> for 
-    /// sections with a <c>modelid</c>, using <see cref="ConfigurableChatClient"/> for auto-reload support. Chat defaults 
-    /// flow through the shared factory so they are applied once, including on every configuration reload.
+    /// equivalents) registered via <c>Configure*ClientDefaults</c>. Also registers keyed <see cref="IChatClient"/> entries
+    /// by full section path for sections with a <c>modelid</c>, using <see cref="ConfigurableChatClient"/> for auto-reload
+    /// support. A configured <c>id</c> adds a secondary lookup key without replacing the section path key. Chat defaults flow
+    /// through the shared factory so they are applied once, including on every configuration reload.
     /// </remarks>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -32,30 +33,26 @@ public static class AIClientExtensions
 
         foreach (var section in EnumerateFactorySections(configuration, prefix))
         {
-            services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), section.Path,
+            var path = section.Path;
+            var options = section.Get<ClientOptions>();
+
+            services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), path,
                 factory: (sp, _) =>
                 {
                     var configurable = new ConfigurableClientFactory(
-                        configuration, section.Path,
+                        configuration, path,
                         sp.GetRequiredService<IClientFactoryResolver>());
 
-                    return new DefaultsApplyingClientFactory(configurable, section.Path, sp);
+                    return new DefaultsApplyingClientFactory(configurable, path, sp);
                 },
                 ServiceLifetime.Singleton));
 
-            services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), new ServiceKey(section.Path),
-                factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(section.Path),
-                ServiceLifetime.Singleton));
-
-            var dottedKey = section.Path.Replace(':', '.');
-
-            services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), dottedKey,
-                factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(section.Path),
-                ServiceLifetime.Singleton));
-
-            services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), new ServiceKey(dottedKey),
-                factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(section.Path),
-                ServiceLifetime.Singleton));
+            if (!string.IsNullOrEmpty(options?.Id) && !string.Equals(options.Id, path, StringComparison.Ordinal))
+            {
+                services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), options.Id,
+                    factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(path),
+                    ServiceLifetime.Singleton));
+            }
         }
 
         var normalizedPrefix = prefix.TrimEnd(':') + ":";
@@ -64,37 +61,40 @@ public static class AIClientExtensions
             x.Key.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase) &&
             x.Key.EndsWith(":modelid", StringComparison.OrdinalIgnoreCase)))
         {
-            var sectionPath = string.Join(':', entry.Key.Split(':')[..^1]);
-            var sectionOptions = configuration.GetRequiredSection(sectionPath).Get<ClientOptions>();
-            var id = sectionOptions?.Id ?? sectionPath[normalizedPrefix.Length..];
-            var lifetime = sectionOptions?.Lifetime ?? ServiceLifetime.Singleton;
+            var path = string.Join(':', entry.Key.Split(':')[..^1]);
+            var options = configuration.GetRequiredSection(path).Get<ClientOptions>();
+            var id = string.IsNullOrEmpty(options?.Id) ? path : options.Id;
+            var lifetime = options?.Lifetime ?? ServiceLifetime.Singleton;
 
-            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), id,
+            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), path,
                 factory: (sp, _) =>
                 {
                     // The keyed IClientFactory exists for sections with a direct apikey.
                     // For sub-sections that inherit their apikey from a parent, create a
                     // section-specific defaults-applying factory on the fly.
-                    var sectionFactory = sp.GetKeyedService<IClientFactory>(sectionPath)
+                    var sectionFactory = sp.GetKeyedService<IClientFactory>(path)
                         ?? new DefaultsApplyingClientFactory(
-                            new ConfigurableClientFactory(configuration, sectionPath, sp.GetRequiredService<IClientFactoryResolver>()),
-                            sectionPath, sp);
+                            new ConfigurableClientFactory(configuration, path, sp.GetRequiredService<IClientFactoryResolver>()),
+                            path, sp);
 
                     return new ConfigurableChatClient(sectionFactory, configuration,
                         sp.GetRequiredService<ILogger<ConfigurableChatClient>>(),
-                        sectionPath, id);
+                        path, id);
                 },
                 lifetime));
 
-            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), new ServiceKey(id),
-                factory: (sp, _) => sp.GetRequiredKeyedService<IChatClient>(id),
-                lifetime));
+            if (!string.Equals(id, path, StringComparison.Ordinal))
+            {
+                services.TryAdd(new ServiceDescriptor(typeof(IChatClient), id,
+                    factory: (sp, _) => sp.GetRequiredKeyedService<IChatClient>(path),
+                    lifetime));
+            }
         }
 
         return services;
     }
 
-    /// <summary>Adds keyed <see cref="IClientFactory"/> registrations for configuration sections with direct API keys.</summary>
+    /// <summary>Adds keyed <see cref="IClientFactory"/> registrations by full section path for configuration sections with direct API keys.</summary>
     /// <param name="builder">The host application builder.</param>
     /// <param name="prefix">The configuration prefix for clients. Defaults to <c>ai:clients</c>.</param>
     /// <param name="useDefaultProviders">Whether to register the default built-in providers.</param>
@@ -150,17 +150,17 @@ public static class AIClientExtensions
         return services;
     }
 
-    /// <summary>Gets a chat client by id (case-insensitive) from the service provider.</summary>
+    /// <summary>Gets a chat client by id from the service provider.</summary>
     public static IChatClient? GetChatClient(this IServiceProvider services, string id)
-        => services.GetKeyedService<IChatClient>(id) ?? services.GetKeyedService<IChatClient>(new ServiceKey(id));
+        => services.GetKeyedService<IChatClient>(id);
 
-    /// <summary>Gets a text to speech client by id (case-insensitive) from the service provider.</summary>
+    /// <summary>Gets a text to speech client by id from the service provider.</summary>
     public static ITextToSpeechClient? GetTextToSpeechClient(this IServiceProvider services, string id)
-        => services.GetKeyedService<ITextToSpeechClient>(id) ?? services.GetKeyedService<ITextToSpeechClient>(new ServiceKey(id));
+        => services.GetKeyedService<ITextToSpeechClient>(id);
 
-    /// <summary>Gets a speech to text client by id (case-insensitive) from the service provider.</summary>
+    /// <summary>Gets a speech to text client by id from the service provider.</summary>
     public static ISpeechToTextClient? GetSpeechToTextClient(this IServiceProvider services, string id)
-        => services.GetKeyedService<ISpeechToTextClient>(id) ?? services.GetKeyedService<ISpeechToTextClient>(new ServiceKey(id));
+        => services.GetKeyedService<ISpeechToTextClient>(id);
 
     static IEnumerable<IConfigurationSection> EnumerateFactorySections(IConfiguration configuration, string prefix)
     {
