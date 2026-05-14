@@ -1,3 +1,5 @@
+# Devlooped AI Extensions
+
 ![Icon](assets/img/icon-32.png) Devlooped AI Extensions
 ============
 
@@ -11,291 +13,280 @@ Extensions for Microsoft.Extensions.AI
 <!-- #extensions-title -->
 
 <!-- #extensions -->
-## Configurable Chat Clients
 
-Since tweaking chat options such as model identifier, reasoning effort, verbosity 
-and other model settings is very common, this package provides the ability to 
-drive those settings from configuration (with auto-reload support), both per-client 
-as well as per-request. This makes local development and testing much easier and 
-boosts the dev loop:
+## Overview
+
+This package adds configuration-driven client registration, provider resolution, tool helpers, OpenAI-specific extensions, and observability helpers for `Microsoft.Extensions.AI`.
+
+It is split into two packages:
+
+| Package | Purpose |
+| --- | --- |
+| `Devlooped.Extensions.AI` | Configuration, providers, chat helpers, tools, OpenAI extras, and pipeline observability |
+| `Devlooped.Extensions.AI.Console` | Rich JSON console logging for chat and HTTP pipeline messages |
+
+## Configuration-driven clients
+
+Register clients from configuration with `AddAIClients`:
+
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+builder.AddAIClients();
+
+var app = builder.Build();
+var chat = app.Services.GetChatClient("grok");
+```
+
+The default configuration prefix is `ai:clients`. A minimal configuration section looks like this:
 
 ```json
 {
   "AI": {
     "Clients": {
       "Grok": {
-        "Endpoint": "https://api.x.ai/v1",
-        "ModelId": "grok-4-1-fast-non-reasoning",
-        "ApiKey": "xai-asdf"
+        "provider": "xai",
+        "apikey": "xai-...",
+        "modelid": "grok-4-fast"
       }
     }
   }
 }
-````
-
-```csharp
-var host = new HostApplicationBuilder(args);
-host.Configuration.AddJsonFile("appsettings.json, optional: false, reloadOnChange: true);
-host.AddClients();
-
-var app = host.Build();
-var grok = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
 ```
 
-Changing the `appsettings.json` file will automatically update the client 
-configuration without restarting the application.
+Useful rules:
 
-The same provider resolution also registers keyed `IClientFactory` instances for sections with a direct 
-`apikey`, which can create speech clients from configuration:
+| Config shape | Registration |
+| --- | --- |
+| section has `apikey` | keyed `IClientFactory` |
+| section has `modelid` | keyed `IChatClient` |
+| section has `id` | overrides the service key |
+| section has `lifetime` | controls the chat client lifetime |
+
+`IChatClient` registrations are reloadable. `IClientFactory` registrations stay valid across configuration changes and create fresh clients each time you call `CreateChatClient`, `CreateSpeechToTextClient`, or `CreateTextToSpeechClient`.
+
+Built-in provider support:
+
+| Provider | Name | Chat | Speech-to-text | Text-to-speech | Match |
+| --- | --- | --- | --- | --- | --- |
+| OpenAI | `openai` | yes | yes | yes | explicit `provider`, or `https://api.openai.com/` |
+| Azure OpenAI | `azure.openai` | yes | yes | yes | explicit `provider`, or `*.openai.azure.com` |
+| Azure AI Inference | `azure.inference` | yes | no | no | explicit `provider`, or `https://ai.azure.com/` |
+| xAI / Grok | `xai` | yes | yes | yes | explicit `provider`, or `https://api.x.ai/` |
+
+When `provider` is omitted, endpoint-based matching is used. If no `endpoint` is provided at all, OpenAI is the default provider.
+
+You can also register your own provider:
 
 ```csharp
-host.AddClients();
-
-var section = host.Configuration.GetRequiredSection("AI:Clients:OpenAI");
-var factory = app.Services.GetRequiredKeyedService<IClientFactory>(section.Path);
-var chat = factory.CreateChatClient();
-var speechToText = factory.CreateSpeechToTextClient();
-var textToSpeech = factory.CreateTextToSpeechClient();
+builder.Services.AddAIClientProvider<MyClientProvider>();
+// or
+builder.Services.AddAIClientProvider(sp => new MyClientProvider(sp));
 ```
 
-## Client Defaults
-
-Similar to `ConfigureHttpClientDefaults`, you can configure shared pipeline behaviors for all AI clients — or for clients from a specific configuration section — without modifying individual registration call sites.
-
-**Global defaults** apply to every client of that modality:
+Use `useDefaultProviders: false` if you want only your own providers:
 
 ```csharp
-// Apply to all IChatClient instances registered via AddClients
-host.ConfigureChatClientDefaults(b => b
-    .UseLogging()
-    .UseOpenTelemetry());
-
-// Apply to all ITextToSpeechClient and ISpeechToTextClient from AddClients factories
-host.ConfigureTextToSpeechClientDefaults(b => b.UseLogging());
-host.ConfigureSpeechToTextClientDefaults(b => b.UseLogging());
+builder.AddAIClients(useDefaultProviders: false);
 ```
 
-**Section-specific defaults** match only clients whose configuration section path equals the given value (exact, case-insensitive, no parent inheritance). The section path uses `:` as separator, not `.`:
+Section-bound clients expose the provider options they were created with. Most callers can request the provider options type directly, for example:
 
 ```csharp
-// Only the client created from "AI:Clients:Grok" will get this pipeline
-host.ConfigureChatClientDefaults("AI:Clients:Grok", b => b
-    .UseRateLimiting());
+var options = chat.GetService<OpenAIClientOptions>();
 ```
 
-Multiple calls accumulate and run in registration order. Global and section-specific registrations can be freely mixed:
+For keyed lookup, use `GetChatClient`, `GetSpeechToTextClient`, and `GetTextToSpeechClient`.
+
+## Client defaults
+
+Use the `Configure*ClientDefaults` methods to apply shared pipelines without touching each registration site.
 
 ```csharp
-host
-    .ConfigureChatClientDefaults(b => b.UseLogging())               // global — runs first
-    .ConfigureChatClientDefaults("AI:Clients:Grok", b => b.UseRateLimiting()) // section
-    .ConfigureChatClientDefaults(b => b.UseOpenTelemetry())         // global — runs last
-    .AddClients();
+builder
+    .ConfigureChatClientDefaults(b => b.UseLogging())
+    .ConfigureChatClientDefaults("AI:Clients:Grok", b => b.UseLogging())
+    .ConfigureSpeechToTextClientDefaults(b => b.UseLogging())
+    .ConfigureTextToSpeechClientDefaults(b => b.UseLogging())
+    .AddAIClients();
 ```
 
-For keyed `IChatClient` registrations, defaults are applied outside `ConfigurableChatClient` so the outer pipeline
-survives configuration reloads. For `IClientFactory` clients, defaults are applied fresh on every
-`Create*` call so configuration changes are always reflected.
+Behavior:
 
-There's also a simpler `Chat` class for streamlined creation of chat messages, which can 
-be used instead of creating an array of `ChatMessage` using `ChatRole.[System|Assistant|User]`:
+| Rule | Meaning |
+| --- | --- |
+| Global defaults | apply to every client of that modality |
+| Section-specific defaults | match the exact configuration section path, case-insensitively |
+| Section paths | use `:` separators, not `.` |
+| Order | registrations run in the order they were added |
+
+Chat defaults survive reloads because they are applied outside the reloadable chat wrapper. Factory-created speech/chat clients get defaults applied on each `Create*` call.
+
+## Chat helpers
+
+`Chat` is a convenient `IList<ChatMessage>` implementation with factory helpers:
 
 ```csharp
-var messages = new Chat()
+var messages = new Chat
 {
-    { "system", "You are a highly intelligent AI assistant." },
-    { "user", "What is 101*3?" },
+    Chat.System("You are a helpful assistant."),
+    Chat.User("What is 101 * 3?")
+};
+
+var options = new ChatOptions
+{
+    EndUserId = "user-123"
 };
 ```
 
-## Tool Results
-
-Given the following tool:
+`Chat` also supports collection initializer syntax with string roles:
 
 ```csharp
-MyResult RunTool(string name, string description, string content) { ... }
+var chat = new Chat
+{
+    { "system", "You are concise." },
+    { "user", "Say hello." }
+};
 ```
 
-You can use the `ToolFactory` and `FindCall<MyResult>` extension method to 
-locate the function invocation, its outcome and the typed result for inspection:
+`Chat.Developer(...)` is also available for developer-role messages.
+
+For source-generated serialization, use `ChatJsonContext.DefaultOptions`.
+
+## Tool calling helpers
+
+`ToolFactory.Create` turns a delegate into an `AIFunction` with safe, snake_case tool names:
 
 ```csharp
+static MyResult RunTool(string name, string description, string content) => new(name, description, content);
+
 AIFunction tool = ToolFactory.Create(RunTool);
-var options = new ChatOptions
-{
-    ToolMode = ChatToolMode.RequireSpecific(tool.Name), // 👈 forces the tool to be used
-    Tools = [tool]
-};
-
-var response = await client.GetResponseAsync(chat, options);
-// 👇 finds the expected result of the tool call
-var result = response.FindCalls<MyResult>(tool).FirstOrDefault();
-
-if (result != null)
-{
-    // Successful tool call
-    Console.WriteLine($"Args: '{result.Call.Arguments.Count}'");
-    MyResult typed = result.Result;
-}
-else
-{
-    Console.WriteLine("Tool call not found in response.");
-}
 ```
 
-If the typed result is not found, you can also inspect the raw outcomes by finding 
-untyped calls to the tool and checking their `Outcome.Exception` property:
+`ToolExtensions.FindCalls` locates tool invocations and their results in `ChatResponse` or message histories:
 
 ```csharp
-var result = response.FindCalls(tool).FirstOrDefault();
-if (result.Outcome.Exception is not null)
+var response = await client.GetResponseAsync(messages, options);
+var call = response.FindCalls<MyResult>(tool).FirstOrDefault();
+
+if (call is not null)
 {
-    Console.WriteLine($"Tool call failed: {result.Outcome.Exception.Message}");
-}
-else
-{
-    Console.WriteLine($"Tool call succeeded: {result.Outcome.Result}");
+    Console.WriteLine(call.Result);
 }
 ```
 
-> [!IMPORTANT]
-> The `ToolFactory` will also automatically sanitize the tool name 
-> when using local functions to avoid invalid characters and honor 
-> its original name.
+If you only need the raw call/result pair, use the untyped `FindCalls` overload and inspect `Outcome.Exception`.
 
-## OpenAI
+`ToolJsonOptions.Default` provides the serializer settings used by the tool helpers.
 
-OpenAI-specific extensions enable more seamless usage with the MS.E.AI API:
+## OpenAI extras
 
-* Setting output verbosity: similarly, [output verbosity](https://platform.openai.com/docs/guides/latest-model#verbosity) is not exposed in the base API.
+The `Devlooped.Extensions.AI.OpenAI` namespace adds OpenAI-specific helpers on top of `ChatOptions`.
 
-These can be used as extension properties on `ChatOptions` whenever `Devlooped.Extensions.AI.OpenAI` is imported: 
+### Verbosity
+
+`Verbosity` is available as an extension property on `ChatOptions`:
+
+```csharp
+using Devlooped.Extensions.AI.OpenAI;
+
+var options = new ChatOptions
+{
+    Verbosity = Verbosity.Low
+};
+```
+
+`Verbosity` is supported by GPT-5+ models. Setting it automatically configures the raw response factory, so do not set a custom `RawRepresentationFactory` yourself when using it.
+
+If you want a bindable options type, use `OpenAIChatOptions`.
+
+### Web search
+
+`WebSearchTool` wraps the OpenAI Responses API web search tool with typed location and domain controls:
 
 ```csharp
 var options = new ChatOptions
 {
-    Verbosity = Verbosity.Low               // 👈 or Medium/High, extension property
-};
-
-var response = await chat.GetResponseAsync(messages, options);
-```
-
-Or you can opt to use the `ChatOptions`-derived `OpenAIChatOptions` class directly.
-
-### Web Search
-
-The `WebSearchTool` can be used to customize the web search behavior in a typed manner, 
-unlike the generic `HostedWebSearchTool`:
-
-```csharp
-var options = new ChatOptions
-{
-    //                          👇 search in Argentina, Bariloche region
-    Tools = [new WebSearchTool("AR")
-    {
-        AllowedDomains = ["catedralaltapatagonia.com"], // 👈 restrict domain
-        Region = "Bariloche",                           // 👈 Bariloche region
-        TimeZone = "America/Argentina/Buenos_Aires",    // 👈 IANA timezone
-    }]
+    Tools =
+    [
+        new WebSearchTool("AR")
+        {
+            Region = "Bariloche",
+            TimeZone = "America/Argentina/Buenos_Aires",
+            AllowedDomains = ["catedralaltapatagonia.com"]
+        }
+    ]
 };
 ```
 
-> [!NOTE]
-> This enables all features supported by the [Web search](https://platform.openai.com/docs/guides/tools-web-search) 
-> feature in OpenAI.
+Supported properties:
 
-If advanced search settings are not needed, you can use the built-in M.E.AI `HostedWebSearchTool` 
-instead, which is a more generic tool and provides the basics out of the box.
+| Property | Meaning |
+| --- | --- |
+| `Country` | ISO alpha-2 country code |
+| `Region` | Free-text region |
+| `City` | Free-text city |
+| `TimeZone` | IANA time zone |
+| `AllowedDomains` | Domain allow-list for search results |
 
-## Observing Request/Response
+## Observability
 
-The underlying HTTP pipeline provided by the Azure SDK allows setting up 
-policies that can observe requests and responses. This is useful for 
-monitoring the requests and responses sent to the AI service, regardless 
-of the chat pipeline configuration used. 
-
-This is added to the `OpenAIClientOptions` (or more properly, any 
-`ClientPipelineOptions`-derived options) using the `Observe` method:
-
-```csharp
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    new OpenAIClientOptions().Observe(
-        onRequest: request => Console.WriteLine($"Request: {request}"),
-        onResponse: response => Console.WriteLine($"Response: {response}"),
-    ));
-```
-
-You can for example trivially collect both requests and responses for 
-payload analysis in tests as follows:
+`ClientPipelineExtensions` adds low-level request/response observation for any `ClientPipelineOptions`-derived type:
 
 ```csharp
 var requests = new List<JsonNode>();
 var responses = new List<JsonNode>();
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    new OpenAIClientOptions().Observe(requests.Add, responses.Add));
+
+var options = OpenAIClientOptions.Observable(requests.Add, responses.Add);
 ```
 
-We also provide a shorthand factory method that creates the options 
-and observes is in a single call:
-
-```csharp
-var requests = new List<JsonNode>();
-var responses = new List<JsonNode>();
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    OpenAIClientOptions.Observable(requests.Add, responses.Add));
-```
-<!-- #extensions -->
+`Observe` adds the pipeline policy to an existing options instance; `Observable` creates a configured instance in one call. Non-JSON payloads are ignored.
 
 <!-- #console -->
-## Console Logging
+## Console logging
 
-Additional `UseJsonConsoleLogging` extension for rich JSON-formatted console logging 
-of `IChatClient` requests and responses are provided at two levels: 
+Install `Devlooped.Extensions.AI.Console` to get rich JSON console logging.
 
-* Chat pipeline: similar to `UseLogging`.
-* HTTP pipeline: lowest possible layer before the request is sent to the AI service, 
-  can capture all requests and responses. Can also be used with other Azure SDK-based 
-  clients that leverage `ClientPipelineOptions`.
-
-> [!NOTE]
-> Rich JSON formatting is provided by [Spectre.Console](https://spectreconsole.net/)
-
-The HTTP pipeline logging can be enabled by calling `UseJsonConsoleLogging` on the
-client options passed to the client constructor:
+### Chat pipeline logging
 
 ```csharp
-var openai = new OpenAIClient(
-    Environment.GetEnvironmentVariable("OPENAI_API_KEY")!,
-    new OpenAIClientOptions().UseJsonConsoleLogging());
-```
+using Devlooped.Extensions.AI;
+using Microsoft.Extensions.AI;
 
-Both alternatives receive an optional `JsonConsoleOptions` instance to configure 
-the output, including truncating or wrapping long messages, setting panel style, 
-and more.
-
-The chat pipeline logging is added similar to other pipeline extensions:
-
-```csharp
-IChatClient chat = new OpenAIChatClient(Environment.GetEnvironmentVariable("OPENAI_API_KEY")!, "gpt-5.2");
+var chat = someChatClient
     .AsBuilder()
-    .UseOpenTelemetry()
-    // other extensions...
-    .UseJsonConsoleLogging(new JsonConsoleOptions()
+    .UseJsonConsoleLogging(new JsonConsoleOptions
     {
-        // Formatting options...
-        Border = BoxBorder.None,
-        WrapLength = 80,
+        InteractiveOnly = false,
+        TruncateLength = 200
     })
     .Build();
 ```
 
-> [!IMPORTANT]
-> By default, the logging will only be performed if the console is interactive.
+### HTTP pipeline logging
+
+```csharp
+var client = new OpenAIClient(
+    apiKey,
+    new OpenAIClientOptions().UseJsonConsoleLogging());
+```
+
+`JsonConsoleOptions` lets you control:
+
+| Option | Meaning |
+| --- | --- |
+| `Border` / `BorderStyle` | panel appearance |
+| `IncludeAdditionalProperties` | include extra message/response data |
+| `InteractiveConfirm` | ask before enabling logging in interactive consoles |
+| `InteractiveOnly` | suppress output when the console is not interactive |
+| `TruncateLength` | trim long text |
+| `WrapLength` | wrap long text |
+
+The default settings favor interactive development sessions and keep non-interactive output quiet.
 
 <!-- #console -->
+
+<!-- #extensions -->
 
 <!-- include https://github.com/devlooped/.github/raw/main/osmf.md -->
 ## Open Source Maintenance Fee
