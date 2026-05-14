@@ -1,10 +1,6 @@
 ---
-name: devlooped.extensions.ai
-description: >
-  Helps use and configure Devlooped.Extensions.AI — configuration-driven AI client registration for
-  Microsoft.Extensions.AI. Use this skill when working with AddAIClients, ConfigureChatClientDefaults,
-  IClientFactory, IClientProvider, ConfigurableChatClient, DEAI001 migration, or keyed IChatClient
-  registrations in a project that references Devlooped.Extensions.AI.
+name: fix-deai001
+description: Fix DEAI001 build error: AddChatClients was removed
 ---
 
 # Devlooped.Extensions.AI
@@ -104,75 +100,6 @@ builder
 
 Multiple calls accumulate in registration order. Global and section-specific registrations can be
 freely mixed. Call order (global then section-specific then global again, etc.) is preserved.
-
-## Configuration Structure
-
-```json
-{
-  "AI": {
-    "Clients": {
-      "OpenAI": {
-        "ApiKey": "sk-...",
-        "ModelId": "gpt-4o"
-      },
-      "Grok": {
-        "Endpoint": "https://api.x.ai/v1",
-        "ApiKey": "xai-...",
-        "ModelId": "grok-3-fast"
-      },
-      "AzureOpenAI": {
-        "Endpoint": "https://my-resource.openai.azure.com/",
-        "ApiKey": "...",
-        "ModelId": "gpt-4o"
-      }
-    }
-  }
-}
-```
-
-- Sections with `apikey` get a keyed `IClientFactory` registered.
-- Sections with `modelid` get a keyed `IChatClient` registered.
-- Section keys become the service keys (e.g. `"Grok"`, `"AI:Clients:Grok"`, `"AI.Clients.Grok"`).
-
-## Resolving Registered Clients
-
-```csharp
-// IChatClient — keyed by client name (short form) or full section path
-var chat = app.Services.GetRequiredKeyedService<IChatClient>("Grok");
-
-// Convenience extension (case-insensitive, short or full key)
-var chat = app.Services.GetChatClient("Grok");
-
-// IClientFactory — keyed by full section path (or dotted equivalent)
-var factory = app.Services.GetRequiredKeyedService<IClientFactory>("AI:Clients:OpenAI");
-var chatClient      = factory.CreateChatClient();
-var speechToText    = factory.CreateSpeechToTextClient();
-var textToSpeech    = factory.CreateTextToSpeechClient();
-```
-
-## Custom Providers
-
-Register a custom `IClientProvider` to support additional AI backends:
-
-```csharp
-// By type
-services.AddAIClientProvider<MyCustomProvider>();
-
-// By factory
-services.AddAIClientProvider(sp => new MyCustomProvider(sp.GetRequiredService<IOptions<MyOptions>>().Value));
-```
-
-`IClientProvider` controls how the provider is detected from configuration and how client factories
-are created. Implement `ProviderName`, `BaseUri`, `HostSuffix`, and `GetFactory(IConfigurationSection)`.
-
-## Auto-Reload
-
-`IChatClient` registrations created by `AddAIClients` use `ConfigurableChatClient`, which rebuilds
-the inner client on every `IConfiguration` reload. Change `appsettings.json` and the next call uses
-the updated model, endpoint, or API key — no restart needed.
-
-`IClientFactory` registrations use `ConfigurableClientFactory`, which re-resolves the provider on
-every `Create*Client()` call, also picking up configuration changes automatically.
 
 ## Full Registration Example
 
