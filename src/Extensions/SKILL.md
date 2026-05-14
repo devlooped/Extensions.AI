@@ -117,6 +117,6 @@ builder
 
 var app = builder.Build();
 
-var grok = app.Services.GetChatClient("Grok");
-var openai = app.Services.GetChatClient("OpenAI");
+var grok = app.Services.GetChatClient("AI:Clients:Grok");
+var openai = app.Services.GetChatClient("AI:Clients:OpenAI");
 ```

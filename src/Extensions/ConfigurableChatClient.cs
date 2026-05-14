@@ -58,7 +58,7 @@ sealed partial class ConfigurableChatClient : IChatClient, IDisposable
     (IChatClient, ChatClientMetadata) Configure()
     {
         // If there was a custom id, we must validate it didn't change since that's not supported.
-        if (configuration[$"{section}:id"] is { } newid && newid != id)
+        if (configuration[$"{section}:id"] is { Length: > 0 } newid && newid != id)
             throw new InvalidOperationException($"The ID of a configured client cannot be changed at runtime. Expected '{id}' but was '{newid}'.");
 
         var client = factory.CreateChatClient();

@@ -20,13 +20,13 @@ public class EndToEnd
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var chat = services.GetChatClient("XAI");
+        var chat = services.GetChatClient("AI:Clients:XAI");
 
         Assert.NotNull(chat);
 
         var hello = await chat.GetResponseAsync("Hi there!");
 
-        //var tts = services.GetChatClient.GetTextToSpeechClient("XAI");
+        //var tts = services.GetChatClient.GetTextToSpeechClient("AI:Clients:XAI");
 
         //Assert.NotNull(tts);
     }

@@ -27,8 +27,8 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var openai = services.GetRequiredKeyedService<IChatClient>("openai");
-        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+        var openai = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
 
         Assert.Equal("openai", openai.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
@@ -53,8 +53,8 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var openai = services.GetRequiredKeyedService<IChatClient>("openai");
-        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+        var openai = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
 
         // Untyped by name+object
         Assert.NotNull(openai.GetService<object>("options"));
@@ -66,7 +66,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void CanGetFromAlternativeKey()
+    public void DoesNotRegisterShortNameWithoutConfiguredId()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -82,10 +82,10 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var grok = services.GetRequiredKeyedService<IChatClient>(new ServiceKey("grok"));
+        Assert.Null(services.GetKeyedService<IChatClient>("grok"));
 
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:Grok");
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
-        Assert.Same(grok, services.GetChatClient("grok"));
     }
 
     [Fact]
@@ -106,15 +106,17 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var grok = services.GetRequiredKeyedService<IChatClient>("groked");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:Grok");
+        var alias = services.GetRequiredKeyedService<IChatClient>("groked");
         var metadata = grok.GetRequiredService<ConfigurableChatClientMetadata>();
 
+        Assert.Same(grok, alias);
         Assert.Equal("groked", metadata.Id);
         Assert.Equal("ai:clients:Grok", metadata.ConfigurationSection);
     }
 
     [Fact]
-    public void CanOverrideClientId()
+    public void CanResolveClientByConfiguredId()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -131,8 +133,10 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var grok = services.GetRequiredKeyedService<IChatClient>("xai");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
+        var alias = services.GetRequiredKeyedService<IChatClient>("xai");
 
+        Assert.Same(grok, alias);
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
 
@@ -154,7 +158,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
 
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
@@ -177,7 +181,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
 
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
@@ -199,7 +203,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
 
         Assert.Equal("openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("gpt-4.1", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
@@ -228,7 +232,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:chat");
 
         Assert.Equal("openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("gpt-4.1", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
@@ -262,7 +266,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:chat");
 
         Assert.Equal("azure.ai.inference", client.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("gpt-5", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
@@ -287,7 +291,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:chat");
 
         Assert.Equal("azure.ai.openai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
         Assert.Equal("gpt-5", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
@@ -310,7 +314,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
         var options = Assert.IsType<OpenAIClientProvider.OpenAIProviderOptions>(
             client.GetService(typeof(object), "OpTiOnS"));
 
@@ -337,7 +341,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:chat");
         var options = Assert.IsType<AzureOpenAIClientProvider.AzureOpenAIProviderOptions>(
             client.GetService(typeof(object), "options"));
 
@@ -363,7 +367,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("chat");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:chat");
         var options = Assert.IsType<AzureAIInferenceClientProvider.AzureInferenceProviderOptions>(
             client.GetService(typeof(object), "options"));
 
@@ -389,7 +393,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("grok");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
         var options = Assert.IsType<GrokClientProvider.GrokProviderOptions>(
             client.GetService(typeof(object), "options"));
 
@@ -514,6 +518,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
+                ["ai:clients:openai:id"] = "default-openai",
                 ["ai:clients:openai:modelid"] = "gpt-4.1.nano",
                 ["ai:clients:openai:apikey"] = "sk-asdfasdf",
             })
@@ -525,10 +530,12 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
-        var alternative = services.GetRequiredKeyedService<IClientFactory>(new ServiceKey("AI:CLIENTS:OPENAI"));
+        var alias = services.GetRequiredKeyedService<IClientFactory>("default-openai");
         var client = factory.CreateChatClient();
 
-        Assert.Same(factory, alternative);
+        Assert.Same(factory, alias);
+        Assert.Null(services.GetKeyedService<IClientFactory>("ai.clients.openai"));
+        Assert.Null(services.GetKeyedService<IClientFactory>("openai"));
         Assert.Equal("gpt-4.1.nano", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
     }
 
@@ -597,7 +604,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
         Assert.NotNull(client.GetService<MarkerChatClient>());
     }
 
@@ -621,8 +628,8 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var openai = services.GetRequiredKeyedService<IChatClient>("openai");
-        var grok = services.GetRequiredKeyedService<IChatClient>("grok");
+        var openai = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
 
         Assert.NotNull(openai.GetService<MarkerChatClient>());
         Assert.Null(grok.GetService<MarkerChatClient>());
@@ -656,7 +663,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
 
         Assert.NotNull(client.GetService<MarkerChatClient>());
         Assert.NotNull(client.GetService<SecondMarkerChatClient>());
@@ -682,8 +689,8 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        Assert.NotNull(services.GetRequiredKeyedService<IChatClient>("foo").GetService<MarkerChatClient>());
-        Assert.Null(services.GetRequiredKeyedService<IChatClient>("foobar").GetService<MarkerChatClient>());
+        Assert.NotNull(services.GetRequiredKeyedService<IChatClient>("ai:clients:foo").GetService<MarkerChatClient>());
+        Assert.Null(services.GetRequiredKeyedService<IChatClient>("ai:clients:foobar").GetService<MarkerChatClient>());
     }
 
     [Fact]
@@ -703,14 +710,14 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var original = services.GetRequiredKeyedService<IChatClient>("openai");
+        var original = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
         Assert.NotNull(original.GetService<MarkerChatClient>());
         Assert.Equal("gpt-4.1", original.GetRequiredService<ChatClientMetadata>().DefaultModelId);
 
         configuration["ai:clients:openai:modelid"] = "gpt-5";
         configuration.Reload();
 
-        var updated = services.GetRequiredKeyedService<IChatClient>("openai");
+        var updated = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
         Assert.Same(original, updated);
         Assert.NotNull(updated.GetService<MarkerChatClient>());
         Assert.Equal("gpt-5", updated.GetRequiredService<ChatClientMetadata>().DefaultModelId);
@@ -734,10 +741,9 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
-        var dotted = services.GetRequiredKeyedService<IClientFactory>("ai.clients.openai");
         var client = factory.CreateChatClient();
 
-        Assert.Same(factory, dotted);
+        Assert.Null(services.GetKeyedService<IClientFactory>("ai.clients.openai"));
         Assert.NotNull(client.GetService<MarkerChatClient>());
     }
 
@@ -879,7 +885,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
         Assert.Null(services.GetKeyedService<IClientFactory>("ai:clients:grok:chat"));
 
         // But IChatClient resolves via apikey inheritance from the parent section
-        var client = services.GetRequiredKeyedService<IChatClient>("grok:chat");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok:chat");
         Assert.Equal("xai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
 
@@ -904,7 +910,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        var client = services.GetRequiredKeyedService<IChatClient>("openai");
+        var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:openai");
         Assert.Equal(1, instanceCount);
         Assert.NotNull(client.GetService<MarkerChatClient>());
     }
