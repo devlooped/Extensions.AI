@@ -18,8 +18,16 @@ public static class AIClientExtensions
     /// <see cref="DefaultsApplyingClientFactory"/> that applies <see cref="ChatDefaultsEntry"/> (and speech/text-to-speech 
     /// equivalents) registered via <c>Configure*ClientDefaults</c>. Also registers keyed <see cref="IChatClient"/> entries
     /// by full section path for sections with a <c>modelid</c>, using <see cref="ConfigurableChatClient"/> for auto-reload
-    /// support. A configured <c>id</c> adds a secondary lookup key without replacing the section path key. Chat defaults flow
-    /// through the shared factory so they are applied once, including on every configuration reload.
+    /// support. The following alternate lookup keys are registered for each service (first registration wins):
+    /// <list type="bullet">
+    ///   <item>Configured <c>id</c> attribute from the section (highest-priority alias).</item>
+    ///   <item>Section path, lowercase invariant (e.g., <c>ai:clients:grok</c> for <c>ai:clients:Grok</c>).</item>
+    ///   <item>Section path with <c>:</c> replaced by <c>.</c> (e.g., <c>ai.clients.Grok</c>).</item>
+    ///   <item>Section path with <c>:</c> replaced by <c>.</c>, lowercase (e.g., <c>ai.clients.grok</c>).</item>
+    ///   <item>Last path segment (e.g., <c>Grok</c>).</item>
+    ///   <item>Last path segment, lowercase (e.g., <c>grok</c>).</item>
+    /// </list>
+    /// Chat defaults flow through the shared factory so they are applied once, including on every configuration reload.
     /// </remarks>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -31,10 +39,10 @@ public static class AIClientExtensions
         services.AddClientFactoryResolver(useDefaultProviders);
         services.AddLogging();
 
-        foreach (var section in EnumerateFactorySections(configuration, prefix))
+        var factorySections = EnumerateFactorySections(configuration, prefix).ToList();
+        foreach (var section in factorySections)
         {
             var path = section.Path;
-            var options = section.Get<ClientOptions>();
 
             services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), path,
                 factory: (sp, _) =>
@@ -46,49 +54,61 @@ public static class AIClientExtensions
                     return new DefaultsApplyingClientFactory(configurable, path, sp);
                 },
                 ServiceLifetime.Singleton));
+        }
 
-            if (!string.IsNullOrEmpty(options?.Id) && !string.Equals(options.Id, path, StringComparison.Ordinal))
-            {
-                services.TryAdd(new ServiceDescriptor(typeof(IClientFactory), options.Id,
-                    factory: (sp, _) => sp.GetRequiredKeyedService<IClientFactory>(path),
-                    ServiceLifetime.Singleton));
-            }
+        foreach (var section in factorySections)
+            TryAddKeyedAlias<IClientFactory>(services, section.Get<ClientOptions>()?.Id, section.Path, ServiceLifetime.Singleton);
+
+        foreach (var section in factorySections)
+        {
+            foreach (var alias in GetGeneratedAliases(section.Path))
+                TryAddKeyedAlias<IClientFactory>(services, alias, section.Path, ServiceLifetime.Singleton);
         }
 
         var normalizedPrefix = prefix.TrimEnd(':') + ":";
-        foreach (var entry in configuration.AsEnumerable().Where(x =>
-            x.Value is not null &&
-            x.Key.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase) &&
-            x.Key.EndsWith(":modelid", StringComparison.OrdinalIgnoreCase)))
-        {
-            var path = string.Join(':', entry.Key.Split(':')[..^1]);
-            var options = configuration.GetRequiredSection(path).Get<ClientOptions>();
-            var id = string.IsNullOrEmpty(options?.Id) ? path : options.Id;
-            var lifetime = options?.Lifetime ?? ServiceLifetime.Singleton;
+        var chatSections = configuration.AsEnumerable().Where(x =>
+                x.Value is not null &&
+                x.Key.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase) &&
+                x.Key.EndsWith(":modelid", StringComparison.OrdinalIgnoreCase))
+            .Select(entry =>
+            {
+                var path = string.Join(':', entry.Key.Split(':')[..^1]);
+                var options = configuration.GetRequiredSection(path).Get<ClientOptions>();
+                var defaultId = GetDefaultId(path);
+                var id = string.IsNullOrEmpty(options?.Id) ? defaultId : options.Id;
+                var lifetime = options?.Lifetime ?? ServiceLifetime.Singleton;
 
-            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), path,
+                return (Path: path, Id: id, DefaultId: defaultId, ConfiguredId: options?.Id, Lifetime: lifetime);
+            })
+            .ToList();
+
+        foreach (var section in chatSections)
+        {
+            services.TryAdd(new ServiceDescriptor(typeof(IChatClient), section.Path,
                 factory: (sp, _) =>
                 {
                     // The keyed IClientFactory exists for sections with a direct apikey.
                     // For sub-sections that inherit their apikey from a parent, create a
                     // section-specific defaults-applying factory on the fly.
-                    var sectionFactory = sp.GetKeyedService<IClientFactory>(path)
+                    var sectionFactory = sp.GetKeyedService<IClientFactory>(section.Path)
                         ?? new DefaultsApplyingClientFactory(
-                            new ConfigurableClientFactory(configuration, path, sp.GetRequiredService<IClientFactoryResolver>()),
-                            path, sp);
+                            new ConfigurableClientFactory(configuration, section.Path, sp.GetRequiredService<IClientFactoryResolver>()),
+                            section.Path, sp);
 
                     return new ConfigurableChatClient(sectionFactory, configuration,
                         sp.GetRequiredService<ILogger<ConfigurableChatClient>>(),
-                        path, id);
+                        section.Path, section.Id);
                 },
-                lifetime));
+                section.Lifetime));
+        }
 
-            if (!string.Equals(id, path, StringComparison.Ordinal))
-            {
-                services.TryAdd(new ServiceDescriptor(typeof(IChatClient), id,
-                    factory: (sp, _) => sp.GetRequiredKeyedService<IChatClient>(path),
-                    lifetime));
-            }
+        foreach (var section in chatSections)
+            TryAddKeyedAlias<IChatClient>(services, section.ConfiguredId, section.Path, section.Lifetime);
+
+        foreach (var section in chatSections)
+        {
+            foreach (var alias in GetGeneratedAliases(section.Path))
+                TryAddKeyedAlias<IChatClient>(services, alias, section.Path, section.Lifetime);
         }
 
         return services;
@@ -176,6 +196,34 @@ public static class AIClientExtensions
             if (sections.Add(sectionPath))
                 yield return configuration.GetRequiredSection(sectionPath);
         }
+    }
+
+    static string GetDefaultId(string path)
+    {
+        var separator = path.LastIndexOf(':');
+        return separator < 0 ? path : path[(separator + 1)..];
+    }
+
+    static IEnumerable<string> GetGeneratedAliases(string path)
+    {
+        yield return path.ToLowerInvariant();
+        var dotted = path.Replace(':', '.');
+        yield return dotted;
+        yield return dotted.ToLowerInvariant();
+        var lastSegment = GetDefaultId(path);
+        yield return lastSegment;
+        yield return lastSegment.ToLowerInvariant();
+    }
+
+    static void TryAddKeyedAlias<TService>(IServiceCollection services, string? id, string path, ServiceLifetime lifetime)
+        where TService : class
+    {
+        if (string.IsNullOrEmpty(id) || string.Equals(id, path, StringComparison.Ordinal))
+            return;
+
+        services.TryAdd(new ServiceDescriptor(typeof(TService), id,
+            factory: (sp, _) => sp.GetRequiredKeyedService<TService>(path),
+            lifetime));
     }
 
     internal class ClientOptions
