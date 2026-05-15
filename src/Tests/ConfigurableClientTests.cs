@@ -66,7 +66,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void DoesNotRegisterShortNameWithoutConfiguredId()
+    public void CanResolveClientByImplicitSectionId()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -82,9 +82,11 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .AddAIClients(configuration)
             .BuildServiceProvider();
 
-        Assert.Null(services.GetKeyedService<IChatClient>("grok"));
-
         var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:Grok");
+        var alias = services.GetRequiredKeyedService<IChatClient>("Grok");
+
+        Assert.Same(grok, alias);
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("grok"));
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
 
@@ -108,9 +110,11 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:Grok");
         var alias = services.GetRequiredKeyedService<IChatClient>("groked");
+        var defaultAlias = services.GetRequiredKeyedService<IChatClient>("Grok");
         var metadata = grok.GetRequiredService<ConfigurableChatClientMetadata>();
 
         Assert.Same(grok, alias);
+        Assert.Same(grok, defaultAlias);
         Assert.Equal("groked", metadata.Id);
         Assert.Equal("ai:clients:Grok", metadata.ConfigurationSection);
     }
@@ -135,9 +139,97 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
         var alias = services.GetRequiredKeyedService<IChatClient>("xai");
+        var defaultAlias = services.GetRequiredKeyedService<IChatClient>("grok");
 
         Assert.Same(grok, alias);
+        Assert.Same(grok, defaultAlias);
         Assert.Equal("xai", grok.GetRequiredService<ChatClientMetadata>().ProviderName);
+    }
+
+    [Fact]
+    public void CanResolveClientByLowercasePath()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:Grok:modelid"] = "grok-4-fast",
+                ["ai:clients:Grok:ApiKey"] = "xai-asdfasdf",
+                ["ai:clients:Grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddAIClients(configuration)
+            .BuildServiceProvider();
+
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:Grok");
+
+        // lowercase path
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("ai:clients:grok"));
+        // dotted path (original casing)
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("ai.clients.Grok"));
+        // dotted path (lowercase)
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("ai.clients.grok"));
+        // last segment (already tested elsewhere, but confirms it too)
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("Grok"));
+        // last segment lowercase
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("grok"));
+    }
+
+    [Fact]
+    public void ConfiguredIdWinsOverGeneratedAliasConflict()
+    {
+        // Section B's path segment is "fast", and section A has id="fast".
+        // Configured id should win (registered before generated aliases).
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:grok:id"] = "fast",
+                ["ai:clients:grok:modelid"] = "grok-4-fast",
+                ["ai:clients:grok:apikey"] = "xai-asdfasdf",
+                ["ai:clients:grok:endpoint"] = "https://api.x.ai",
+                ["ai:clients:fast:modelid"] = "gpt-4.1.nano",
+                ["ai:clients:fast:apikey"] = "sk-asdfasdf",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddAIClients(configuration)
+            .BuildServiceProvider();
+
+        var grok = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok");
+        var fast = services.GetRequiredKeyedService<IChatClient>("ai:clients:fast");
+
+        // "fast" as an alias key was claimed first by grok's configured id
+        Assert.Same(grok, services.GetRequiredKeyedService<IChatClient>("fast"));
+        Assert.NotSame(fast, services.GetRequiredKeyedService<IChatClient>("fast"));
+    }
+
+    [Fact]
+    public void CanResolveFactoryByAlternateKeys()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["ai:clients:Grok:apikey"] = "xai-asdfasdf",
+                ["ai:clients:Grok:endpoint"] = "https://api.x.ai",
+            })
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddAIClients(configuration)
+            .BuildServiceProvider();
+
+        var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:Grok");
+
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("ai:clients:grok"));
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("ai.clients.Grok"));
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("ai.clients.grok"));
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("Grok"));
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("grok"));
     }
 
     [Fact]
@@ -531,11 +623,12 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
         var alias = services.GetRequiredKeyedService<IClientFactory>("default-openai");
+        var defaultAlias = services.GetRequiredKeyedService<IClientFactory>("openai");
         var client = factory.CreateChatClient();
 
         Assert.Same(factory, alias);
-        Assert.Null(services.GetKeyedService<IClientFactory>("ai.clients.openai"));
-        Assert.Null(services.GetKeyedService<IClientFactory>("openai"));
+        Assert.Same(factory, defaultAlias);
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("ai.clients.openai"));
         Assert.Equal("gpt-4.1.nano", client.GetRequiredService<ChatClientMetadata>().DefaultModelId);
     }
 
@@ -557,6 +650,7 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         Assert.NotNull(services.GetKeyedService<IClientFactory>("ai:clients:grok"));
+        Assert.NotNull(services.GetKeyedService<IClientFactory>("grok"));
         Assert.Null(services.GetKeyedService<IClientFactory>("ai:clients:grok:router"));
     }
 
@@ -741,9 +835,11 @@ public class ConfigurableClientTests(ITestOutputHelper output)
             .BuildServiceProvider();
 
         var factory = services.GetRequiredKeyedService<IClientFactory>("ai:clients:openai");
+        var alias = services.GetRequiredKeyedService<IClientFactory>("openai");
         var client = factory.CreateChatClient();
 
-        Assert.Null(services.GetKeyedService<IClientFactory>("ai.clients.openai"));
+        Assert.Same(factory, alias);
+        Assert.Same(factory, services.GetRequiredKeyedService<IClientFactory>("ai.clients.openai"));
         Assert.NotNull(client.GetService<MarkerChatClient>());
     }
 
@@ -886,6 +982,8 @@ public class ConfigurableClientTests(ITestOutputHelper output)
 
         // But IChatClient resolves via apikey inheritance from the parent section
         var client = services.GetRequiredKeyedService<IChatClient>("ai:clients:grok:chat");
+        var alias = services.GetRequiredKeyedService<IChatClient>("chat");
+        Assert.Same(client, alias);
         Assert.Equal("xai", client.GetRequiredService<ChatClientMetadata>().ProviderName);
     }
 

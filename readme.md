@@ -35,7 +35,7 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
 builder.AddAIClients();
 
 var app = builder.Build();
-var chat = app.Services.GetChatClient("AI:Clients:Grok");
+var chat = app.Services.GetChatClient("Grok");
 ```
 
 The default configuration prefix is `ai:clients`. A minimal configuration section looks like this:
@@ -60,10 +60,11 @@ Useful rules:
 | --- | --- |
 | section has `apikey` | keyed `IClientFactory` |
 | section has `modelid` | keyed `IChatClient` |
+| section path ends in `Grok` | adds `Grok` as an implicit lookup key |
 | section has `id` | adds an extra lookup key |
 | section has `lifetime` | controls the chat client lifetime |
 
-`IChatClient` and `IClientFactory` registrations are keyed by their full configuration section path. An optional `id` adds a secondary lookup key without replacing the section-path key. `IChatClient` registrations are reloadable. `IClientFactory` registrations stay valid across configuration changes and create fresh clients each time you call `CreateChatClient`, `CreateSpeechToTextClient`, or `CreateTextToSpeechClient`.
+`IChatClient` and `IClientFactory` registrations are keyed by their full configuration section path and by the last section path segment. An optional `id` adds another lookup key without replacing the section-path key. `IChatClient` registrations are reloadable. `IClientFactory` registrations stay valid across configuration changes and create fresh clients each time you call `CreateChatClient`, `CreateSpeechToTextClient`, or `CreateTextToSpeechClient`.
 
 Built-in provider support:
 
