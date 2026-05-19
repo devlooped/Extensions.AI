@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <NoWarn>OPENAI001;MEAI001;DEAI001;$(NoWarn)</NoWarn>
+    <NoWarn>OPENAI001;MEAI001;$(NoWarn)</NoWarn>
     <LangVersion>Preview</LangVersion>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <RootNamespace>Devlooped</RootNamespace>
@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Extensions.CodeAnalysis\Extensions.CodeAnalysis.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Extensions.Codefix\Extensions.Codefix.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Extensions\Extensions.csproj" />
     <ProjectReference Include="..\Extensions.Console\Extensions.Console.csproj" />
   </ItemGroup>

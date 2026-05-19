@@ -11,7 +11,11 @@ source) using provider detection, and support hot-reload without restarting the 
 
 ## DEAI001 — Migrate from AddChatClients to AddAIClients
 
-`AddChatClients` is **removed** (error, `DiagnosticId = "DEAI001"`). Replace every call site:
+`AddChatClients` is **removed** (analyzer error **DEAI001**). In Visual Studio or Rider, use the
+**Migrate to AddAIClients** code fix (light bulb) on the error for deterministic migration. When the
+`configure` callback is too complex for the fixer (**DEAI002**), follow the manual steps below.
+
+Replace every call site:
 
 ### Before (error)
 

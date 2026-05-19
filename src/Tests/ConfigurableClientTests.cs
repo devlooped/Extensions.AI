@@ -9,6 +9,19 @@ namespace Devlooped.Extensions.AI;
 public class ConfigurableClientTests(ITestOutputHelper output)
 {
     [Fact]
+    public void Migrate()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+        var collection = new ServiceCollection();
+
+        collection.ConfigureChatClientDefaults(b => b.UseLogging())
+            .AddAIClients(configuration, useDefaultProviders: false);
+
+        var services = collection.BuildServiceProvider();
+    }
+
+
+    [Fact]
     public void CanConfigureClients()
     {
         var configuration = new ConfigurationBuilder()

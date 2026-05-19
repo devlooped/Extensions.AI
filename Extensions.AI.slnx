@@ -5,6 +5,8 @@
     <Platform Name="x86" />
   </Configurations>
   <Project Path="src/Extensions.CodeAnalysis/Extensions.CodeAnalysis.csproj" />
+  <Project Path="src/Extensions.Codefix/Extensions.Codefix.csproj" />
+  <Project Path="src/Extensions.CodeAnalysis.Tests/Extensions.CodeAnalysis.Tests.csproj" />
   <Project Path="src/Extensions/Extensions.csproj" />
   <Project Path="src/Extensions.Console/Extensions.Console.csproj" />
   <Project Path="src/Tests/Tests.csproj" />
